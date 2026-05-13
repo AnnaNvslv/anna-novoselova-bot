@@ -6,466 +6,246 @@
 <title>Запись к оптометристу — Анна Новосёлова</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --primary:#1B4F72;--accent:#0891b2;--green:#047857;--green-l:#d1fae5;
-  --bg:#F0F4F8;--surface:#fff;--border:#e2e8f0;--text:#1a202c;--text-m:#64748b;
-  --r:12px;--shadow:0 2px 12px rgba(0,0,0,.1)
-}
+:root{--primary:#1B4F72;--accent:#0891b2;--green:#047857;--green-l:#d1fae5;--bg:#F0F4F8;--surface:#fff;--border:#e2e8f0;--text:#1a202c;--text-m:#64748b;--r:12px;--shadow:0 2px 12px rgba(0,0,0,.08)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:16px;min-height:100vh}
-.page{display:none;min-height:100vh;flex-direction:column}
-.page.active{display:flex}
-/* HEADER */
-.header{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;padding:28px 20px 24px;text-align:center}
-.header-avatar{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.2);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px}
-.header h1{font-size:20px;font-weight:700;margin-bottom:4px}
-.header p{font-size:14px;opacity:.85}
-/* CONTENT */
-.content{flex:1;padding:20px 16px 32px;max-width:480px;margin:0 auto;width:100%}
-/* CARD */
-.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
-.card-title{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--primary)}
-/* TELEGRAM LOGIN */
-.tg-login-wrap{text-align:center;padding:20px 0}
-.tg-login-wrap p{color:var(--text-m);font-size:14px;margin-bottom:20px;line-height:1.5}
-.tg-btn{display:inline-flex;align-items:center;gap:10px;background:#2AABEE;color:#fff;border:none;border-radius:10px;padding:13px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
-.tg-btn:hover{background:#1a9bd8}
-.tg-btn svg{width:22px;height:22px}
-.steps{display:flex;gap:10px;margin-bottom:20px}
-.step{flex:1;text-align:center;font-size:12px;color:var(--text-m)}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
-.step.done .step-num{background:var(--green)}
-.step.active .step-num{background:var(--primary)}
-/* CALENDAR */
-.slots-grid{display:flex;flex-direction:column;gap:14px}
-.slots-day{}
-.slots-day-title{font-size:14px;font-weight:700;color:var(--text-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.slots-times{display:flex;flex-wrap:wrap;gap:8px}
-.slot-btn{padding:9px 16px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text);font-family:inherit;transition:all .15s}
-.slot-btn:hover{border-color:var(--accent);color:var(--accent)}
-.slot-btn.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
-/* FORM */
+body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--text);font-size:16px;min-height:100vh}
+.header{background:linear-gradient(135deg,#1B4F72 0%,#0891b2 100%);color:#fff;padding:32px 20px 28px;text-align:center}
+.avatar{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:36px;border:3px solid rgba(255,255,255,.3)}
+.header h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.header p{font-size:14px;opacity:.8;line-height:1.5}
+.page{display:none;max-width:500px;margin:0 auto;padding:20px 16px 48px}
+.page.active{display:block}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;margin-bottom:14px}
+.card-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:14px}
+.month-title{font-size:12px;font-weight:700;color:var(--text-m);text-transform:uppercase;letter-spacing:.7px;margin:18px 0 8px;padding:0 2px}
+.day-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px}
+.day-name{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text)}
+.slots-row{display:flex;flex-wrap:wrap;gap:8px}
+.slot{padding:9px 16px;border:2px solid var(--border);border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:var(--text);transition:all .15s;font-family:inherit}
+.slot:hover{border-color:var(--accent);color:var(--accent);background:#f0f9ff}
+.slot.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.no-slots{text-align:center;padding:40px 20px;color:var(--text-m)}
+.slot-summary{background:var(--accent);color:#fff;border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
+.slot-summary .date{font-size:18px;font-weight:800;margin-bottom:2px}
+.slot-summary .time{font-size:14px;opacity:.85}
 .form-group{margin-bottom:14px}
-label{display:block;font-size:13px;font-weight:600;color:var(--text-m);margin-bottom:5px}
-input,select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:15px;color:var(--text);outline:none;transition:border .15s;background:#fff}
-input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-textarea{resize:none;min-height:70px}
-/* MULTISELECT */
-.multi-opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.multi-opt{padding:7px 13px;border:1.5px solid var(--border);border-radius:20px;font-size:13.5px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--text);user-select:none;transition:all .15s}
-.multi-opt.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
-/* CONSENT */
-.consent-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1.5px solid var(--border)}
-.consent-item input[type=checkbox]{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--accent)}
-.consent-item span{font-size:13.5px;color:var(--text-m);line-height:1.5}
-/* BUTTON */
-.btn-main{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
-.btn-main:hover{background:var(--primary)}
-.btn-main:disabled{background:#94a3b8;cursor:not-allowed}
-.btn-back{background:none;border:none;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;padding:4px 0;margin-bottom:12px}
-/* SELECTED SLOT SUMMARY */
-.slot-summary{background:var(--accent);color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:center}
-.slot-summary .date{font-size:18px;font-weight:800}
-.slot-summary .time{font-size:14px;opacity:.85;margin-top:2px}
-/* CONFIRMATION */
-.confirm-icon{font-size:64px;text-align:center;margin:20px 0}
-.confirm-title{font-size:22px;font-weight:800;text-align:center;color:var(--primary);margin-bottom:8px}
-.confirm-sub{font-size:15px;text-align:center;color:var(--text-m);line-height:1.6}
-.confirm-details{background:var(--green-l);border-radius:10px;padding:16px;margin:20px 0}
-.confirm-details .row{display:flex;justify-content:space-between;padding:5px 0;font-size:14px}
-.confirm-details .row .label{color:var(--text-m)}
-.confirm-details .row .val{font-weight:700}
-/* EMPTY */
-.empty-slots{text-align:center;padding:40px 20px;color:var(--text-m)}
-.empty-slots .icon{font-size:48px;margin-bottom:10px}
-.spinner{text-align:center;padding:40px;color:var(--text-m);font-size:14px}
+label{display:block;font-size:13.5px;font-weight:600;color:var(--text-m);margin-bottom:5px}
+input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:15px;color:var(--text);outline:none;transition:border .15s;-webkit-appearance:none;background:#fff}
+input:focus,select:focus{border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.consent{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer}
+.consent input[type=checkbox]{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--accent)}
+.consent p{font-size:13.5px;color:var(--text-m);line-height:1.5}
+.btn-next{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn-next:hover{background:var(--primary)}
+.btn-next:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-back{background:none;border:none;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
+.confirm-wrap{text-align:center;padding:20px 0}
+.confirm-icon{font-size:72px;margin-bottom:16px}
+.confirm-title{font-size:24px;font-weight:800;color:var(--primary);margin-bottom:8px}
+.confirm-sub{font-size:15px;color:var(--text-m);line-height:1.6;margin-bottom:20px}
+.confirm-box{background:var(--green-l);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.confirm-box .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:14px}
+.confirm-box .row:last-child{border-bottom:none}
+.confirm-box .lbl{color:var(--text-m)}
+.confirm-box .val{font-weight:700}
+.tg-box{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:var(--r);padding:16px;text-align:center;margin-bottom:14px}
+.tg-box p{font-size:14px;color:#1e40af;line-height:1.6;margin-bottom:10px}
+.tg-bot-btn{display:inline-flex;align-items:center;gap:8px;background:#2AABEE;color:#fff;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none}
+.spinner{text-align:center;padding:48px;color:var(--text-m);font-size:15px}
 </style>
 </head>
 <body>
 
-<!-- ═══ PAGE 1: LOGIN ═══ -->
-<div class="page active" id="page-login">
-  <div class="header">
-    <div class="header-avatar">👁</div>
-    <h1>Анна Новосёлова</h1>
-    <p>Оптометрист · Нови-Сад<br>Оптика Ginter, Trg Republike 25</p>
-  </div>
-  <div class="content">
-    <div class="card">
-      <div class="card-title">Онлайн-запись на приём</div>
-      <div class="tg-login-wrap">
-        <p>Войдите через Telegram, чтобы записаться.<br>Мы сохраним ваш контакт для отправки подтверждения и напоминаний.</p>
-        <button class="tg-btn" onclick="loginWithTelegram()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.4 14.028l-2.95-.924c-.64-.203-.658-.64.136-.954l11.57-4.461c.537-.194 1.006.131.738.532z"/></svg>
-          Войти через Telegram
-        </button>
-        <div id="tg-widget-container" style="margin-top:16px"></div>
-      </div>
-    </div>
-    <div class="card" style="background:#eff6ff;border:none;box-shadow:none">
-      <div style="font-size:13.5px;color:#1e40af;line-height:1.6">
-        <b>Как это работает:</b><br>
-        1. Нажмите «Войти через Telegram»<br>
-        2. Выберите удобный слот<br>
-        3. Заполните краткую анкету<br>
-        4. Получите подтверждение в Telegram ✓
-      </div>
-    </div>
-  </div>
+<div class="header">
+  <div class="avatar">&#128065;</div>
+  <h1>Анна Новосёлова</h1>
+  <p>Оптометрист &middot; Нови-Сад<br>Оптика Ginter, Trg Republike 25</p>
 </div>
 
-<!-- ═══ PAGE 2: SLOTS ═══ -->
-<div class="page" id="page-slots">
-  <div class="header">
-    <div class="header-avatar">📅</div>
-    <h1>Выберите время</h1>
-    <p id="welcome-name"></p>
+<div class="page active" id="page-slots">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px">
+    <div>
+      <div style="font-size:19px;font-weight:800">Выберите время</div>
+      <div style="font-size:13px;color:var(--text-m);margin-top:2px">Ближайшие свободные слоты</div>
+    </div>
+    <div style="background:var(--surface);border-radius:8px;padding:8px 12px;text-align:center;box-shadow:var(--shadow)">
+      <div style="font-size:11px;color:var(--text-m)">Длительность</div>
+      <div style="font-size:16px;font-weight:800;color:var(--primary)">1 час</div>
+    </div>
   </div>
-  <div class="content">
-    <button class="btn-back" onclick="showPage('login')">← Назад</button>
-    <div id="slots-container"><div class="spinner">Загрузка расписания...</div></div>
-  </div>
+  <div id="slots-container"><div class="spinner">Загрузка...</div></div>
 </div>
 
-<!-- ═══ PAGE 3: FORM ═══ -->
 <div class="page" id="page-form">
-  <div class="header">
-    <div class="header-avatar">📋</div>
-    <h1>Ваши данные</h1>
-    <p>Заполните анкету для записи</p>
+  <button class="btn-back" onclick="showPage('slots')">&#8249; Назад к расписанию</button>
+  <div id="slot-summary"></div>
+  <div class="card">
+    <div class="card-title">Ваши данные</div>
+    <div class="form-group"><label>Фамилия и имя *</label><input id="f-name" type="text" placeholder="Иванова Мария Петровна" autocomplete="name"></div>
+    <div class="form-group"><label>Дата рождения *</label><input id="f-dob" type="date"></div>
+    <div class="form-group"><label>Телефон</label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"></div>
+    <div class="form-group"><label>Telegram <span style="font-weight:400;color:var(--text-m)">(необязательно, для уведомлений)</span></label><input id="f-tg" type="text" placeholder="@username"></div>
   </div>
-  <div class="content">
-    <button class="btn-back" onclick="showPage('slots')">← Назад</button>
-    <div id="slot-summary-display"></div>
-    <div class="card">
-      <div class="card-title">Контактные данные</div>
-      <div class="form-group">
-        <label>Фамилия и имя *</label>
-        <input id="f-name" type="text" placeholder="Иванова Мария">
-      </div>
-      <div class="form-group">
-        <label>Дата рождения *</label>
-        <input id="f-dob" type="date" max="">
-      </div>
-      <div class="form-group">
-        <label>Telegram @username</label>
-        <input id="f-tg" type="text" placeholder="@username" readonly style="background:#f8fafc">
-      </div>
-      <div class="form-group">
-        <label>Телефон</label>
-        <input id="f-phone" type="tel" placeholder="+381 ...">
-      </div>
+  <div class="card">
+    <div class="card-title">Цель визита</div>
+    <div class="chips" id="goals">
+      <div class="chip" onclick="this.classList.toggle('on')">Подбор очков</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Замена очков</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Подбор контактных линз</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Контрольный визит</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Жалобы на зрение</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Проверка зрения</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Другое</div>
     </div>
-    <div class="card">
-      <div class="card-title">Цель визита</div>
-      <div class="multi-opts" id="goals-opts">
-        ${['Подбор очков','Замена очков','Подбор контактных линз','Контрольный визит','Жалобы на зрение','Проверка зрения','Другое'].map(g=>`<div class="multi-opt" onclick="toggleOpt(this)">${g}</div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Жалобы</div>
-      <div class="multi-opts" id="complaints-opts">
-        ${['Снижение зрения вдаль','Снижение зрения вблизи','Усталость глаз','Головные боли','Двоение','Дискомфорт в очках/линзах','Нет жалоб'].map(c=>`<div class="multi-opt" onclick="toggleOpt(this)">${c}</div>`).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Согласия</div>
-      <div class="consent-item">
-        <input type="checkbox" id="consent-data">
-        <span>Я даю согласие на обработку персональных данных в соответствии с законодательством Республики Сербия.</span>
-      </div>
-      <div class="consent-item">
-        <input type="checkbox" id="consent-bot">
-        <span>Я согласен(-на) получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях.</span>
-      </div>
-    </div>
-    <button class="btn-main" id="submit-btn" onclick="submitBooking()">Записаться на приём</button>
   </div>
+  <div class="card">
+    <div class="card-title">Жалобы</div>
+    <div class="chips" id="complaints">
+      <div class="chip" onclick="this.classList.toggle('on')">Снижение зрения вдаль</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Снижение вблизи</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Усталость глаз</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Головные боли</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Двоение</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Дискомфорт в очках</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Нет жалоб</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Согласия</div>
+    <div class="consent" onclick="document.getElementById('c1').click()">
+      <input type="checkbox" id="c1">
+      <p>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</p>
+    </div>
+    <div class="consent" onclick="document.getElementById('c2').click()">
+      <input type="checkbox" id="c2">
+      <p>Согласен(-на) получать уведомления о записи и заказе через Telegram.</p>
+    </div>
+  </div>
+  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться на приём &#8594;</button>
 </div>
 
-<!-- ═══ PAGE 4: CONFIRMATION ═══ -->
 <div class="page" id="page-confirm">
-  <div class="header">
-    <div class="header-avatar">✅</div>
-    <h1>Вы записаны!</h1>
-    <p>Подтверждение придёт в Telegram</p>
+  <div class="confirm-wrap">
+    <div class="confirm-icon">&#9989;</div>
+    <div class="confirm-title">Вы записаны!</div>
+    <div class="confirm-sub">Ждём вас на приёме.</div>
   </div>
-  <div class="content">
-    <div class="confirm-icon">🎉</div>
-    <div class="confirm-title">Запись оформлена</div>
-    <div class="confirm-sub" id="confirm-text"></div>
-    <div class="confirm-details" id="confirm-details"></div>
-    <div class="card" style="text-align:center;margin-top:0">
-      <p style="font-size:14px;color:var(--text-m);line-height:1.6">
-        📱 Подтверждение и напоминание придут в Telegram.<br><br>
-        Если нужно перенести или отменить — напишите <b>@AnnaNvslv</b>
-      </p>
-    </div>
+  <div class="confirm-box" id="confirm-details"></div>
+  <div class="tg-box" id="tg-hint"></div>
+  <div class="card" style="font-size:14px;color:var(--text-m);line-height:1.7;text-align:center">
+    <b>Адрес:</b> Trg Republike 25<br>
+    (Рибља пијаца, там где Ночной Базар)<br>
+    <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48" style="color:var(--accent);text-decoration:none">&#128205; Открыть на карте</a>
   </div>
 </div>
 
 <script>
-// ═══ CONFIG ═══
-const SB_URL = 'https://ncfqiznpilikwmpqhapb.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
-const { createClient } = window.supabase;
-const db = createClient(SB_URL, SB_KEY);
+const SB_URL='https://ncfqiznpilikwmpqhapb.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
+const{createClient}=window.supabase;
+const db=createClient(SB_URL,SB_KEY);
+const MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DAYS=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+const DS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+let selectedSlot=null;
+let botUsername='';
 
-// ═══ STATE ═══
-let tgUser = null;     // { id, first_name, last_name, username }
-let selectedSlot = null; // { id, date, start_time }
-let botUsername = '';
-let doctorName = 'Анна Новосёлова';
-
-// ═══ INIT ═══
-const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-const DAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-const DAYS_SHORT = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-
-const fmt = d => { if(!d)return''; const[y,m,dd]=d.split('-'); return`${dd}.${m}.${y}`; };
-const fmtLong = d => { if(!d)return''; const dt=new Date(d+'T12:00:00'); return`${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}`; };
-
-document.addEventListener('DOMContentLoaded', async () => {
-  // Set max date for DOB
-  document.getElementById('f-dob').max = new Date().toISOString().split('T')[0];
-  // Load settings
-  try {
-    const { data: rows } = await db.from('settings').select('key,value').in('key',['bot_username','doctor_name']);
-    (rows||[]).forEach(r => {
-      if(r.key==='bot_username') botUsername = r.value;
-      if(r.key==='doctor_name') doctorName = r.value;
-    });
-  } catch(e) { console.error('Settings load error', e); }
-  // Load Telegram widget
-  loadTelegramWidget();
+document.addEventListener('DOMContentLoaded',async()=>{
+  document.getElementById('f-dob').max=new Date().toISOString().split('T')[0];
+  try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');(r||[]).forEach(x=>{if(x.key==='bot_username')botUsername=x.value;});}catch(e){}
+  loadSlots();
 });
 
-// ═══ TELEGRAM LOGIN ═══
-function loadTelegramWidget() {
-  if (!botUsername) {
-    // Fallback: show manual chat_id input
-    document.getElementById('tg-widget-container').innerHTML = `
-      <div style="margin-top:16px;text-align:left;background:#fef3c7;border-radius:8px;padding:12px;font-size:13px;color:#92400e">
-        <b>Для настройки:</b> добавьте имя бота (@botname) в Настройках CRM в поле «Имя бота»
-      </div>`;
-    return;
-  }
-  const script = document.createElement('script');
-  script.src = 'https://telegram.org/js/telegram-widget.js?22';
-  script.setAttribute('data-telegram-login', botUsername.replace('@',''));
-  script.setAttribute('data-size', 'large');
-  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-  script.setAttribute('data-request-access', 'write');
-  script.setAttribute('data-lang', 'ru');
-  document.getElementById('tg-widget-container').appendChild(script);
+async function loadSlots(){
+  const c=document.getElementById('slots-container');
+  const today=new Date().toISOString().split('T')[0];
+  const f=new Date();f.setDate(f.getDate()+30);
+  const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',f.toISOString().split('T')[0]).order('date').order('start_time');
+  if(!slots||!slots.length){c.innerHTML='<div class="no-slots"><div style="font-size:48px">📅</div><p>Свободных мест пока нет.<br>Загляните позже.</p></div>';return;}
+  const byDate={};
+  slots.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
+  let html='';let lastM='';
+  Object.entries(byDate).forEach(([date,ds])=>{
+    const dt=new Date(date+'T12:00:00');
+    const mk=MONTHS[dt.getMonth()]+' '+dt.getFullYear();
+    if(mk!==lastM){html+=`<div class="month-title">${mk}</div>`;lastM=mk;}
+    html+=`<div class="day-card"><div class="day-name">${DS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}</div><div class="slots-row">${ds.map(s=>`<button class="slot" onclick="selectSlot(this,'${s.id}','${date}','${(s.start_time||'').substr(0,5)}')">${(s.start_time||'').substr(0,5)}</button>`).join('')}</div></div>`;
+  });
+  c.innerHTML=html;
 }
 
-function loginWithTelegram() {
-  // Scroll to widget
-  document.getElementById('tg-widget-container').scrollIntoView({ behavior: 'smooth' });
-}
-
-window.onTelegramAuth = function(user) {
-  tgUser = user;
-  document.getElementById('welcome-name').textContent = `Здравствуйте, ${user.first_name}!`;
-  if (user.username) document.getElementById('f-tg').value = '@' + user.username;
-  document.getElementById('f-name').value = [user.first_name, user.last_name].filter(Boolean).join(' ');
-  showPage('slots');
-  loadSlots();
-};
-
-// Dev/test: bypass telegram login
-function devLogin() {
-  onTelegramAuth({ id: 'TEST123', first_name: 'Тест', last_name: 'Пользователь', username: 'testuser' });
-}
-
-// ═══ SLOTS ═══
-async function loadSlots() {
-  const container = document.getElementById('slots-container');
-  container.innerHTML = '<div class="spinner">Загрузка расписания...</div>';
-  const today = new Date().toISOString().split('T')[0];
-  const future = new Date();
-  future.setDate(future.getDate() + 30);
-  const futureStr = future.toISOString().split('T')[0];
-  const { data: slots } = await db.from('available_slots')
-    .select('*').eq('is_booked', false).gte('date', today).lte('date', futureStr)
-    .order('date').order('start_time');
-  if (!slots || slots.length === 0) {
-    container.innerHTML = `<div class="empty-slots"><div class="icon">📅</div><p>Свободных мест пока нет.<br>Пожалуйста, загляните позже.</p></div>`;
-    return;
-  }
-  // Group by date
-  const byDate = {};
-  slots.forEach(s => { if(!byDate[s.date]) byDate[s.date]=[]; byDate[s.date].push(s); });
-  container.innerHTML = `<div class="slots-grid">${Object.entries(byDate).map(([date, daySlots]) => {
-    const dt = new Date(date + 'T12:00:00');
-    const dayLabel = `${DAYS_SHORT[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
-    return `<div class="slots-day">
-      <div class="slots-day-title">${dayLabel}</div>
-      <div class="slots-times">
-        ${daySlots.map(s => `<button class="slot-btn" onclick="selectSlot(this,'${s.id}','${s.date}','${s.start_time?.substr(0,5)}')">${s.start_time?.substr(0,5)}</button>`).join('')}
-      </div>
-    </div>`;
-  }).join('')}</div>`;
-}
-
-function selectSlot(btn, id, date, time) {
-  document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+function selectSlot(btn,id,date,time){
+  document.querySelectorAll('.slot').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
-  selectedSlot = { id, date, time };
-  // Scroll to bottom and go to form
-  setTimeout(() => {
-    showPage('form');
-    // Show summary
-    document.getElementById('slot-summary-display').innerHTML = `
-      <div class="slot-summary">
-        <div class="date">📅 ${fmtLong(date)}</div>
-        <div class="time">⏰ ${time} · Длительность 1 час</div>
-      </div>`;
-  }, 200);
+  selectedSlot={id,date,time};
+  const dt=new Date(date+'T12:00:00');
+  document.getElementById('slot-summary').innerHTML=`<div class="slot-summary"><div class="date">📅 ${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}</div><div class="time">⏰ ${time} &nbsp;·&nbsp; 1 час</div></div>`;
+  setTimeout(()=>showPage('form'),150);
 }
 
-// ═══ FORM ═══
-function toggleOpt(el) {
-  el.classList.toggle('sel');
-}
+function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.textContent);}
 
-function getSelected(containerId) {
-  return [...document.querySelectorAll(`#${containerId} .sel`)].map(el => el.textContent);
-}
-
-async function submitBooking() {
-  const name = document.getElementById('f-name').value.trim();
-  const dob = document.getElementById('f-dob').value;
-  const tgUsername = document.getElementById('f-tg').value.trim();
-  const phone = document.getElementById('f-phone').value.trim();
-  const consentData = document.getElementById('consent-data').checked;
-  const consentBot = document.getElementById('consent-bot').checked;
-  const goals = getSelected('goals-opts');
-  const complaints = getSelected('complaints-opts');
-
-  if (!name) { alert('Пожалуйста, введите фамилию и имя'); return; }
-  if (!dob) { alert('Пожалуйста, укажите дату рождения'); return; }
-  if (!consentData) { alert('Необходимо согласие на обработку персональных данных'); return; }
-  if (!selectedSlot) { showPage('slots'); return; }
-
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Оформляем запись...';
-
-  try {
-    // 1. Create or find patient
-    const { data: patient } = await db.from('patients').insert({
-      name,
-      dob: dob || null,
-      telegram_username: tgUsername,
-      telegram_chat_id: tgUser?.id ? String(tgUser.id) : null,
-      phone: phone || null,
-      visit_goals: goals,
-      complaints,
-      data_consent: consentData,
-      accuracy_consent: consentBot,
-      is_first_visit: true,
-    }).select().single();
-
-    if (!patient) throw new Error('Не удалось создать карточку пациента');
-
-    // 2. Create appointment
-    const apptNum = await generateApptNumber(selectedSlot.date);
-    const { data: appt } = await db.from('appointments').insert({
-      patient_id: patient.id,
-      slot_id: selectedSlot.id,
-      date: selectedSlot.date,
-      time: selectedSlot.time,
-      type: 'Первичный приём (подбор очков/МКЛ)',
-      status: 'запланирован',
-      appointment_number: apptNum,
-    }).select().single();
-
-    // 3. Mark slot as booked
-    await db.from('available_slots').update({ is_booked: true, appointment_id: appt?.id }).eq('id', selectedSlot.id);
-
-    // 4. Notify Anna
-    await notifyAnna(name, selectedSlot.date, selectedSlot.time, apptNum);
-
-    // 5. Notify patient
-    if (tgUser?.id) {
-      await notifyPatient(String(tgUser.id), name, selectedSlot.date, selectedSlot.time, apptNum);
-    }
-
-    // 6. Show confirmation
-    showConfirmation(name, selectedSlot.date, selectedSlot.time, apptNum);
-
-  } catch(e) {
-    console.error('Booking error:', e);
-    alert('Произошла ошибка при записи. Пожалуйста, попробуйте ещё раз или свяжитесь с нами напрямую.');
-    btn.disabled = false;
-    btn.textContent = 'Записаться на приём';
+async function submitBooking(){
+  const name=document.getElementById('f-name').value.trim();
+  const dob=document.getElementById('f-dob').value;
+  const phone=document.getElementById('f-phone').value.trim();
+  const tg=document.getElementById('f-tg').value.trim();
+  if(!name){alert('Введите ваше имя');return;}
+  if(!dob){alert('Укажите дату рождения');return;}
+  if(!document.getElementById('c1').checked){alert('Необходимо согласие на обработку данных');return;}
+  if(!selectedSlot){showPage('slots');return;}
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true;btn.textContent='Оформляем...';
+  try{
+    const{data:p,error:pe}=await db.from('patients').insert({name,dob:dob||null,phone:phone||null,telegram_username:tg||null,visit_goals:chips('goals'),complaints:chips('complaints'),data_consent:true,accuracy_consent:document.getElementById('c2').checked,is_first_visit:true}).select().single();
+    if(pe)throw pe;
+    const num=await genNum(selectedSlot.date);
+    const{data:a,error:ae}=await db.from('appointments').insert({patient_id:p.id,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:'Первичный приём (подбор очков/МКЛ)',status:'запланирован',appointment_number:num}).select().single();
+    if(ae)throw ae;
+    await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
+    await notifyAnna(name,selectedSlot.date,selectedSlot.time,num);
+    showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg);
+  }catch(e){
+    console.error(e);
+    alert('Ошибка записи. Напишите нам: @AnnaNvslv');
+    btn.disabled=false;btn.textContent='Записаться на приём →';
   }
 }
 
-async function generateApptNumber(date) {
-  const month = date.substr(5,2), year = date.substr(2,2);
-  const prefix = `OG-${month}${year}`;
-  const { count } = await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',`${prefix}-%`);
-  return `${prefix}-${String((count||0)+1).padStart(2,'0')}`;
+async function genNum(date){
+  const m=date.substr(5,2),y=date.substr(2,2),pref='OG-'+m+y;
+  const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',pref+'-%');
+  return pref+'-'+String((count||0)+1).padStart(2,'0');
 }
 
-async function getBotToken() {
-  const { data } = await db.from('settings').select('value').eq('key','bot_token').single();
-  return data?.value || '';
+async function notifyAnna(name,date,time,num){
+  try{
+    const{data:r}=await db.from('settings').select('key,value').in('key',['bot_token','my_chat_id']);
+    const s={};(r||[]).forEach(x=>s[x.key]=x.value);
+    if(!s.bot_token||!s.my_chat_id)return;
+    const dt=new Date(date+'T12:00:00');
+    await fetch('https://api.telegram.org/bot'+s.bot_token+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:s.my_chat_id,text:'📋 Новая запись онлайн!\n\nПациент: '+name+'\n📅 '+dt.getDate()+' '+MONTHS[dt.getMonth()]+', '+DAYS[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num,parse_mode:'HTML'})});
+  }catch(e){}
 }
 
-async function getAnnasChatId() {
-  const { data } = await db.from('settings').select('value').eq('key','my_chat_id').single();
-  return data?.value || '';
-}
-
-async function tgSend(chatId, text) {
-  const token = await getBotToken();
-  if (!token || !chatId) return false;
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' })
-    });
-    return r.ok;
-  } catch { return false; }
-}
-
-async function notifyAnna(name, date, time, apptNum) {
-  const chatId = await getAnnasChatId();
-  if (!chatId) return;
-  const dt = new Date(date + 'T12:00:00');
-  const msg = `📋 <b>Новая запись онлайн!</b>\n\nПациент: <b>${name}</b>\n📅 ${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}\n⏰ ${time}\nНомер: <b>${apptNum}</b>`;
-  await tgSend(chatId, msg);
-}
-
-async function notifyPatient(chatId, name, date, time, apptNum) {
-  const dt = new Date(date + 'T12:00:00');
-  const dateStr = `${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}`;
-  const msg = `Здравствуйте, ${name}!\n\nВы записаны в Оптику Ginter на Первичный приём к оптометристу Анне Новосёловой.\n\n📅 ${dateStr}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — 1 час\nНомер записи: <b>${apptNum}</b>\n\n💰 Стоимость приёма: 3000 динар. Оплата — только наличными. (Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые).\n\nЗа 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут.\n\n❤️‍🩹 Если планы изменятся — сообщите, пожалуйста, заранее.\n\nДо встречи!\nАнна.`;
-  await tgSend(chatId, msg);
-}
-
-function showConfirmation(name, date, time, apptNum) {
-  const dt = new Date(date + 'T12:00:00');
-  document.getElementById('confirm-text').innerHTML = `Ваша запись оформлена и подтверждение уже отправлено в Telegram.`;
-  document.getElementById('confirm-details').innerHTML = `
-    <div class="row"><span class="label">Пациент</span><span class="val">${name}</span></div>
-    <div class="row"><span class="label">Дата</span><span class="val">${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}</span></div>
-    <div class="row"><span class="label">Время</span><span class="val">${time}</span></div>
-    <div class="row"><span class="label">Номер записи</span><span class="val">${apptNum}</span></div>
-    <div class="row"><span class="label">Адрес</span><span class="val">Trg Republike 25</span></div>`;
+function showConfirm(name,date,time,num,tg){
+  const dt=new Date(date+'T12:00:00');
+  document.getElementById('confirm-details').innerHTML=`<div class="row"><span class="lbl">Пациент</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Дата</span><span class="val">${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}</span></div><div class="row"><span class="lbl">Время</span><span class="val">${time}</span></div><div class="row"><span class="lbl">Номер записи</span><span class="val">${num}</span></div>`;
+  const bot=botUsername?botUsername.replace('@',''):'';
+  document.getElementById('tg-hint').innerHTML=bot
+    ?`<p>Напишите боту, чтобы получить подтверждение и напоминание:</p><a class="tg-bot-btn" href="https://t.me/${bot}" target="_blank">✈️ Написать боту</a>`
+    :`<p>По вопросам пишите: <b>@AnnaNvslv</b></p>`;
   showPage('confirm');
 }
 
-// ═══ NAVIGATION ═══
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  window.scrollTo(0, 0);
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  window.scrollTo(0,0);
 }
 </script>
 </body>

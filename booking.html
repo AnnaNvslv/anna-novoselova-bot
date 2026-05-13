@@ -6,213 +6,496 @@
 <title>Запись к оптометристу — Анна Новосёлова</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--primary:#1B4F72;--accent:#0891b2;--green:#047857;--green-l:#d1fae5;--bg:#F0F4F8;--surface:#fff;--border:#e2e8f0;--text:#1a202c;--text-m:#64748b;--r:12px;--shadow:0 2px 12px rgba(0,0,0,.08)}
+:root{--p:#1B4F72;--a:#0891b2;--g:#047857;--gl:#d1fae5;--bg:#EFF4F8;--s:#fff;--b:#e2e8f0;--t:#1a202c;--tm:#64748b;--r:14px;--sh:0 2px 14px rgba(0,0,0,.08)}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--text);font-size:16px;min-height:100vh}
-.header{background:linear-gradient(135deg,#1B4F72 0%,#0891b2 100%);color:#fff;padding:32px 20px 28px;text-align:center}
-.avatar{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:36px;border:3px solid rgba(255,255,255,.3)}
-.header h1{font-size:22px;font-weight:700;margin-bottom:4px}
-.header p{font-size:14px;opacity:.8;line-height:1.5}
-.page{display:none;max-width:500px;margin:0 auto;padding:20px 16px 48px}
-.page.active{display:block}
-.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;margin-bottom:14px}
-.card-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:14px}
-.month-title{font-size:12px;font-weight:700;color:var(--text-m);text-transform:uppercase;letter-spacing:.7px;margin:18px 0 8px;padding:0 2px}
-.day-card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px}
-.day-name{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text)}
-.slots-row{display:flex;flex-wrap:wrap;gap:8px}
-.slot{padding:9px 16px;border:2px solid var(--border);border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;color:var(--text);transition:all .15s;font-family:inherit}
-.slot:hover{border-color:var(--accent);color:var(--accent);background:#f0f9ff}
-.slot.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
-.no-slots{text-align:center;padding:40px 20px;color:var(--text-m)}
-.slot-summary{background:var(--accent);color:#fff;border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
-.slot-summary .date{font-size:18px;font-weight:800;margin-bottom:2px}
-.slot-summary .time{font-size:14px;opacity:.85}
-.form-group{margin-bottom:14px}
-label{display:block;font-size:13.5px;font-weight:600;color:var(--text-m);margin-bottom:5px}
-input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:15px;color:var(--text);outline:none;transition:border .15s;-webkit-appearance:none;background:#fff}
-input:focus,select:focus{border-color:var(--accent)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.chip{padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit}
-.chip:hover{border-color:var(--accent)}
-.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.consent{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer}
-.consent input[type=checkbox]{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--accent)}
-.consent p{font-size:13.5px;color:var(--text-m);line-height:1.5}
-.btn-next{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
-.btn-next:hover{background:var(--primary)}
+body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--t);font-size:16px;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:28px 20px 24px;text-align:center}
+.hdr-av{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;border:2.5px solid rgba(255,255,255,.3)}
+.hdr h1{font-size:20px;font-weight:700;margin-bottom:3px}
+.hdr p{font-size:13px;opacity:.8;line-height:1.5}
+.pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
+.pg.on{display:block}
+/* STEPS */
+.steps{display:flex;align-items:center;padding:14px 4px;gap:0}
+.st{display:flex;align-items:center;flex:1}
+.st-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.st-dot.done{background:var(--g);color:#fff}
+.st-dot.curr{background:var(--a);color:#fff}
+.st-dot.idle{background:var(--b);color:var(--tm)}
+.st-line{flex:1;height:2px;background:var(--b)}
+.st-line.done{background:var(--g)}
+/* CARDS */
+.card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:700;color:var(--p);margin-bottom:14px}
+/* TYPE CARDS */
+.type-card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:10px;cursor:pointer;border:2px solid transparent;transition:all .15s;display:flex;align-items:flex-start;gap:14px}
+.type-card:hover{border-color:var(--a)}
+.type-card.sel{border-color:var(--a);background:#f0f9ff}
+.type-icon{font-size:28px;flex-shrink:0;margin-top:2px}
+.type-name{font-size:15px;font-weight:700;margin-bottom:3px}
+.type-sub{font-size:13px;color:var(--tm);margin-bottom:6px;line-height:1.4}
+.type-meta{display:flex;gap:10px}
+.type-dur,.type-price{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:20px}
+.type-dur{background:#e0f2fe;color:#0369a1}
+.type-price{background:var(--gl);color:var(--g)}
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav h3{font-size:16px;font-weight:700}
+.cal-nav-btn{background:none;border:1.5px solid var(--b);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit;color:var(--t)}
+.cal-nav-btn:hover{background:var(--bg)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px}
+.cal-head{text-align:center;font-size:12px;font-weight:600;color:var(--tm);padding:4px 0}
+.cal-cell{aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;cursor:default}
+.cal-cell.avail{background:var(--gl);color:var(--g);font-weight:700;cursor:pointer}
+.cal-cell.avail:hover{background:#a7f3d0}
+.cal-cell.sel-day{background:var(--a);color:#fff !important;font-weight:700}
+.cal-cell.today{border:2px solid var(--a)}
+.cal-cell.past{color:var(--b)}
+.cal-cell.empty{background:transparent}
+.times-wrap{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:12px}
+.times-title{font-size:14px;font-weight:700;color:var(--p);margin-bottom:12px}
+.times-grid{display:flex;flex-wrap:wrap;gap:8px}
+.time-btn{padding:9px 16px;border:2px solid var(--b);border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s}
+.time-btn:hover{border-color:var(--a);color:var(--a)}
+.time-btn.sel{background:var(--a);color:#fff;border-color:var(--a)}
+/* SELECTED SUMMARY */
+.sel-sum{border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+.sel-sum.type-sum{background:#f0f9ff;border:1.5px solid #bae6fd}
+.sel-sum.slot-sum{background:var(--a);color:#fff}
+.sel-sum .label{font-size:11px;opacity:.7;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px}
+.sel-sum .value{font-size:16px;font-weight:700}
+/* FORM */
+.fg{margin-bottom:14px}
+label{display:block;font-size:13.5px;font-weight:600;color:var(--tm);margin-bottom:5px}
+.req{color:var(--a)}
+input,select,textarea{width:100%;padding:12px 14px;border:1.5px solid var(--b);border-radius:9px;font-family:inherit;font-size:15px;color:var(--t);outline:none;transition:border .15s;-webkit-appearance:none;background:#fff}
+input:focus,select:focus,textarea:focus{border-color:var(--a)}
+textarea{resize:none;min-height:80px}
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.chip{padding:7px 13px;border:1.5px solid var(--b);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit;line-height:1.3}
+.chip:hover{border-color:var(--a)}
+.chip.on{background:var(--a);color:#fff;border-color:var(--a)}
+/* CONSENT */
+.con{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--b);margin-bottom:9px;cursor:pointer}
+.con input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--a)}
+.con span{font-size:13.5px;color:var(--tm);line-height:1.5}
+/* BUTTONS */
+.btn-next{width:100%;padding:15px;background:var(--a);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.btn-next:hover{background:var(--p)}
 .btn-next:disabled{background:#94a3b8;cursor:not-allowed}
-.btn-back{background:none;border:none;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
-.confirm-wrap{text-align:center;padding:20px 0}
-.confirm-icon{font-size:72px;margin-bottom:16px}
-.confirm-title{font-size:24px;font-weight:800;color:var(--primary);margin-bottom:8px}
-.confirm-sub{font-size:15px;color:var(--text-m);line-height:1.6;margin-bottom:20px}
-.confirm-box{background:var(--green-l);border-radius:var(--r);padding:18px;margin-bottom:14px}
-.confirm-box .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:14px}
-.confirm-box .row:last-child{border-bottom:none}
-.confirm-box .lbl{color:var(--text-m)}
-.confirm-box .val{font-weight:700}
-.tg-box{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:var(--r);padding:16px;text-align:center;margin-bottom:14px}
-.tg-box p{font-size:14px;color:#1e40af;line-height:1.6;margin-bottom:10px}
-.tg-bot-btn{display:inline-flex;align-items:center;gap:8px;background:#2AABEE;color:#fff;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none}
-.spinner{text-align:center;padding:48px;color:var(--text-m);font-size:15px}
+.btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
+/* CONFIRM */
+.conf-icon{font-size:72px;text-align:center;margin:20px 0 14px}
+.conf-title{font-size:24px;font-weight:800;color:var(--p);text-align:center;margin-bottom:8px}
+.conf-sub{font-size:15px;color:var(--tm);text-align:center;line-height:1.6;margin-bottom:20px}
+.conf-box{background:var(--gl);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.conf-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:14px}
+.conf-row:last-child{border-bottom:none}
+.conf-row .l{color:var(--tm)}
+.conf-row .v{font-weight:700}
+.tgbox{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px}
+.tgbox p{font-size:14px;color:#1e40af;line-height:1.6;margin-bottom:10px}
+.tg-link{display:inline-flex;align-items:center;gap:8px;background:#2AABEE;color:#fff;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none}
+.spin{text-align:center;padding:40px;color:var(--tm)}
+.sep{height:1px;background:var(--b);margin:14px 0}
+.hint{font-size:12.5px;color:var(--tm);margin-top:4px}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="avatar">&#128065;</div>
+<div class="hdr">
+  <div class="hdr-av">&#128065;</div>
   <h1>Анна Новосёлова</h1>
   <p>Оптометрист &middot; Нови-Сад<br>Оптика Ginter, Trg Republike 25</p>
 </div>
 
-<div class="page active" id="page-slots">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px">
-    <div>
-      <div style="font-size:19px;font-weight:800">Выберите время</div>
-      <div style="font-size:13px;color:var(--text-m);margin-top:2px">Ближайшие свободные слоты</div>
-    </div>
-    <div style="background:var(--surface);border-radius:8px;padding:8px 12px;text-align:center;box-shadow:var(--shadow)">
-      <div style="font-size:11px;color:var(--text-m)">Длительность</div>
-      <div style="font-size:16px;font-weight:800;color:var(--primary)">1 час</div>
-    </div>
+<!-- PAGE: TYPE -->
+<div class="pg on" id="pg-type">
+  <div style="padding:16px 0 8px">
+    <div style="font-size:19px;font-weight:800">Выберите вид приёма</div>
+    <div style="font-size:13px;color:var(--tm);margin-top:3px">Шаг 1 из 3</div>
   </div>
-  <div id="slots-container"><div class="spinner">Загрузка...</div></div>
+  <div id="type-list"></div>
 </div>
 
-<div class="page" id="page-form">
-  <button class="btn-back" onclick="showPage('slots')">&#8249; Назад к расписанию</button>
-  <div id="slot-summary"></div>
-  <div class="card">
-    <div class="card-title">Ваши данные</div>
-    <div class="form-group"><label>Фамилия и имя *</label><input id="f-name" type="text" placeholder="Иванова Мария Петровна" autocomplete="name"></div>
-    <div class="form-group"><label>Дата рождения *</label><input id="f-dob" type="date"></div>
-    <div class="form-group"><label>Телефон</label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"></div>
-    <div class="form-group"><label>Telegram <span style="font-weight:400;color:var(--text-m)">(необязательно, для уведомлений)</span></label><input id="f-tg" type="text" placeholder="@username"></div>
+<!-- PAGE: CALENDAR -->
+<div class="pg" id="pg-cal">
+  <button class="btn-back" onclick="goPage('type')">&#8249; Назад</button>
+  <div id="type-sel-sum"></div>
+  <div class="card" style="padding:16px">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calMove(-1)">&#8249;</button>
+      <h3 id="cal-label"></h3>
+      <button class="cal-nav-btn" onclick="calMove(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-days-header">
+      <div class="cal-head">Пн</div><div class="cal-head">Вт</div><div class="cal-head">Ср</div>
+      <div class="cal-head">Чт</div><div class="cal-head">Пт</div><div class="cal-head">Сб</div>
+      <div class="cal-head">Вс</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
   </div>
+  <div id="times-section" style="display:none">
+    <div class="times-wrap">
+      <div class="times-title" id="times-title"></div>
+      <div class="times-grid" id="times-grid"></div>
+    </div>
+    <button class="btn-next" id="btn-to-form" onclick="goPage('form')" disabled>Далее — заполнить анкету &#8594;</button>
+  </div>
+</div>
+
+<!-- PAGE: FORM -->
+<div class="pg" id="pg-form">
+  <button class="btn-back" onclick="goPage('cal')">&#8249; Назад к расписанию</button>
+  <div id="form-slot-sum"></div>
+
   <div class="card">
-    <div class="card-title">Цель визита</div>
-    <div class="chips" id="goals">
-      <div class="chip" onclick="this.classList.toggle('on')">Подбор очков</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Замена очков</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Подбор контактных линз</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Контрольный визит</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Жалобы на зрение</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Проверка зрения</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Другое</div>
+    <div class="card-title">Контактные данные</div>
+    <div class="fg">
+      <label>Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label>
+      <input id="f-tg" type="text" placeholder="@username">
+    </div>
+    <div class="fg">
+      <label>Фамилия и имя (латиницей) <span class="req">*</span></label>
+      <input id="f-name" type="text" placeholder="Ivanova Maria" autocomplete="name">
+      <div class="hint">Пример: Ivanova Maria Petrovna</div>
+    </div>
+    <div class="fg">
+      <label>Дата рождения <span class="req">*</span></label>
+      <input id="f-dob" type="date">
+    </div>
+    <div class="fg">
+      <label>Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label>
+      <input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel">
     </div>
   </div>
+
   <div class="card">
     <div class="card-title">Жалобы</div>
-    <div class="chips" id="complaints">
-      <div class="chip" onclick="this.classList.toggle('on')">Снижение зрения вдаль</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Снижение вблизи</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Усталость глаз</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Головные боли</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Двоение</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Дискомфорт в очках</div>
-      <div class="chip" onclick="this.classList.toggle('on')">Нет жалоб</div>
+    <div class="chips" id="ch-complaints">
+      <div class="chip" onclick="tog(this)">Снижение остроты зрения вдаль</div>
+      <div class="chip" onclick="tog(this)">Снижение остроты зрения вблизи</div>
+      <div class="chip" onclick="tog(this)">Усталость глаз</div>
+      <div class="chip" onclick="tog(this)">Головные боли</div>
+      <div class="chip" onclick="tog(this)">Двоение</div>
+      <div class="chip" onclick="tog(this)">Дискомфорт в очках</div>
+      <div class="chip" onclick="tog(this)">Мушки / точки перед глазами</div>
+      <div class="chip" onclick="tog(this)">Нет выраженных жалоб</div>
     </div>
   </div>
+
+  <div class="card">
+    <div class="card-title">Используете ли вы коррекцию зрения?</div>
+    <div class="chips" id="ch-correction">
+      <div class="chip" onclick="tog(this)">Пользуюсь очками</div>
+      <div class="chip" onclick="tog(this)">Пользуюсь контактными линзами</div>
+      <div class="chip" onclick="tog(this)">Не пользуюсь</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)">(если знаете, примерно)</span></div>
+    <input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0">
+  </div>
+
+  <div class="card">
+    <div class="card-title">Заболевания глаз</div>
+    <div class="chips" id="ch-eye">
+      <div class="chip" onclick="tog(this)">Катаракта</div>
+      <div class="chip" onclick="tog(this)">Глаукома</div>
+      <div class="chip" onclick="tog(this)">Косоглазие</div>
+      <div class="chip" onclick="tog(this)">Амблиопия</div>
+      <div class="chip" onclick="tog(this)">Заболевания сетчатки</div>
+      <div class="chip" onclick="tog(this)">Макулодистрофия</div>
+      <div class="chip" onclick="tog(this)">Кератоконус</div>
+      <div class="chip" onclick="tog(this)">Синдром сухого глаза</div>
+      <div class="chip" onclick="tog(this)">Частые воспаления (конъюктивит, блефарит)</div>
+      <div class="chip" onclick="tog(this)">Операции на глазах (LASIK, PRK, замена хрусталика)</div>
+      <div class="chip" onclick="tog(this)">Нет заболеваний</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Общие заболевания</div>
+    <div class="chips" id="ch-general">
+      <div class="chip" onclick="tog(this)">Повышенное / нестабильное артериальное давление</div>
+      <div class="chip" onclick="tog(this)">Заболевания щитовидной железы</div>
+      <div class="chip" onclick="tog(this)">Сахарный диабет или преддиабет</div>
+      <div class="chip" onclick="tog(this)">Мигрень (с аурой)</div>
+      <div class="chip" onclick="tog(this)">Черепно-мозговые травмы / сотрясения</div>
+      <div class="chip" onclick="tog(this)">Эпилепсия</div>
+      <div class="chip" onclick="tog(this)">Инсульт</div>
+      <div class="chip" onclick="tog(this)">Операция на голове</div>
+      <div class="chip" onclick="tog(this)">Нет заболеваний</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Зрительные нагрузки <span class="req">*</span></div>
+    <div class="chips" id="ch-loads">
+      <div class="chip" onclick="tog(this)">Работа за монитором более 5&#8211;6 часов</div>
+      <div class="chip" onclick="tog(this)">Частое использование смартфона</div>
+      <div class="chip" onclick="tog(this)">Беременность</div>
+      <div class="chip" onclick="tog(this)">Вождение в тёмное время суток</div>
+      <div class="chip" onclick="tog(this)">Специфические занятия (вышивание, ювелирное дело и др.)</div>
+      <div class="chip" onclick="tog(this)">Ночные смены</div>
+      <div class="chip" onclick="tog(this)">Ничего из перечисленного</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Что хотели бы сообщить перед приёмом?</div>
+    <textarea id="f-notes" placeholder="Любая важная информация, которую хотите передать заранее..."></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Откуда вы узнали о нас?</div>
+    <select id="f-source">
+      <option value="">— выберите —</option>
+      <option>Посоветовали друзья / знакомые</option>
+      <option>Посоветовали коллеги</option>
+      <option>Из чата в ТГ</option>
+      <option>Из рекламного поста</option>
+      <option>Личное знакомство</option>
+      <option>Другое</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)">(если есть)</span></div>
+    <input id="f-promo" type="text" placeholder="Введите промокод">
+  </div>
+
   <div class="card">
     <div class="card-title">Согласия</div>
-    <div class="consent" onclick="document.getElementById('c1').click()">
-      <input type="checkbox" id="c1">
-      <p>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</p>
+    <div class="con" onclick="document.getElementById('c1').click()">
+      <input type="checkbox" id="c1"><span>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</span>
     </div>
-    <div class="consent" onclick="document.getElementById('c2').click()">
-      <input type="checkbox" id="c2">
-      <p>Согласен(-на) получать уведомления о записи и заказе через Telegram.</p>
+    <div class="con" onclick="document.getElementById('c2').click()">
+      <input type="checkbox" id="c2"><span><b>Согласен(-на)</b> получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях. <span class="req">*</span></span>
     </div>
   </div>
-  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться на приём &#8594;</button>
+
+  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться &#8594;</button>
 </div>
 
-<div class="page" id="page-confirm">
-  <div class="confirm-wrap">
-    <div class="confirm-icon">&#9989;</div>
-    <div class="confirm-title">Вы записаны!</div>
-    <div class="confirm-sub">Ждём вас на приёме.</div>
-  </div>
-  <div class="confirm-box" id="confirm-details"></div>
-  <div class="tg-box" id="tg-hint"></div>
-  <div class="card" style="font-size:14px;color:var(--text-m);line-height:1.7;text-align:center">
+<!-- PAGE: CONFIRM -->
+<div class="pg" id="pg-confirm">
+  <div class="conf-icon">&#9989;</div>
+  <div class="conf-title">Вы записаны!</div>
+  <div class="conf-sub">Ждём вас на приёме.</div>
+  <div class="conf-box" id="conf-details"></div>
+  <div class="tgbox" id="tg-hint"></div>
+  <div class="card" style="font-size:14px;color:var(--tm);text-align:center;line-height:1.7">
     <b>Адрес:</b> Trg Republike 25<br>
     (Рибља пијаца, там где Ночной Базар)<br>
-    <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48" style="color:var(--accent);text-decoration:none">&#128205; Открыть на карте</a>
+    <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48" style="color:var(--a);text-decoration:none">&#128205; Открыть на карте</a>
   </div>
 </div>
 
 <script>
+// ═══ CONFIG ═══
 const SB_URL='https://ncfqiznpilikwmpqhapb.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
 const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
-const MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-const DAYS=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+
+const TYPES=[
+  {id:'primary',icon:'👁',name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)',consult:3000},
+  {id:'repeat',icon:'🔄',name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём',consult:2000},
+  {id:'cl',icon:'🔬',name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением',consult:3500},
+  {id:'consult',icon:'💬',name:'Очная консультация в оптике',sub:'Без проверки зрения',dur:'30 минут',price:'1000 дин.',apptName:'Помощь в оптике',consult:1000},
+  {id:'help',icon:'🛍',name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике',consult:0},
+];
+
+const MONTHS_R=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_G=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DAYS_FULL=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
 const DS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+
+let selectedType=null;
 let selectedSlot=null;
+let selectedDateStr=null;
+let allSlots=[];
+let calYear=0;
+let calMonth=0;
 let botUsername='';
 
+// ═══ INIT ═══
 document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('f-dob').max=new Date().toISOString().split('T')[0];
-  try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');(r||[]).forEach(x=>{if(x.key==='bot_username')botUsername=x.value;});}catch(e){}
-  loadSlots();
+  renderTypes();
+  const now=new Date();
+  calYear=now.getFullYear();calMonth=now.getMonth();
+  try{
+    const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');
+    if(r&&r[0])botUsername=r[0].value;
+  }catch(e){}
+  // Load all slots for next 60 days
+  const today=now.toISOString().split('T')[0];
+  const future=new Date(now);future.setDate(future.getDate()+60);
+  const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
+  allSlots=slots||[];
 });
 
-async function loadSlots(){
-  const c=document.getElementById('slots-container');
-  const today=new Date().toISOString().split('T')[0];
-  const f=new Date();f.setDate(f.getDate()+30);
-  const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',f.toISOString().split('T')[0]).order('date').order('start_time');
-  if(!slots||!slots.length){c.innerHTML='<div class="no-slots"><div style="font-size:48px">📅</div><p>Свободных мест пока нет.<br>Загляните позже.</p></div>';return;}
-  const byDate={};
-  slots.forEach(s=>{if(!byDate[s.date])byDate[s.date]=[];byDate[s.date].push(s);});
-  let html='';let lastM='';
-  Object.entries(byDate).forEach(([date,ds])=>{
-    const dt=new Date(date+'T12:00:00');
-    const mk=MONTHS[dt.getMonth()]+' '+dt.getFullYear();
-    if(mk!==lastM){html+=`<div class="month-title">${mk}</div>`;lastM=mk;}
-    html+=`<div class="day-card"><div class="day-name">${DS[dt.getDay()]}, ${dt.getDate()} ${MONTHS[dt.getMonth()]}</div><div class="slots-row">${ds.map(s=>`<button class="slot" onclick="selectSlot(this,'${s.id}','${date}','${(s.start_time||'').substr(0,5)}')">${(s.start_time||'').substr(0,5)}</button>`).join('')}</div></div>`;
-  });
-  c.innerHTML=html;
+// ═══ TYPES ═══
+function renderTypes(){
+  document.getElementById('type-list').innerHTML=TYPES.map(t=>`
+    <div class="type-card" onclick="selectType('${t.id}')">
+      <div class="type-icon">${t.icon}</div>
+      <div style="flex:1">
+        <div class="type-name">${t.name}</div>
+        <div class="type-sub">${t.sub}</div>
+        <div class="type-meta">
+          <span class="type-dur">&#128337; ${t.dur}</span>
+          <span class="type-price">${t.price}</span>
+        </div>
+      </div>
+    </div>`).join('');
 }
 
-function selectSlot(btn,id,date,time){
-  document.querySelectorAll('.slot').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
+function selectType(id){
+  selectedType=TYPES.find(t=>t.id===id);
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+  document.getElementById('type-sel-sum').innerHTML=`
+    <div class="sel-sum type-sum">
+      <div class="label">Выбранный вид приёма</div>
+      <div class="value">${selectedType.icon} ${selectedType.name}</div>
+      <div style="font-size:13px;color:var(--tm);margin-top:4px">${selectedType.dur} &nbsp;·&nbsp; ${selectedType.price}</div>
+    </div>`;
+  renderCalendar();
+  goPage('cal');
+}
+
+// ═══ CALENDAR ═══
+function calMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+  document.getElementById('times-section').style.display='none';
+  selectedDateStr=null;selectedSlot=null;
+  document.getElementById('btn-to-form').disabled=true;
+}
+
+function renderCalendar(){
+  const today=new Date();today.setHours(0,0,0,0);
+  document.getElementById('cal-label').textContent=MONTHS_R[calMonth]+' '+calYear;
+  const firstDay=new Date(calYear,calMonth,1);
+  let startDow=firstDay.getDay();
+  if(startDow===0)startDow=7; // Mon=1
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  // Build set of available dates this month
+  const availDates=new Set();
+  allSlots.forEach(s=>{
+    const d=new Date(s.date+'T12:00:00');
+    if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);
+  });
+  let html='';
+  // Empty cells before first day
+  for(let i=1;i<startDow;i++)html+=`<div class="cal-cell empty"></div>`;
+  // Days
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dt=new Date(calYear,calMonth,d);
+    const isPast=dt<today;
+    const isToday=dt.toDateString()===today.toDateString();
+    const isAvail=availDates.has(dateStr)&&!isPast;
+    const isSel=dateStr===selectedDateStr;
+    let cls='cal-cell';
+    if(isPast)cls+=' past';
+    else if(isSel)cls+=' sel-day';
+    else if(isAvail)cls+=' avail';
+    const click=isAvail&&!isSel?`onclick="selectDate('${dateStr}')"` :'';
+    html+=`<div class="${cls}" ${click}>${d}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+function selectDate(dateStr){
+  selectedDateStr=dateStr;
+  selectedSlot=null;
+  document.getElementById('btn-to-form').disabled=true;
+  renderCalendar();
+  const dt=new Date(dateStr+'T12:00:00');
+  const label=`${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}`;
+  document.getElementById('times-title').textContent='Выберите время — '+label;
+  const daySlots=allSlots.filter(s=>s.date===dateStr);
+  document.getElementById('times-grid').innerHTML=daySlots.map(s=>`
+    <button class="time-btn" onclick="selectTime(this,'${s.id}','${dateStr}','${(s.start_time||'').substr(0,5)}')">${(s.start_time||'').substr(0,5)}</button>`).join('');
+  document.getElementById('times-section').style.display='block';
+  setTimeout(()=>document.getElementById('times-section').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
+
+function selectTime(btn,id,date,time){
+  document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
   selectedSlot={id,date,time};
   const dt=new Date(date+'T12:00:00');
-  document.getElementById('slot-summary').innerHTML=`<div class="slot-summary"><div class="date">📅 ${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}</div><div class="time">⏰ ${time} &nbsp;·&nbsp; 1 час</div></div>`;
-  setTimeout(()=>showPage('form'),150);
+  const dateLabel=`${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}`;
+  document.getElementById('form-slot-sum').innerHTML=`
+    <div class="sel-sum slot-sum">
+      <div class="label">Ваша запись</div>
+      <div class="value">&#128197; ${dateLabel}</div>
+      <div style="font-size:14px;opacity:.85;margin-top:3px">&#9200; ${time} &nbsp;·&nbsp; ${selectedType.dur} &nbsp;·&nbsp; ${selectedType.price}</div>
+    </div>`;
+  document.getElementById('btn-to-form').disabled=false;
 }
 
+// ═══ FORM ═══
+function tog(el){el.classList.toggle('on');}
 function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.textContent);}
+function v(id){return(document.getElementById(id)?.value||'').trim();}
 
 async function submitBooking(){
-  const name=document.getElementById('f-name').value.trim();
-  const dob=document.getElementById('f-dob').value;
-  const phone=document.getElementById('f-phone').value.trim();
-  const tg=document.getElementById('f-tg').value.trim();
-  if(!name){alert('Введите ваше имя');return;}
-  if(!dob){alert('Укажите дату рождения');return;}
+  const tg=v('f-tg'),name=v('f-name'),dob=v('f-dob');
+  if(!tg){alert('Пожалуйста, укажите Telegram username');return;}
+  if(!name){alert('Пожалуйста, введите ваше имя');return;}
+  if(!dob){alert('Пожалуйста, укажите дату рождения');return;}
+  if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
   if(!document.getElementById('c1').checked){alert('Необходимо согласие на обработку данных');return;}
-  if(!selectedSlot){showPage('slots');return;}
+  if(!document.getElementById('c2').checked){alert('Необходимо согласие на получение уведомлений от бота');return;}
+  if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent='Оформляем...';
   try{
-    const{data:p,error:pe}=await db.from('patients').insert({name,dob:dob||null,phone:phone||null,telegram_username:tg||null,visit_goals:chips('goals'),complaints:chips('complaints'),data_consent:true,accuracy_consent:document.getElementById('c2').checked,is_first_visit:true}).select().single();
+    const{data:p,error:pe}=await db.from('patients').insert({
+      name,dob:dob||null,
+      phone:v('f-phone')||null,
+      telegram_username:tg||null,
+      complaints:chips('ch-complaints'),
+      correction_types:chips('ch-correction'),
+      approx_diopters:v('f-diop')||null,
+      eye_diseases:chips('ch-eye'),
+      general_diseases:chips('ch-general'),
+      visual_loads:chips('ch-loads'),
+      pre_notes:v('f-notes')||null,
+      source:v('f-source')||null,
+      promo_code:v('f-promo')||null,
+      data_consent:true,
+      accuracy_consent:true,
+      is_first_visit:true,
+    }).select().single();
     if(pe)throw pe;
     const num=await genNum(selectedSlot.date);
-    const{data:a,error:ae}=await db.from('appointments').insert({patient_id:p.id,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:'Первичный приём (подбор очков/МКЛ)',status:'запланирован',appointment_number:num}).select().single();
+    const{data:a,error:ae}=await db.from('appointments').insert({
+      patient_id:p.id,slot_id:selectedSlot.id,
+      date:selectedSlot.date,time:selectedSlot.time,
+      type:selectedType.apptName,
+      status:'запланирован',
+      appointment_number:num,
+      consultation_price:selectedType.consult,
+    }).select().single();
     if(ae)throw ae;
     await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
-    await notifyAnna(name,selectedSlot.date,selectedSlot.time,num);
+    await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,selectedType.name);
     showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg);
   }catch(e){
     console.error(e);
     alert('Ошибка записи. Напишите нам: @AnnaNvslv');
-    btn.disabled=false;btn.textContent='Записаться на приём →';
+    btn.disabled=false;btn.textContent='Записаться →';
   }
 }
 
@@ -222,29 +505,37 @@ async function genNum(date){
   return pref+'-'+String((count||0)+1).padStart(2,'0');
 }
 
-async function notifyAnna(name,date,time,num){
+async function notifyAnna(name,date,time,num,typeName){
   try{
     const{data:r}=await db.from('settings').select('key,value').in('key',['bot_token','my_chat_id']);
     const s={};(r||[]).forEach(x=>s[x.key]=x.value);
     if(!s.bot_token||!s.my_chat_id)return;
     const dt=new Date(date+'T12:00:00');
-    await fetch('https://api.telegram.org/bot'+s.bot_token+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:s.my_chat_id,text:'📋 Новая запись онлайн!\n\nПациент: '+name+'\n📅 '+dt.getDate()+' '+MONTHS[dt.getMonth()]+', '+DAYS[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num,parse_mode:'HTML'})});
+    const msg='📋 Новая запись онлайн!\n\nПациент: '+name+'\nВид: '+typeName+'\n📅 '+dt.getDate()+' '+MONTHS_G[dt.getMonth()]+', '+DAYS_FULL[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num;
+    await fetch('https://api.telegram.org/bot'+s.bot_token+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:s.my_chat_id,text:msg,parse_mode:'HTML'})});
   }catch(e){}
 }
 
 function showConfirm(name,date,time,num,tg){
   const dt=new Date(date+'T12:00:00');
-  document.getElementById('confirm-details').innerHTML=`<div class="row"><span class="lbl">Пациент</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Дата</span><span class="val">${dt.getDate()} ${MONTHS[dt.getMonth()]}, ${DAYS[dt.getDay()]}</span></div><div class="row"><span class="lbl">Время</span><span class="val">${time}</span></div><div class="row"><span class="lbl">Номер записи</span><span class="val">${num}</span></div>`;
+  document.getElementById('conf-details').innerHTML=`
+    <div class="conf-row"><span class="l">Пациент</span><span class="v">${name}</span></div>
+    <div class="conf-row"><span class="l">Вид приёма</span><span class="v">${selectedType.name}</span></div>
+    <div class="conf-row"><span class="l">Дата</span><span class="v">${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}</span></div>
+    <div class="conf-row"><span class="l">Время</span><span class="v">${time}</span></div>
+    <div class="conf-row"><span class="l">Стоимость</span><span class="v">${selectedType.price}</span></div>
+    <div class="conf-row"><span class="l">Номер записи</span><span class="v">${num}</span></div>`;
   const bot=botUsername?botUsername.replace('@',''):'';
   document.getElementById('tg-hint').innerHTML=bot
-    ?`<p>Напишите боту, чтобы получить подтверждение и напоминание:</p><a class="tg-bot-btn" href="https://t.me/${bot}" target="_blank">✈️ Написать боту</a>`
+    ?`<p>Напишите боту — получите подтверждение и напоминание о приёме:</p><a class="tg-link" href="https://t.me/${bot}" target="_blank">&#9992;&#65039; Написать боту</a>`
     :`<p>По вопросам пишите: <b>@AnnaNvslv</b></p>`;
-  showPage('confirm');
+  goPage('confirm');
 }
 
-function showPage(n){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+n).classList.add('active');
+// ═══ NAV ═══
+function goPage(n){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+n).classList.add('on');
   window.scrollTo(0,0);
 }
 </script>

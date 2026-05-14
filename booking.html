@@ -266,16 +266,8 @@ textarea{resize:none;min-height:80px}
     <input id="f-promo" type="text" placeholder="Введите промокод">
   </div>
 
-  <div class="card">
-    <div class="card-title">Согласия</div>
-    <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid #e2e8f0;margin-bottom:10px">
-      <input type="checkbox" id="c1" style="width:22px;height:22px;flex-shrink:0;margin-top:2px;accent-color:#0891b2;cursor:pointer">
-      <label for="c1" style="font-size:13.5px;color:#64748b;line-height:1.5;cursor:pointer">Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</label>
-    </div>
-    <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid #e2e8f0;margin-bottom:10px">
-      <input type="checkbox" id="c2" style="width:22px;height:22px;flex-shrink:0;margin-top:2px;accent-color:#0891b2;cursor:pointer">
-      <label for="c2" style="font-size:13.5px;color:#64748b;line-height:1.5;cursor:pointer"><b>Согласен(-на)</b> получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях. <span style="color:#0891b2">*</span></label>
-    </div>
+  <div style="font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;padding:0 4px;margin-top:8px">
+    Нажимая кнопку «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.
   </div>
 
   <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться &#8594;</button>
@@ -460,8 +452,6 @@ async function submitBooking(){
   if(!chips('ch-eye').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»');return;}
   if(!chips('ch-general').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»');return;}
   if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
-  if(!document.getElementById('c1').checked){alert('Необходимо согласие на обработку данных');return;}
-  if(!document.getElementById('c2').checked){alert('Необходимо согласие на получение уведомлений от бота');return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent='Оформляем...';

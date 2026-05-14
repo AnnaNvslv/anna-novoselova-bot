@@ -236,7 +236,6 @@ textarea{resize:none;min-height:80px}
     <div class="chips" id="ch-loads">
       <div class="chip" onclick="tog(this)">Работа за монитором более 5&#8211;6 часов</div>
       <div class="chip" onclick="tog(this)">Частое использование смартфона</div>
-      <div class="chip" onclick="tog(this)">Беременность</div>
       <div class="chip" onclick="tog(this)">Вождение в тёмное время суток</div>
       <div class="chip" onclick="tog(this)">Специфические занятия (вышивание, ювелирное дело и др.)</div>
       <div class="chip" onclick="tog(this)">Ночные смены</div>
@@ -269,12 +268,12 @@ textarea{resize:none;min-height:80px}
 
   <div class="card">
     <div class="card-title">Согласия</div>
-    <label class="con">
-      <input type="checkbox" id="c1"><span>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</span>
-    </label>
-    <label class="con">
-      <input type="checkbox" id="c2"><span><b>Согласен(-на)</b> получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях. <span class="req">*</span></span>
-    </label>
+    <div class="con" onclick="document.getElementById('c1').checked=!document.getElementById('c1').checked">
+      <input type="checkbox" id="c1" onclick="event.stopPropagation()"><span>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</span>
+    </div>
+    <div class="con" onclick="document.getElementById('c2').checked=!document.getElementById('c2').checked">
+      <input type="checkbox" id="c2" onclick="event.stopPropagation()"><span><b>Согласен(-на)</b> получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях. <span class="req">*</span></span>
+    </div>
   </div>
 
   <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться &#8594;</button>

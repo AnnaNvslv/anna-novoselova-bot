@@ -77,7 +77,7 @@ textarea{resize:none;min-height:80px}
 .chip:hover{border-color:var(--a)}
 .chip.on{background:var(--a);color:#fff;border-color:var(--a)}
 /* CONSENT */
-.con{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--b);margin-bottom:9px;cursor:pointer}
+.con{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--b);margin-bottom:9px;cursor:pointer;text-decoration:none}
 .con input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--a)}
 .con span{font-size:13.5px;color:var(--tm);line-height:1.5}
 /* BUTTONS */
@@ -269,12 +269,12 @@ textarea{resize:none;min-height:80px}
 
   <div class="card">
     <div class="card-title">Согласия</div>
-    <div class="con" onclick="document.getElementById('c1').click()">
+    <label class="con" for="c1">
       <input type="checkbox" id="c1"><span>Согласен(-на) на обработку персональных данных в соответствии с законодательством Республики Сербия.</span>
-    </div>
-    <div class="con" onclick="document.getElementById('c2').click()">
+    </label>
+    <label class="con" for="c2">
       <input type="checkbox" id="c2"><span><b>Согласен(-на)</b> получать уведомления через Telegram-бот о статусе записи, готовности заказа и напоминаниях. <span class="req">*</span></span>
-    </div>
+    </label>
   </div>
 
   <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться &#8594;</button>
@@ -454,6 +454,10 @@ async function submitBooking(){
   if(!tg){alert('Пожалуйста, укажите Telegram username');return;}
   if(!name){alert('Пожалуйста, введите ваше имя');return;}
   if(!dob){alert('Пожалуйста, укажите дату рождения');return;}
+  if(!chips('ch-complaints').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»');return;}
+  if(!chips('ch-correction').length){alert('Пожалуйста, укажите используете ли вы коррекцию зрения');return;}
+  if(!chips('ch-eye').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»');return;}
+  if(!chips('ch-general').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»');return;}
   if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
   if(!document.getElementById('c1').checked){alert('Необходимо согласие на обработку данных');return;}
   if(!document.getElementById('c2').checked){alert('Необходимо согласие на получение уведомлений от бота');return;}

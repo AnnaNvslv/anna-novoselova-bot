@@ -1556,22 +1556,20 @@ async function printExam(examId){
 }
 
 async function emailExam(examId,target){
-  toast('Генерируем PDF...','info');
+  toast('Строим карту...','info');
   const{e,p}=await _buildPrintCard(examId);
   const{data:sRows}=await db.from('settings').select('key,value').in('key',['doctor_name']);
   const s={}; (sRows||[]).forEach(r=>s[r.key]=r.value);
   const date=fmt((e?.created_at||today()).split('T')[0]);
-  const filename=`karta-${(p?.name||'pacient').split(' ')[0]}-${date}.pdf`;
-  const element=document.getElementById('print-area');
-  try {
-    await _captureAndSavePDF(filename);
-  } catch(err){ console.error('PDF error',err); }
+  const title=`Карта — ${p?.name||'пациент'} — ${date}`;
+  const html=document.getElementById('print-area').innerHTML;
+  _openPrintWindow(title, html);
   let toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p?.email||'');
   if(target==='patient'&&!toEmail){ toast('Email пациента не указан','error'); return; }
   const subj=`Карта обследования — ${p?.name||''} — ${date}`;
   const body=`Здравствуйте!\n\nПрикрепляю карту оптометрического обследования пациента ${p?.name||''}.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
-  toast('PDF скачан — прикрепите к письму','info');
-  setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1200);
+  toast('Сохраните PDF и прикрепите к письму','info');
+  setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1500);
 }
 
 // ═══ PATIENT CARD PDF ═══
@@ -1667,64 +1665,65 @@ async function _buildPatientPrintCard(pid) {
   return p;
 }
 
-async function _captureAndSavePDF(filename) {
-  const el = document.getElementById('print-area');
-  const prev = el.style.cssText || '';
-  el.style.cssText = 'display:block!important;position:fixed!important;top:0!important;left:0!important;width:794px!important;z-index:99999!important;background:#fff!important;';
-  await new Promise(r => setTimeout(r, 350));
-  try {
-    await html2pdf().set({
-      margin:12, filename,
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,logging:false},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-    }).from(el).save();
-  } finally {
-    el.style.cssText = prev;
-  }
-}
-function _showPrintArea(el) {
-  el.style.display = 'block';
-  el.style.position = 'fixed';
-  el.style.top = '-9999px';
-  el.style.left = '-9999px';
-  el.style.zIndex = '-1';
-  el.style.width = '794px';
-}
-function _hidePrintArea(el) {
-  el.style.display = '';
-  el.style.position = '';
-  el.style.top = '';
-  el.style.left = '';
-  el.style.zIndex = '';
-  el.style.width = '';
+function _openPrintWindow(title, html) {
+  const win = window.open('', '_blank', 'width=900,height=750');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
+    @page{margin:14mm 16mm;size:A4}
+    body{margin:0;padding:16px;background:#fff}
+    .print-card{font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1a1a2e;background:#fff;max-width:185mm;margin:0 auto;line-height:1.45}
+    .pc-bar{height:3.5pt;background:linear-gradient(to right,#1B4F72,#0891b2);margin-bottom:10pt;border-radius:2pt}
+    .pc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8pt;padding-bottom:8pt;border-bottom:0.5pt solid #dde}
+    .pc-doctor{font-size:13pt;font-weight:700;color:#1B4F72;letter-spacing:-0.3pt}
+    .pc-doctor-sub{font-size:7.5pt;color:#888;margin-top:1pt}
+    .pc-meta{text-align:right;font-size:8pt;color:#555}
+    .pc-meta-num{font-size:10pt;font-weight:700;color:#1B4F72}
+    .pc-title{text-align:center;font-size:11pt;font-weight:700;text-transform:uppercase;letter-spacing:1pt;color:#1B4F72;margin:8pt 0 10pt;padding:6pt 0;border-top:0.5pt solid #dde;border-bottom:0.5pt solid #dde}
+    .pc-patient-block{background:#f0f5fb;border-radius:4pt;padding:6pt 8pt;margin-bottom:10pt}
+    .pc-patient-name{font-size:11pt;font-weight:700;color:#1a1a2e}
+    .pc-patient-sub{font-size:8pt;color:#555;margin-top:2pt}
+    .pc-sec{margin-bottom:8pt}
+    .pc-sec-label{font-size:7pt;font-weight:700;color:#0891b2;text-transform:uppercase;letter-spacing:0.8pt;margin-bottom:3pt}
+    .pc-text{font-size:8.5pt;padding:3pt 0;color:#333}
+    .pc-anam{background:#fafafa;border-left:2pt solid #0891b2;padding:5pt 8pt;font-size:8.5pt;white-space:pre-wrap;line-height:1.5}
+    .pc-table{width:100%;border-collapse:collapse;margin-bottom:2pt;font-size:8.5pt}
+    .pc-table th{text-align:center;padding:3pt 5pt;font-size:7pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4pt;border-bottom:1pt solid #c8d8e8;background:#f0f5fb}
+    .pc-table td{padding:3.5pt 5pt;text-align:center;border-bottom:0.5pt solid #e8eef4}
+    .pc-table .eye{font-weight:700;color:#1B4F72;text-align:left;width:22pt}
+    .pc-rx-block{background:#f8fafe;border-radius:4pt;padding:6pt 8pt;margin-bottom:6pt}
+    .pc-rx-title{font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:4pt;text-transform:uppercase;letter-spacing:0.3pt}
+    .pc-recs{background:#f0fdf4;border-left:2.5pt solid #10b981;padding:6pt 8pt;font-size:8.5pt;white-space:pre-wrap;line-height:1.6;color:#1a2e1a}
+    .pc-footer{margin-top:10pt;padding-top:6pt;border-top:0.5pt solid #dde;display:flex;justify-content:space-between;align-items:flex-end}
+    .pc-note{font-size:6.5pt;color:#999;max-width:130mm}
+    .pc-control{font-size:8.5pt;font-weight:700;color:#1B4F72;text-align:right}
+  </style></head><body>${html}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); },400);
 }
 
 async function savePatientPDF(pid) {
-  toast('Генерируем PDF...','info');
+  toast('Строим карточку...','info');
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
-  const filename = `karta-${(p.name||'pacient').split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`;
-  try {
-    await _captureAndSavePDF(filename);
-    toast('PDF скачан','success');
-  } catch(err) { console.error(err); toast('Ошибка генерации PDF','error'); }
+  const title = `Карточка — ${p.name||'пациент'} — ${new Date().toLocaleDateString('ru-RU')}`;
+  const html = document.getElementById('print-area').innerHTML;
+  _openPrintWindow(title, html);
 }
 
 async function emailPatientPDF(pid, target) {
-  toast('Генерируем PDF...','info');
+  toast('Строим карточку...','info');
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
-  const filename = `karta-${(p.name||'pacient').split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`;
-  try { await _captureAndSavePDF(filename); } catch(err) { console.error('PDF error',err); }
+  const date_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const title = `Карточка — ${p.name||'пациент'} — ${date_str}`;
+  const html = document.getElementById('print-area').innerHTML;
+  _openPrintWindow(title, html);
   const toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p.email||'');
   if(target==='patient' && !toEmail) { toast('Email пациента не указан в карточке','error'); return; }
-  const date_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
   const subj = `Карточка пациента — ${p.name||''} — ${date_str}`;
   const body = target==='clinic'
-    ? `Карточка пациента ${p.name||''} сформирована ${date_str}.\n\nПрикрепите скачанный PDF к письму.\n\nС уважением,\nАнна Новосёлова`
+    ? `Карточка пациента ${p.name||''} сформирована ${date_str}.\n\nПрикрепите сохранённый PDF к письму.\n\nС уважением,\nАнна Новосёлова`
     : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАнна Новосёлова\nОптометрист · Нови-Сад`;
-  toast('PDF скачан — прикрепите к письму','info');
   setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1200);
 }
 

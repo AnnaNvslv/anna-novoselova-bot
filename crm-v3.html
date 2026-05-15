@@ -425,7 +425,7 @@ function openModal(html) {
     });
   },200);
 }
-function closeModal() { _modalDirty=false; document.getElementById('overlay').classList.add('hidden'); }
+function closeModal() { _modalDirty=false; if(_autosaveTimer){clearInterval(_autosaveTimer);_autosaveTimer=null;} document.getElementById('overlay').classList.add('hidden'); }
 function overlayClick(e) {
   if(e.target===document.getElementById('overlay')) {
     if(confirm('Закрыть окно?')) closeModal();
@@ -1097,8 +1097,10 @@ async function cancelAppt(id){
 }
 
 // ═══ EXAMINATION FORM ═══
+let _autosaveTimer = null;
 async function openExamForm(apptId,patientId){
   _examTab='anamn';_examData={corrections:[]};
+  if(_autosaveTimer) clearInterval(_autosaveTimer);
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span class="modal-title">Загрузка...</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
   const[{data:p},{data:ex},{data:cnt}]=await Promise.all([
     db.from('patients').select('*').eq('id',patientId).single(),
@@ -1108,6 +1110,14 @@ async function openExamForm(apptId,patientId){
   const e=ex||{};const visitNum=e.visit_number||(cnt||0)+1;
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;
   _drawExam(p,e,visitNum,apptId);
+  _autosaveTimer = setInterval(()=>{
+    if(_modalDirty && document.getElementById('e-complaints')){
+      const currentId = window._lastExamId||(e?.id||'');
+      saveExam(currentId,apptId,patientId,visitNum).then(()=>{
+        if(document.getElementById('e-complaints')) toast('Автосохранение ✓','info');
+      });
+    }
+  },120000);
 }
 async function openExamView(examId,pid){
   _examTab='anamn';
@@ -1279,7 +1289,7 @@ function _drawExam(p,e,visitNum,apptId){
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Закрыть</button>
+      <button class="btn btn-ghost" onclick="if(_modalDirty&&!confirm('Есть несохранённые данные. Закрыть без сохранения?'))return;closeModal()">Закрыть</button>
       ${e?.id?`
         <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 В оптику</button>
         <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 Пациенту</button>
@@ -1363,10 +1373,24 @@ async function saveExam(id,apptId,patientId,visitNum){
     rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),
     recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
   };
-  if(id){await db.from('examinations').update(data).eq('id',id);toast('Карта сохранена ✓');}
-  else{const{data:ne}=await db.from('examinations').insert(data).select().single();if(ne?.id)window._lastExamId=ne.id;toast('Карта создана ✓');}
-  _modalDirty=false;
-  return window._lastExamId||id;
+  try{
+    if(id){
+      const{error}=await db.from('examinations').update(data).eq('id',id);
+      if(error)throw error;
+      toast('Карта сохранена ✓','success');
+    }else{
+      const{data:ne,error}=await db.from('examinations').insert(data).select().single();
+      if(error)throw error;
+      if(ne?.id)window._lastExamId=ne.id;
+      toast('Карта создана ✓','success');
+    }
+    _modalDirty=false;
+    return window._lastExamId||id;
+  }catch(err){
+    console.error('saveExam error:',err);
+    toast('❌ Ошибка сохранения: '+(err.message||'нет связи'),'error');
+    return null;
+  }
 }
 
 async function saveAndPrint(id,apptId,patientId,visitNum){

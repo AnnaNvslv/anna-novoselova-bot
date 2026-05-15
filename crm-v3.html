@@ -897,6 +897,9 @@ async function _renderPatientCard(pid) {
         <div class="flex gap-8">
           <button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ Приём</button>
           ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ Заказ</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️ Редактировать</button>`:''}
+          <button class="btn btn-ghost btn-sm" title="Скачать PDF карточки" onclick="savePatientPDF('${pid}')">💾 PDF</button>
+          <button class="btn btn-ghost btn-sm" title="Отправить PDF пациенту" onclick="emailPatientPDF('${pid}','patient')">📧 Пациенту</button>
+          <button class="btn btn-ghost btn-sm" title="Отправить PDF в оптику" onclick="emailPatientPDF('${pid}','clinic')">📨 В оптику</button>
           <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
         </div>
       </div>
@@ -1537,12 +1540,160 @@ async function emailExam(examId,target){
   const filename=`karta-${(p?.name||'pacient').split(' ')[0]}-${date}.pdf`;
   const element=document.getElementById('print-area');
   try {
-    await html2pdf().set({margin:12,filename,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(element).save();
+    _showPrintArea(element);
+    await html2pdf().set({margin:12,filename,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(element).save();
   } catch(err){ console.error('PDF error',err); }
+  finally { _hidePrintArea(element); }
   let toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p?.email||'');
   if(target==='patient'&&!toEmail){ toast('Email пациента не указан','error'); return; }
   const subj=`Карта обследования — ${p?.name||''} — ${date}`;
   const body=`Здравствуйте!\n\nПрикрепляю карту оптометрического обследования пациента ${p?.name||''}.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
+  toast('PDF скачан — прикрепите к письму','info');
+  setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1200);
+}
+
+// ═══ PATIENT CARD PDF ═══
+async function _buildPatientPrintCard(pid) {
+  const [{data:p},{data:appts},{data:orders},{data:exams}] = await Promise.all([
+    db.from('patients').select('*').eq('id',pid).single(),
+    db.from('appointments').select('*').eq('patient_id',pid).order('date',{ascending:false}),
+    db.from('orders').select('*').eq('patient_id',pid).order('created_at',{ascending:false}),
+    db.from('examinations').select('*').eq('patient_id',pid).order('created_at',{ascending:false})
+  ]);
+  if(!p) return null;
+  const age = p.dob ? calcAge(p.dob) : '';
+  const today_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const apptRows = (appts||[]).map(a=>`
+    <tr>
+      <td>${fmt(a.date)}</td>
+      <td>${a.type||'—'}</td>
+      <td>${a.time?.substr(0,5)||'—'}</td>
+      <td>${a.status||'—'}</td>
+      <td>${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="color:#999;text-align:center">Нет приёмов</td></tr>';
+
+  const lastExam = (exams||[])[0];
+  const examBlock = lastExam ? `
+    <div class="pc-sec">
+      <div class="pc-sec-label">Последняя карта обследования — Визит №${lastExam.visit_number||'—'} (${fmt(lastExam.created_at?.split('T')[0])})</div>
+      <table class="pc-table" style="font-size:8pt">
+        <tr><th></th><th>Sph даль</th><th>Cyl</th><th>Ax</th></tr>
+        <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td></tr>
+        <tr><td class="eye">OS</td><td>${lastExam.rx_far_os_sph||'—'}</td><td>${lastExam.rx_far_os_cyl||'—'}</td><td>${lastExam.rx_far_os_ax||'—'}</td></tr>
+      </table>
+      ${lastExam.recommendations?`<div style="margin-top:6pt;font-size:8pt"><b>Рекомендации:</b> ${lastExam.recommendations}</div>`:''}
+      ${lastExam.control_date?`<div style="margin-top:4pt;font-size:8pt;color:#b45309"><b>Контрольный визит:</b> ${fmt(lastExam.control_date)}</div>`:''}
+    </div>` : '';
+
+  const orderRows = (orders||[]).map(o=>`
+    <tr>
+      <td>${fmt(o.created_at?.split('T')[0])}</td>
+      <td>${o.type||'—'}</td>
+      <td>${o.status||'—'}</td>
+      <td>${o.order_total?fmtMoney(o.order_total):'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="color:#999;text-align:center">Нет заказов</td></tr>';
+
+  const html = `<div class="print-card">
+    <div class="pc-bar"></div>
+    <div class="pc-header">
+      <div>
+        <div class="pc-doctor">Анна Новосёлова</div>
+        <div class="pc-doctor-sub">Оптометрист · Нови-Сад, Сербия · Оптика Ginter</div>
+      </div>
+      <div class="pc-meta">
+        <div class="pc-meta-num">Карточка пациента</div>
+        <div>Дата: ${today_str}</div>
+      </div>
+    </div>
+    <div class="pc-title">Карточка пациента</div>
+    <div class="pc-patient-block">
+      <div class="pc-patient-name">${p.name||''}</div>
+      <div class="pc-patient-sub">${age?age+' лет':''}${p.dob?' · Д.р.: '+fmt(p.dob):''}</div>
+    </div>
+    <div class="pc-sec">
+      <div class="pc-sec-label">Контактная информация</div>
+      <table style="font-size:8.5pt;width:100%;border-collapse:collapse">
+        <tr><td style="width:35%;color:#555;padding:2pt 0">Телефон</td><td>${p.phone||'—'}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">Email</td><td>${p.email||'—'}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">Telegram</td><td>${p.telegram_chat_id?'ID: '+p.telegram_chat_id:p.telegram_username?'@'+p.telegram_username:'—'}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">Источник</td><td>${p.source||'—'}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">В базе с</td><td>${fmt(p.created_at?.split('T')[0])}</td></tr>
+      </table>
+      ${p.notes?`<div style="margin-top:6pt;font-size:8pt;background:#f0f9ff;padding:5pt 8pt;border-radius:4pt"><b>Примечания:</b> ${p.notes}</div>`:''}
+    </div>
+    ${examBlock}
+    <div class="pc-sec">
+      <div class="pc-sec-label">История приёмов</div>
+      <table class="pc-table" style="font-size:8pt">
+        <tr><th>Дата</th><th>Вид</th><th>Время</th><th>Статус</th><th>Стоимость</th></tr>
+        ${apptRows}
+      </table>
+    </div>
+    <div class="pc-sec">
+      <div class="pc-sec-label">Заказы</div>
+      <table class="pc-table" style="font-size:8pt">
+        <tr><th>Дата</th><th>Тип</th><th>Статус</th><th>Сумма</th></tr>
+        ${orderRows}
+      </table>
+    </div>
+    <div class="pc-footer">
+      <div class="pc-note">Документ сформирован автоматически из CRM Оптики Ginter. Конфиденциально.</div>
+    </div>
+  </div>`;
+  document.getElementById('print-area').innerHTML = html;
+  return p;
+}
+
+function _showPrintArea(el) {
+  el.style.display = 'block';
+  el.style.position = 'fixed';
+  el.style.top = '-9999px';
+  el.style.left = '-9999px';
+  el.style.zIndex = '-1';
+  el.style.width = '794px';
+}
+function _hidePrintArea(el) {
+  el.style.display = '';
+  el.style.position = '';
+  el.style.top = '';
+  el.style.left = '';
+  el.style.zIndex = '';
+  el.style.width = '';
+}
+
+async function savePatientPDF(pid) {
+  toast('Генерируем PDF...','info');
+  const p = await _buildPatientPrintCard(pid);
+  if(!p) { toast('Ошибка: пациент не найден','error'); return; }
+  const filename = `karta-${(p.name||'pacient').split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`;
+  const element = document.getElementById('print-area');
+  _showPrintArea(element);
+  try {
+    await html2pdf().set({margin:12,filename,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(element).save();
+    toast('PDF скачан','success');
+  } catch(err) { console.error(err); toast('Ошибка генерации PDF','error'); }
+  finally { _hidePrintArea(element); }
+}
+
+async function emailPatientPDF(pid, target) {
+  toast('Генерируем PDF...','info');
+  const p = await _buildPatientPrintCard(pid);
+  if(!p) { toast('Ошибка: пациент не найден','error'); return; }
+  const filename = `karta-${(p.name||'pacient').split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`;
+  const element = document.getElementById('print-area');
+  _showPrintArea(element);
+  try {
+    await html2pdf().set({margin:12,filename,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(element).save();
+  } catch(err) { console.error('PDF error',err); }
+  finally { _hidePrintArea(element); }
+  const toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p.email||'');
+  if(target==='patient' && !toEmail) { toast('Email пациента не указан в карточке','error'); return; }
+  const date_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const subj = `Карточка пациента — ${p.name||''} — ${date_str}`;
+  const body = target==='clinic'
+    ? `Карточка пациента ${p.name||''} сформирована ${date_str}.\n\nПрикрепите скачанный PDF к письму.\n\nС уважением,\nАнна Новосёлова`
+    : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАнна Новосёлова\nОптометрист · Нови-Сад`;
   toast('PDF скачан — прикрепите к письму','info');
   setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1200);
 }

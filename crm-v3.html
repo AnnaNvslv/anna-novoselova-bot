@@ -1098,22 +1098,24 @@ async function cancelAppt(id){
 
 // ═══ EXAMINATION FORM ═══
 let _autosaveTimer = null;
+let _currentExamId = null;
 async function openExamForm(apptId,patientId){
-  _examTab='anamn';_examData={corrections:[]};
+  _examTab='anamn';_examData={corrections:[]};_currentExamId=null;
   if(_autosaveTimer) clearInterval(_autosaveTimer);
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span class="modal-title">Загрузка...</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
-  const[{data:p},{data:ex},{data:cnt}]=await Promise.all([
+  const[{data:p},{data:exams},{data:cnt}]=await Promise.all([
     db.from('patients').select('*').eq('id',patientId).single(),
-    db.from('examinations').select('*').eq('appointment_id',apptId).maybeSingle(),
+    db.from('examinations').select('*').eq('appointment_id',apptId).order('created_at',{ascending:false}).limit(1),
     db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',patientId)
   ]);
+  const ex = exams?.[0] || null;
   const e=ex||{};const visitNum=e.visit_number||(cnt||0)+1;
+  _currentExamId = e.id || null;
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;
   _drawExam(p,e,visitNum,apptId);
   _autosaveTimer = setInterval(()=>{
     if(_modalDirty && document.getElementById('e-complaints')){
-      const currentId = window._lastExamId||(e?.id||'');
-      saveExam(currentId,apptId,patientId,visitNum).then(()=>{
+      saveExam(_currentExamId||'',apptId,patientId,visitNum).then(()=>{
         if(document.getElementById('e-complaints')) toast('Автосохранение ✓','info');
       });
     }
@@ -1353,6 +1355,7 @@ function _renderCorrs(){
 function addCorrection(){_examData.corrections.push({type:'Очки для дали'});document.getElementById('corr-list').innerHTML=_renderCorrs();}
 
 async function saveExam(id,apptId,patientId,visitNum){
+  const effectiveId = _currentExamId || id || '';
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
     visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),complaints_notes:v('e-complaints'),last_ophthalmologist:v('e-lastoph'),
@@ -1374,18 +1377,18 @@ async function saveExam(id,apptId,patientId,visitNum){
     recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
   };
   try{
-    if(id){
-      const{error}=await db.from('examinations').update(data).eq('id',id);
+    if(effectiveId){
+      const{error}=await db.from('examinations').update(data).eq('id',effectiveId);
       if(error)throw error;
       toast('Карта сохранена ✓','success');
     }else{
       const{data:ne,error}=await db.from('examinations').insert(data).select().single();
       if(error)throw error;
-      if(ne?.id)window._lastExamId=ne.id;
+      if(ne?.id){ _currentExamId=ne.id; window._lastExamId=ne.id; }
       toast('Карта создана ✓','success');
     }
     _modalDirty=false;
-    return window._lastExamId||id;
+    return _currentExamId||effectiveId;
   }catch(err){
     console.error('saveExam error:',err);
     toast('❌ Ошибка сохранения: '+(err.message||'нет связи'),'error');
@@ -1442,7 +1445,7 @@ async function _buildPrintCard(examId) {
 
   const rxBlock=(title,rows,shared)=>{
     if(!rows.some(r=>r.v1||r.v2||r.v3)) return '';
-    return`<div class="pc-rx-block">
+    return`<div class="pc-rx-block" style="page-break-inside:avoid">
       <div class="pc-rx-title">${title}</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
@@ -1459,28 +1462,26 @@ async function _buildPrintCard(examId) {
     <div class="pc-bar"></div>
     <div class="pc-header">
       <div>
-        <div class="pc-doctor">${doctor}</div>
+        <div style="font-size:9pt;color:#555">${doctor}</div>
         <div class="pc-doctor-sub">Оптометрист · Нови-Сад, Сербия</div>
       </div>
       <div class="pc-meta">
-        <div class="pc-meta-num">Визит №${e?.visit_number||1}</div>
-        <div>${date}</div>
-        ${e?.appointment_number?`<div style="color:#0891b2;font-weight:600">${e.appointment_number}</div>`:''}
+        <div style="font-size:11pt;font-weight:800;color:#1B4F72">${e?.appointment_number||('Визит №'+(e?.visit_number||1))}</div>
+        <div style="font-size:9pt;color:#555">${date}</div>
       </div>
     </div>
     <div class="pc-title">Карта оптометрического обследования</div>
     <div class="pc-patient-block">
-      <div class="pc-patient-name">${p?.name||''}</div>
-      <div class="pc-patient-sub">${age?age+' лет':''}</div>
+      <div style="font-size:14pt;font-weight:800;color:#1a1a2e">${p?.name||''}</div>
+      <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' лет':''}</div>
     </div>
 
     ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Причина обращения</div><div class="pc-text">${rx('visit_reason')}</div></div>`:'' }
     ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Жалобы</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
-    ${rx('last_ophthalmologist')?`<div class="pc-sec"><div class="pc-sec-label">Последнее посещение офтальмолога</div><div class="pc-text">${rx('last_ophthalmologist')}</div></div>`:''}
     ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Глазные заболевания</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
-    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-anam">${rx('general_diseases_notes')}</div></div>`:''}
+    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(Boolean).join('; ')}</div></div>`:''}
 
-    ${(e?.current_corrections?.length)?`<div class="pc-sec">
+    ${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Используемая коррекция</div>
       ${e.current_corrections.map(c=>`<div style="margin-bottom:5pt">
         <div style="font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:2pt">${c.type}${c.duration?' · '+c.duration:''}</div>
@@ -1493,7 +1494,7 @@ async function _buildPrintCard(examId) {
       </div>`).join('')}
     </div>`:''}
 
-    <div class="pc-sec">
+    <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Авторефрактометрия</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>R AVE</th></tr>
@@ -1503,7 +1504,7 @@ async function _buildPrintCard(examId) {
       ${rx('refr_od_pd')?`<div style="font-size:8pt;margin-top:4pt"><b>PD:</b> ${rx('refr_od_pd')}</div>`:''}
     </div>
 
-    <div class="pc-sec">
+    <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Результаты обследования</div>
       <table class="pc-table">
         <tr><th></th><th>Visus без корр.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus с корр.</th></tr>
@@ -1522,7 +1523,7 @@ async function _buildPrintCard(examId) {
     ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock('Параметры для изготовления очков для близи',
       [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax')}],
       [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}]):''}
-    ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block">
+    ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block" style="page-break-inside:avoid">
       <div class="pc-rx-title">Параметры для назначения МКЛ</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
@@ -1536,7 +1537,7 @@ async function _buildPrintCard(examId) {
       </div>
     </div>`:''}
 
-    <div class="pc-sec">
+    <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Рекомендации и заключение</div>
       <div class="pc-recs">${rx('recommendations')||'—'}</div>
     </div>

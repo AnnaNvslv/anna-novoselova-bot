@@ -42,7 +42,7 @@ async function renderSlots() {
   const apptMap={};(appts||[]).forEach(a=>{apptMap[`${a.date}|${a.time?.substr(0,5)}`]=a;});
   const extraTimes=new Set();
   (slots||[]).forEach(sl=>{const t=sl.start_time?.substr(0,5);if(t&&!defaultTimes.includes(t))extraTimes.add(t);});
-  const allTimes=[...defaultTimes,...[...extraTimes].sort()];
+  const allTimes=[...new Set([...defaultTimes,...extraTimes])].sort();
 
   const renderCell=(d,t)=>{
     const k=`${d}|${t}`, appt=apptMap[k], slot=slotMap[k];

@@ -14,11 +14,37 @@ async function renderSettings() {
           </div>
           <button class="btn btn-primary mt-12" onclick="saveSettings()">Сохранить</button>
         </div>
+        <div class="card mb-12">
+          <div class="card-header"><span class="card-title">📅 Расписание</span></div>
+          <div class="form-grid">
+            <div class="form-group"><label>Начало рабочего дня</label><input type="time" id="s-cal-start" value="${s.cal_start||'09:00'}"></div>
+            <div class="form-group"><label>Конец рабочего дня</label><input type="time" id="s-cal-end" value="${s.cal_end||'18:00'}"></div>
+            <div class="form-group"><label>Длительность приёма (мин)</label>
+              <select id="s-cal-dur">
+                ${[15,20,30,45,60,90].map(m=>`<option value="${m}" ${+(s.cal_duration||60)===m?'selected':''}>${m} мин</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label>Перерыв между приёмами (мин)</label>
+              <select id="s-cal-brk">
+                ${[0,5,10,15,20,30].map(m=>`<option value="${m}" ${+(s.cal_break||15)===m?'selected':''}>${m} мин</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
+            <div class="flex gap-8" style="flex-wrap:wrap;margin-top:6px">
+              ${(()=>{const wd=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
+                return ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].map((d,i)=>`<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="s-wd${i}" ${wd.includes(i)?'checked':''} style="width:auto">${d}</label>`).join('');})()}
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text-m)" id="cal-preview"></div>
+          <button class="btn btn-primary mt-12" onclick="saveCalSettings()">Сохранить расписание</button>
+        </div>
         ${isAdmin()?`<div class="card mb-12">
           <div class="card-header"><span class="card-title">🔐 PIN-коды</span></div>
           <div class="form-grid">
             <div class="form-group"><label>PIN администратора</label><input type="password" id="s-apin" value="${s.admin_pin||''}"></div>
             <div class="form-group"><label>PIN сотрудника</label><input type="password" id="s-spin" value="${s.staff_pin||''}"></div>
+            <div class="form-group"><label>PIN Ervin</label><input type="password" id="s-epin" value="${s.ervin_pin||''}"></div>
           </div>
           <button class="btn btn-primary mt-12" onclick="savePins()">Обновить PIN</button>
         </div>`:''}
@@ -50,7 +76,19 @@ async function renderSettings() {
     </div>`;
 }
 async function saveSettings(){await Promise.all([db.from('settings').upsert({key:'doctor_name',value:v('s-dname')}),db.from('settings').upsert({key:'clinic_name',value:v('s-cname')})]);toast('Сохранено');}
-async function savePins(){await Promise.all([db.from('settings').upsert({key:'admin_pin',value:v('s-apin')}),db.from('settings').upsert({key:'staff_pin',value:v('s-spin')})]);toast('PIN обновлён');}
+async function saveCalSettings(){
+  const workDays=[0,1,2,3,4,5,6].filter(i=>document.getElementById('s-wd'+i)?.checked).join(',');
+  await Promise.all([
+    db.from('settings').upsert({key:'cal_start',value:v('s-cal-start')}),
+    db.from('settings').upsert({key:'cal_end',value:v('s-cal-end')}),
+    db.from('settings').upsert({key:'cal_duration',value:document.getElementById('s-cal-dur').value}),
+    db.from('settings').upsert({key:'cal_break',value:document.getElementById('s-cal-brk').value}),
+    db.from('settings').upsert({key:'cal_work_days',value:workDays}),
+  ]);
+  _calSettings=null;
+  toast('Расписание сохранено');
+}
+async function savePins(){await Promise.all([db.from('settings').upsert({key:'admin_pin',value:v('s-apin')}),db.from('settings').upsert({key:'staff_pin',value:v('s-spin')}),db.from('settings').upsert({key:'ervin_pin',value:v('s-epin')})]);toast('PIN обновлён');}
 async function saveTg(){await Promise.all([db.from('settings').upsert({key:'bot_token',value:v('s-token')}),db.from('settings').upsert({key:'bot_username',value:v('s-botname')}),db.from('settings').upsert({key:'my_chat_id',value:v('s-mychat')})]);toast('Токен сохранён');}
 async function testTg(){const{data:ch}=await db.from('settings').select('value').eq('key','my_chat_id').single();const ok=await tgSend(ch?.value,'✅ Тест CRM Гинтер Оптика');toast(ok?'📨 Отправлено!':'Ошибка — проверь токен',ok?'success':'error');}
 async function openChatIdHelper(){

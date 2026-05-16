@@ -401,3 +401,4 @@ async function sendFollowUpSurvey(orderId){
   toast(ok?'📨 Опрос отправлен':'Ошибка',ok?'success':'error');
 }
 async function delOrder(id){if(!confirm('Удалить заказ?'))return;await db.from('orders').delete().eq('id',id);render();}
+}

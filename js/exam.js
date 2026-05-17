@@ -32,7 +32,62 @@ async function openExamView(examId,pid){
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
 }
 const OPT_VALIDATE = `oninput="_modalDirty=true;this.value=this.value.replace(/[^0-9+\\-/.,\\s]/g,'')"`;
-function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}">`;}
+// ── RX SELECT HELPERS ──
+function _genOpts(vals, saved) {
+  const s = String(saved||'');
+  let html = '<option value="">—</option>';
+  vals.forEach(v => { html += `<option value="${v}" ${String(v)===s?'selected':''}>${v}</option>`; });
+  if(s && s!=='' && !vals.map(String).includes(s))
+    html += `<option value="${s}" selected>${s}</option>`;
+  return html;
+}
+function _sphVals() {
+  const v=['0.00'];
+  for(let i=25;i<=1300;i+=25) v.push('+'+(i/100).toFixed(2));
+  for(let i=25;i<=1300;i+=25) v.push('-'+(i/100).toFixed(2));
+  return v;
+}
+function _cylVals() {
+  const v=['0.00'];
+  for(let i=25;i<=600;i+=25) v.push('-'+(i/100).toFixed(2));
+  for(let i=25;i<=600;i+=25) v.push('+'+(i/100).toFixed(2));
+  return v;
+}
+function _axVals() { return Array.from({length:181},(_,i)=>i); }
+function _pdVals() { return Array.from({length:31},(_,i)=>i+50); }
+function _addVals() { const v=[]; for(let i=25;i<=400;i+=25) v.push((i/100).toFixed(2)); return v; }
+function _bcVals() { const v=[]; for(let i=83;i<=90;i++) v.push((i/10).toFixed(1)); return v; }
+function _diaVals() { const v=[]; for(let i=140;i<=150;i++) v.push((i/10).toFixed(1)); return v; }
+
+const SS = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:100%;background:#fff;color:var(--t)';
+const SN = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:72px;background:#fff;color:var(--t)';
+
+function _rs(id, type, val) {
+  let opts, style=SS;
+  if(type==='sph')    { opts=_sphVals(); }
+  else if(type==='cyl'){ opts=_cylVals(); }
+  else if(type==='ax') { opts=_axVals(); style=SN; }
+  else if(type==='pd') { const def=val||62; opts=_pdVals(); style=SN; val=def; }
+  else if(type==='add'){ opts=_addVals(); style=SN; }
+  else if(type==='degr'){opts=_addVals(); style=SN; }
+  else if(type==='bc') { const def=val||'8.6'; opts=_bcVals(); style=SN; val=def; }
+  else if(type==='dia'){ const def=val||'14.2'; opts=_diaVals(); style=SN; val=def; }
+  else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
+  return`<div style="display:flex;gap:2px;align-items:center">
+    <select id="${id}" style="${style}" onchange="_modalDirty=true">${_genOpts(opts,val)}</select>
+    <button type="button" title="+" onclick="addCustomRx('${id}')" style="padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;background:white;cursor:pointer;font-size:13px;color:var(--accent);flex-shrink:0;line-height:1">+</button>
+  </div>`;
+}
+function addCustomRx(id){
+  const val=prompt('Введите значение:');
+  if(val===null||val==='')return;
+  const sel=document.getElementById(id);if(!sel)return;
+  const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;
+  sel.appendChild(opt);sel.value=val;_modalDirty=true;
+}
+// Legacy _ri for ave/non-rx fields
+function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}" oninput="_modalDirty=true">`;
+}
 // wide input (no validation) for text fields
 function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
 function _drawExam(p,e,visitNum,apptId){
@@ -96,8 +151,8 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Авторефрактометрия</div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>R AVE</th></tr>
-            <tr><td>OD</td><td>${_ri('r-od-sph',ge('refr_od_sph'))}</td><td>${_ri('r-od-cyl',ge('refr_od_cyl'))}</td><td>${_ri('r-od-ax',ge('refr_od_ax'))}</td><td>${_ri('r-od-ave',ge('refr_od_ave'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('r-os-sph',ge('refr_os_sph'))}</td><td>${_ri('r-os-cyl',ge('refr_os_cyl'))}</td><td>${_ri('r-os-ax',ge('refr_os_ax'))}</td><td>${_ri('r-os-ave',ge('refr_os_ave'))}</td></tr>
+            <tr><td>OD</td><td>${_rs('r-od-sph','sph',ge('refr_od_sph'))}</td><td>${_rs('r-od-cyl','cyl',ge('refr_od_cyl'))}</td><td>${_rs('r-od-ax','ax',ge('refr_od_ax'))}</td><td>${_ri('r-od-ave',ge('refr_od_ave'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('r-os-sph','sph',ge('refr_os_sph'))}</td><td>${_rs('r-os-cyl','cyl',ge('refr_os_cyl'))}</td><td>${_rs('r-os-ax','ax',ge('refr_os_ax'))}</td><td>${_ri('r-os-ave',ge('refr_os_ave'))}</td></tr>
           </table>
           <div class="rx-shared-row" style="max-width:200px">
             <div class="form-group"><label>PD (оба глаза)</label>${_ri('r-pd',ge('refr_od_pd'))}</div>
@@ -110,8 +165,8 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Результаты обследования</div>
           <table class="rx-table">
             <tr><th></th><th>Visus без корр.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus с корр.</th><th>OU с корр.</th></tr>
-            <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'))}</td><td>${_ri('x-od-cs',ge('exam_od_cosph'))}</td><td>${_ri('x-od-cyl',ge('exam_od_cyl'))}</td><td>${_ri('x-od-ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'))}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'))}</td><td>${_ri('x-os-cs',ge('exam_os_cosph'))}</td><td>${_ri('x-os-cyl',ge('exam_os_cyl'))}</td><td>${_ri('x-os-ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'))}</td></tr>
+            <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'))}</td><td>${_rs('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rs('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rs('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'))}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'))}</td></tr>
+            <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'))}</td><td>${_rs('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rs('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rs('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'))}</td></tr>
           </table>
           <div class="form-group mt-8"><label>Примечание</label>${_riText('x-note',ge('exam_ou_note'))}</div>
         </div>
@@ -122,12 +177,12 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Параметры для изготовления очков для дали</div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_ri('rf-od-sph',ge('rx_far_od_sph'))}</td><td>${_ri('rf-od-cyl',ge('rx_far_od_cyl'))}</td><td>${_ri('rf-od-ax',ge('rx_far_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('rf-os-sph',ge('rx_far_os_sph'))}</td><td>${_ri('rf-os-cyl',ge('rx_far_os_cyl'))}</td><td>${_ri('rf-os-ax',ge('rx_far_os_ax'))}</td></tr>
+            <tr><td>OD</td><td>${_rs('rf-od-sph','sph',ge('rx_far_od_sph'))}</td><td>${_rs('rf-od-cyl','cyl',ge('rx_far_od_cyl'))}</td><td>${_rs('rf-od-ax','ax',ge('rx_far_od_ax'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rf-os-sph','sph',ge('rx_far_os_sph'))}</td><td>${_rs('rf-os-cyl','cyl',ge('rx_far_os_cyl'))}</td><td>${_rs('rf-os-ax','ax',ge('rx_far_os_ax'))}</td></tr>
           </table>
           <div class="rx-shared-row">
-            <div class="form-group" style="max-width:80px"><label>PD</label>${_ri('rf-pd',ge('rx_far_od_pd'),true)}</div>
-            <div class="form-group" style="max-width:80px"><label>ADD</label>${_ri('rf-add',ge('rx_far_os_pd'),true)}</div>
+            <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
+            <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
             <div class="form-group" style="flex:2"><label>Рекомендованные линзы</label>${_riText('rf-lens',ge('rx_far_lens'))}</div>
           </div>
           <div class="form-group mt-8"><label>Примечание</label>${_riText('rf-note',ge('rx_far_note'))}</div>
@@ -136,12 +191,12 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Параметры для изготовления очков для работы с компьютером</div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_ri('rc-od-sph',ge('rx_comp_od_sph'))}</td><td>${_ri('rc-od-cyl',ge('rx_comp_od_cyl'))}</td><td>${_ri('rc-od-ax',ge('rx_comp_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('rc-os-sph',ge('rx_comp_os_sph'))}</td><td>${_ri('rc-os-cyl',ge('rx_comp_os_cyl'))}</td><td>${_ri('rc-os-ax',ge('rx_comp_os_ax'))}</td></tr>
+            <tr><td>OD</td><td>${_rs('rc-od-sph','sph',ge('rx_comp_od_sph'))}</td><td>${_rs('rc-od-cyl','cyl',ge('rx_comp_od_cyl'))}</td><td>${_rs('rc-od-ax','ax',ge('rx_comp_od_ax'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rc-os-sph','sph',ge('rx_comp_os_sph'))}</td><td>${_rs('rc-os-cyl','cyl',ge('rx_comp_os_cyl'))}</td><td>${_rs('rc-os-ax','ax',ge('rx_comp_os_ax'))}</td></tr>
           </table>
           <div class="rx-shared-row">
-            <div class="form-group" style="max-width:80px"><label>PD</label>${_ri('rc-pd',ge('rx_comp_od_pd'),true)}</div>
-            <div class="form-group" style="max-width:80px"><label>ADD</label>${_ri('rc-add',ge('rx_comp_od_add'),true)}</div>
+            <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
+            <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
             <div class="form-group" style="flex:2"><label>Рекомендованные линзы</label>${_riText('rc-lens',ge('rx_comp_lens'))}</div>
           </div>
           <div class="form-group mt-8"><label>Примечание</label>${_riText('rc-note',ge('rx_comp_note'))}</div>
@@ -150,12 +205,12 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Параметры для изготовления очков для близи / чтения</div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_ri('rn-od-sph',ge('rx_near_od_sph'))}</td><td>${_ri('rn-od-cyl',ge('rx_near_od_cyl'))}</td><td>${_ri('rn-od-ax',ge('rx_near_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('rn-os-sph',ge('rx_near_os_sph'))}</td><td>${_ri('rn-os-cyl',ge('rx_near_os_cyl'))}</td><td>${_ri('rn-os-ax',ge('rx_near_os_ax'))}</td></tr>
+            <tr><td>OD</td><td>${_rs('rn-od-sph','sph',ge('rx_near_od_sph'))}</td><td>${_rs('rn-od-cyl','cyl',ge('rx_near_od_cyl'))}</td><td>${_rs('rn-od-ax','ax',ge('rx_near_od_ax'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rn-os-sph','sph',ge('rx_near_os_sph'))}</td><td>${_rs('rn-os-cyl','cyl',ge('rx_near_os_cyl'))}</td><td>${_rs('rn-os-ax','ax',ge('rx_near_os_ax'))}</td></tr>
           </table>
           <div class="rx-shared-row">
-            <div class="form-group" style="max-width:80px"><label>PD</label>${_ri('rn-pd',ge('rx_near_od_pd'),true)}</div>
-            <div class="form-group" style="max-width:80px"><label>Degr</label>${_ri('rn-degr',ge('rx_near_od_add'),true)}</div>
+            <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
+            <div class="form-group" style="max-width:80px"><label>Degr</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
             <div class="form-group" style="flex:2"><label>Рекомендованные линзы</label>${_riText('rn-lens',ge('rx_near_lens'))}</div>
           </div>
           <div class="form-group mt-8"><label>Примечание</label>${_riText('rn-note',ge('rx_near_note'))}</div>
@@ -164,12 +219,12 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-section-title">Параметры для назначения МКЛ</div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_ri('rcl-od-sph',ge('rx_cl_od_sph'))}</td><td>${_ri('rcl-od-cyl',ge('rx_cl_od_cyl'))}</td><td>${_ri('rcl-od-ax',ge('rx_cl_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_ri('rcl-os-sph',ge('rx_cl_os_sph'))}</td><td>${_ri('rcl-os-cyl',ge('rx_cl_os_cyl'))}</td><td>${_ri('rcl-os-ax',ge('rx_cl_os_ax'))}</td></tr>
+            <tr><td>OD</td><td>${_rs('rcl-od-sph','sph',ge('rx_cl_od_sph'))}</td><td>${_rs('rcl-od-cyl','cyl',ge('rx_cl_od_cyl'))}</td><td>${_rs('rcl-od-ax','ax',ge('rx_cl_od_ax'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rcl-os-sph','sph',ge('rx_cl_os_sph'))}</td><td>${_rs('rcl-os-cyl','cyl',ge('rx_cl_os_cyl'))}</td><td>${_rs('rcl-os-ax','ax',ge('rx_cl_os_ax'))}</td></tr>
           </table>
           <div class="rx-shared-row">
-            <div class="form-group" style="max-width:80px"><label>BC</label>${_ri('rcl-bc',ge('rx_cl_od_bc'),true)}</div>
-            <div class="form-group" style="max-width:80px"><label>DIA</label>${_ri('rcl-dia',ge('rx_cl_od_dia'),true)}</div>
+            <div class="form-group" style="max-width:80px"><label>BC</label>${_rs('rcl-bc','bc',ge('rx_cl_od_bc'))}</div>
+            <div class="form-group" style="max-width:80px"><label>DIA</label>${_rs('rcl-dia','dia',ge('rx_cl_od_dia'))}</div>
             <div class="form-group" style="flex:2"><label>Рекомендованные линзы</label>${_riText('rcl-lens',ge('rx_cl_type_rec'))}</div>
           </div>
           <div class="form-group mt-8"><label>Вид МКЛ</label><input id="rcl-type" value="${ge('rx_cl_od_type')}" placeholder="напр.: однодневные, ежемесячные, торические..." oninput="_modalDirty=true"></div>

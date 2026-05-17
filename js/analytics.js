@@ -1,7 +1,7 @@
 // ═══ ANALYTICS ═══
 async function renderAnalytics() {
-  if(!isAdmin()){document.getElementById('content').innerHTML=`<div class="topbar"><h1>Аналитика</h1></div><div class="content"><div class="empty"><p>Только для администратора</p></div></div>`;return;}
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>Аналитика</h1></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  if(!isAdmin()){document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('analytics')}</h1></div><div class="content"><div class="empty"><p>${t('admin_only')}</p></div></div>`;return;}
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('analytics')}</h1></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const nowMonth=today().substr(0,7);
   const[{data:allOrders},{data:patients},{data:monthAppts}]=await Promise.all([
     db.from('orders').select('*'),
@@ -30,9 +30,9 @@ async function renderAnalytics() {
         <div style="display:flex;flex-direction:column;gap:10px">
           <div class="flex justify-between"><span class="text-m">Стоимость приёмов (3000 дин. × ${(monthAppts||[]).length}):</span><span class="fw-6">${fmtMoney(salaryFromAppts)}</span></div>
           <div class="flex justify-between"><span class="text-m">Заказы пациентов ≥10 000 дин. (×${salaryOrders.length}):</span><span class="fw-6">${fmtMoney(salaryOrders.reduce((s,o)=>s+orderTotal(o),0))}</span></div>
-          <div class="flex justify-between"><span class="text-m">10% от суммы заказов:</span><span class="fw-6">${fmtMoney(Math.round(salaryFromOrders))}</span></div>
+          <div class="flex justify-between"><span class="text-m">${t('ten_percent')}</span><span class="fw-6">${fmtMoney(Math.round(salaryFromOrders))}</span></div>
           <div class="divider"></div>
-          <div class="flex justify-between fw-7"><span>Итого к зарплате:</span><span style="color:var(--green)">${fmtMoney(totalSalary)}</span></div>
+          <div class="flex justify-between fw-7"><span>${t('salary_total')}</span><span style="color:var(--green)">${fmtMoney(totalSalary)}</span></div>
         </div>
       </div>
       <div class="card">

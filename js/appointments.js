@@ -1,14 +1,14 @@
 // ═══ APPOINTMENTS ═══
 async function renderAppointments() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>Приёмы</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ Приём</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ Приём</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').order('date',{ascending:false}).order('time');
-  const filtered=apptFilter==='все'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
+  const filtered=apptFilter==='sve'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
-      <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${f}</button>`).join('')}</div>
+      <div class="filter-bar">${[t('all'),t('status_planned'),t('status_done'),t('status_cancelled')].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${f}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>Пациент</th><th>Дата / Время</th><th>Тип приёма</th><th>Стоимость</th><th>Статус</th><th></th></tr></thead>
+      <thead><tr><th>${t('patient')}</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>
       <tbody>${filtered.map(a=>`<tr>
         <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span></td>
         <td><b>${fmt(a.date)}</b> в ${a.time?.substr(0,5)}</td>
@@ -19,7 +19,7 @@ async function renderAppointments() {
           ${a.status==='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Карта</button><button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">✕</button>`:''}
           ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>`:''}
         </div></td>
-      </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><p>Нет приёмов</p></div></td></tr>`}
+      </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
 }
 // ═══ APPOINTMENT FORM ═══
@@ -30,47 +30,47 @@ async function openEditAppt(id){const{data:a}=await db.from('appointments').sele
 async function _apptForm(a,prePatient,preDate,preTime){
   const{data:patients}=await db.from('patients').select('id,name').order('name');
   openModal(`<div class="modal modal-lg">
-    <div class="modal-header"><span class="modal-title">${a?'Редактировать приём':'Новый приём'}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>Пациент *</label>
+        <div class="form-group full"><label>${t('patient')} *</label>
           <select id="a-pid"><option value="">— выберите —</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
         </div>
-        <div class="form-group full"><label>Тип приёма *</label>
+        <div class="form-group full"><label>${t('appt_type')} *</label>
           <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(t=>`<option value="${t.name}" data-dur="${t.duration}" ${(a?.type||'')===t.name?'selected':''}>${t.name}</option>`).join('')}</select>
         </div>
-        <div class="form-group"><label>Дата *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
-        <div class="form-group"><label>Время *</label>
+        <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
+        <div class="form-group"><label>${t('time')} *</label>
           <select id="a-time">${[...Array(40)].map((_,i)=>{const m=8*60+i*15;const t=minToTime(m);return`<option ${(a?.time||preTime||'10:00').substr(0,5)===t?'selected':''}>${t}</option>`;}).join('')}</select>
         </div>
-        <div class="form-group"><label>Стоимость приёма (дин.)</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
-        <div class="form-group"><label>Длительность (мин.)</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(t=>t.name===a.type)?.duration||60:60}" readonly></div>
-        <div class="form-group full"><label>Примечание</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
-        <div class="form-group full"><label>Уведомить пациента в Telegram?</label>
-          <select id="a-notify"><option value="yes">Да — отправить подтверждение</option><option value="no">Нет</option></select>
+        <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
+        <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(t=>t.name===a.type)?.duration||60:60}" readonly></div>
+        <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
+        <div class="form-group full"><label>${t('notify_tg')}</label>
+          <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">Нет</option></select>
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
-      <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">Сохранить</button>
+      <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
+      <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">${t('save')}</button>
     </div>
   </div>`);
 }
 function apptTypeChanged(){const sel=document.getElementById('a-type');const opt=sel.options[sel.selectedIndex];document.getElementById('a-dur').value=opt?.dataset?.dur||60;}
 async function saveAppt(id){
   const patient_id=v('a-pid'),date=v('a-date'),time=v('a-time');
-  if(!patient_id||!date||!time){alert('Заполните обязательные поля');return;}
+  if(!patient_id||!date||!time){alert(t('fill_required'));return;}
   const typeName=v('a-type');
   const dur=+(v('a-dur'))||60;
   const data={patient_id,date,time,type:typeName,notes:v('a-notes'),consultation_price:+(v('a-price'))||0};
   let apptId=id;
-  if(id){await db.from('appointments').update(data).eq('id',id);toast('Приём обновлён');}
+  if(id){await db.from('appointments').update(data).eq('id',id);toast(t('appt_updated'));}
   else{
     const apptNum=await generateApptNumber(date);
     const{data:a}=await db.from('appointments').insert({...data,status:'запланирован',appointment_number:apptNum}).select().single();
     apptId=a?.id;
-    toast(`Приём записан · ${apptNum}`);
+    toast(`${t('appt_saved')} · ${apptNum}`);
   }
   // Block slots by duration
   if(!id&&apptId){await blockSlotsByDuration(date,time,dur,apptId);}
@@ -91,12 +91,12 @@ async function blockSlotsByDuration(date,startTime,durationMin,appointmentId){
   const toBlock=slots.filter(s=>{ const sm=timeToMin(s.start_time?.substr(0,5));return sm>=startMin&&sm<endMin; });
   for(const sl of toBlock) await db.from('available_slots').update({is_booked:true,appointment_id:appointmentId}).eq('id',sl.id);
 }
-async function confirmCompleteAppt(id){if(!confirm('Отметить приём как завершённый?'))return;await db.from('appointments').update({status:'завершён'}).eq('id',id);toast('Приём завершён');render();}
+async function confirmCompleteAppt(id){if(!confirm(t('confirm_complete')))return;await db.from('appointments').update({status:'завершён'}).eq('id',id);toast(t('appt_done'));render();}
 async function cancelAppt(id){
-  if(!confirm('Отменить приём?'))return;
+  if(!confirm(t('confirm_cancel')))return;
   await db.from('appointments').update({status:'отменён'}).eq('id',id);
   await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
-  toast('Приём отменён');
+  toast(t('appt_cancelled'));
   render();
   if(_openPatientId) _renderPatientCard(_openPatientId);
 }

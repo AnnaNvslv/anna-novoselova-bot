@@ -1,8 +1,8 @@
 // ═══ ORDERS ═══
 async function renderOrders() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>Заказы</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ Заказ</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ Заказ</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').order('created_at',{ascending:false});
-  const filtered=orderFilter==='все'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
+  const filtered=orderFilter==='sve'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
       <div class="filter-bar">${['все',...ORDER_STATUSES_ALL].map(f=>`<button class="filter-btn${orderFilter===f?' active':''}" onclick="orderFilter='${f}';renderOrders()">${f}</button>`).join('')}</div>
@@ -32,7 +32,7 @@ async function renderOrders() {
           ${o.status==='выдан'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Отправить опрос (2 нед.)" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
           ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
         </div></td>
-      </tr>`).join('')||`<tr><td colspan="9"><div class="empty"><p>Нет заказов</p></div></td></tr>`}
+      </tr>`).join('')||`<tr><td colspan="9"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
 }
 // ═══ ORDER CARD VIEW ═══
@@ -400,5 +400,5 @@ async function sendFollowUpSurvey(orderId){
   const ok=await tgSend(o.patients.telegram_chat_id,msg);
   toast(ok?'📨 Опрос отправлен':'Ошибка',ok?'success':'error');
 }
-async function delOrder(id){if(!confirm('Удалить заказ?'))return;await db.from('orders').delete().eq('id',id);render();}
+async function delOrder(id){if(!confirm(t('confirm_delete_order')))return;await db.from('orders').delete().eq('id',id);render();}
 }

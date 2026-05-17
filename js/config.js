@@ -22,8 +22,8 @@ const STATUS_BADGE = { 'запланирован':'badge-blue','завершён
 // ═══ STATE ═══
 let role = null;
 let curSection = 'dashboard';
-let orderFilter = 'все';
-let apptFilter = 'все';
+let orderFilter = 'sve';
+let apptFilter = 'sve';
 let _calWeekOffset = 0;
 let _modalDirty = false;
 let _examData = { corrections: [] };

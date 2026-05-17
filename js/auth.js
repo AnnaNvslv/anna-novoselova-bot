@@ -2,8 +2,8 @@
 async function doLogin() {
   const pin = document.getElementById('pin-input').value.trim();
   const errEl = document.getElementById('login-err');
-  if (!pin) { errEl.textContent = 'Введите PIN'; return; }
-  errEl.textContent = 'Подключение...';
+  if (!pin) { errEl.textContent = 'Unesite PIN / Введите PIN'; return; }
+  errEl.textContent = 'Povezivanje...';
   if (db) {
     try {
       const { data: rows, error } = await db.from('settings').select('key,value').in('key',['admin_pin','staff_pin','ervin_pin']);
@@ -12,19 +12,25 @@ async function doLogin() {
         if (pin === (m.admin_pin||'1234')) { role='admin'; localStorage.setItem('crm_role','admin'); showApp(); return; }
         if (pin === (m.staff_pin||'0000')) { role='staff'; localStorage.setItem('crm_role','staff'); showApp(); return; }
         if (pin === (m.ervin_pin||'2222')) { role='ervin'; localStorage.setItem('crm_role','ervin'); showApp(); return; }
-        errEl.textContent = 'Неверный PIN'; return;
+        errEl.textContent = 'Pogrešan PIN'; return;
       }
     } catch(e) { console.error(e); }
   }
   if (pin==='1234') { role='admin'; localStorage.setItem('crm_role','admin'); showApp(); return; }
   if (pin==='0000') { role='staff'; localStorage.setItem('crm_role','staff'); showApp(); return; }
   if (pin==='2222') { role='ervin'; localStorage.setItem('crm_role','ervin'); showApp(); return; }
-  errEl.textContent = 'Неверный PIN';
+  errEl.textContent = 'Pogrešan PIN';
 }
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  document.getElementById('sb-role-label').textContent = role==='admin' ? 'Администратор' : 'Сотрудник';
+  document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
+  _refreshStaticUI();
+  // Set active lang button
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.style.fontWeight=b.dataset.lang===_lang?'800':'400';
+    b.style.color=b.dataset.lang===_lang?'white':'rgba(255,255,255,.5)';
+  });
   render();
 }
 function logout() { role=null; localStorage.removeItem('crm_role'); location.reload(); }

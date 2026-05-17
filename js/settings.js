@@ -1,6 +1,6 @@
 // ═══ SETTINGS ═══
 async function renderSettings() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>Настройки</h1></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('settings')}</h1></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:rows}=await db.from('settings').select('key,value');
   const s={}; (rows||[]).forEach(r=>s[r.key]=r.value);
   document.querySelector('.content').innerHTML=`
@@ -9,48 +9,48 @@ async function renderSettings() {
         <div class="card mb-12">
           <div class="card-header"><span class="card-title">🔧 Основное</span></div>
           <div class="form-grid">
-            <div class="form-group"><label>Имя врача</label><input id="s-dname" value="${s.doctor_name||''}"></div>
-            <div class="form-group"><label>Название клиники</label><input id="s-cname" value="${s.clinic_name||''}"></div>
+            <div class="form-group"><label>${t('doctor_name')}</label><input id="s-dname" value="${s.doctor_name||''}"></div>
+            <div class="form-group"><label>${t('clinic_name')}</label><input id="s-cname" value="${s.clinic_name||''}"></div>
           </div>
-          <button class="btn btn-primary mt-12" onclick="saveSettings()">Сохранить</button>
+          <button class="btn btn-primary mt-12" onclick="saveSettings()">${t('save')}</button>
         </div>
         <div class="card mb-12">
           <div class="card-header"><span class="card-title">📅 Расписание</span></div>
           <div class="form-grid">
-            <div class="form-group"><label>Начало рабочего дня</label><input type="time" id="s-cal-start" value="${s.cal_start||'09:00'}"></div>
-            <div class="form-group"><label>Конец рабочего дня</label><input type="time" id="s-cal-end" value="${s.cal_end||'18:00'}"></div>
-            <div class="form-group"><label>Длительность приёма (мин)</label>
+            <div class="form-group"><label>${t('work_start')}</label><input type="time" id="s-cal-start" value="${s.cal_start||'09:00'}"></div>
+            <div class="form-group"><label>${t('work_end')}</label><input type="time" id="s-cal-end" value="${s.cal_end||'18:00'}"></div>
+            <div class="form-group"><label>${t('appt_duration')}</label>
               <select id="s-cal-dur">
                 ${[15,20,30,45,60,90].map(m=>`<option value="${m}" ${+(s.cal_duration||60)===m?'selected':''}>${m} мин</option>`).join('')}
               </select>
             </div>
-            <div class="form-group"><label>Перерыв между приёмами (мин)</label>
+            <div class="form-group"><label>${t('break_between')}</label>
               <select id="s-cal-brk">
                 ${[0,5,10,15,20,30].map(m=>`<option value="${m}" ${+(s.cal_break||15)===m?'selected':''}>${m} мин</option>`).join('')}
               </select>
             </div>
           </div>
-          <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
+          <div class="form-group" style="margin-top:10px"><label>${t('work_days')}</label>
             <div class="flex gap-8" style="flex-wrap:wrap;margin-top:6px">
               ${(()=>{const wd=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
                 return ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'].map((d,i)=>`<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="s-wd${i}" ${wd.includes(i)?'checked':''} style="width:auto">${d}</label>`).join('');})()}
             </div>
           </div>
           <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text-m)" id="cal-preview"></div>
-          <button class="btn btn-primary mt-12" onclick="saveCalSettings()">Сохранить расписание</button>
+          <button class="btn btn-primary mt-12" onclick="saveCalSettings()">${t('save_schedule')}</button>
         </div>
         ${isAdmin()?`<div class="card mb-12">
           <div class="card-header"><span class="card-title">🔐 PIN-коды</span></div>
           <div class="form-grid">
-            <div class="form-group"><label>PIN администратора</label><input type="password" id="s-apin" value="${s.admin_pin||''}"></div>
-            <div class="form-group"><label>PIN сотрудника</label><input type="password" id="s-spin" value="${s.staff_pin||''}"></div>
-            <div class="form-group"><label>PIN Ervin</label><input type="password" id="s-epin" value="${s.ervin_pin||''}"></div>
+            <div class="form-group"><label>${t('admin_pin')}</label><input type="password" id="s-apin" value="${s.admin_pin||''}"></div>
+            <div class="form-group"><label>${t('staff_pin')}</label><input type="password" id="s-spin" value="${s.staff_pin||''}"></div>
+            <div class="form-group"><label>${t('ervin_pin')}</label><input type="password" id="s-epin" value="${s.ervin_pin||''}"></div>
           </div>
-          <button class="btn btn-primary mt-12" onclick="savePins()">Обновить PIN</button>
+          <button class="btn btn-primary mt-12" onclick="savePins()">${t('update_pin')}</button>
         </div>`:''}
         <div class="card">
           <div class="card-header"><span class="card-title">📤 Данные</span></div>
-          <button class="btn btn-ghost btn-sm" onclick="exportAll()">⬇ Экспорт JSON</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportAll()">${t('export_json')}</button>
         </div>
       </div>
       <div class="card">
@@ -64,18 +64,18 @@ async function renderSettings() {
             <li>Нажмите «Найти Chat ID» → скопируйте ID в карточку пациента</li>
           </ol>
         </div>
-        <div class="form-group mt-12"><label>Токен бота</label><input id="s-token" value="${s.bot_token||''}" placeholder="123456789:AAH..."></div>
+        <div class="form-group mt-12"><label>${t('tg_token')}</label><input id="s-token" value="${s.bot_token||''}" placeholder="123456789:AAH..."></div>
         <div class="form-group mt-8"><label>Имя бота (@username) — для страницы записи</label><input id="s-botname" value="${s.bot_username||''}" placeholder="@NazvanieVashegoBot"></div>
-        <div class="form-group mt-8"><label>Мой Chat ID (для тестов)</label><input id="s-mychat" value="${s.my_chat_id||''}"></div>
+        <div class="form-group mt-8"><label>${t('tg_mychat')}</label><input id="s-mychat" value="${s.my_chat_id||''}"></div>
         <div class="flex gap-8 mt-12">
-          <button class="btn btn-primary" onclick="saveTg()">Сохранить</button>
+          <button class="btn btn-primary" onclick="saveTg()">${t('save')}</button>
           <button class="btn btn-ghost" onclick="testTg()">Тест</button>
-          <button class="btn btn-ghost" onclick="openChatIdHelper()">Найти Chat ID</button>
+          <button class="btn btn-ghost" onclick="openChatIdHelper()">${t('tg_find_id')}</button>
         </div>
       </div>
     </div>`;
 }
-async function saveSettings(){await Promise.all([db.from('settings').upsert({key:'doctor_name',value:v('s-dname')}),db.from('settings').upsert({key:'clinic_name',value:v('s-cname')})]);toast('Сохранено');}
+async function saveSettings(){await Promise.all([db.from('settings').upsert({key:'doctor_name',value:v('s-dname')}),db.from('settings').upsert({key:'clinic_name',value:v('s-cname')})]);toast(t('saved'));}
 async function saveCalSettings(){
   const workDays=[0,1,2,3,4,5,6].filter(i=>document.getElementById('s-wd'+i)?.checked).join(',');
   await Promise.all([
@@ -86,11 +86,11 @@ async function saveCalSettings(){
     db.from('settings').upsert({key:'cal_work_days',value:workDays}),
   ]);
   _calSettings=null;
-  toast('Расписание сохранено');
+  toast(t('schedule_saved'));
 }
-async function savePins(){await Promise.all([db.from('settings').upsert({key:'admin_pin',value:v('s-apin')}),db.from('settings').upsert({key:'staff_pin',value:v('s-spin')}),db.from('settings').upsert({key:'ervin_pin',value:v('s-epin')})]);toast('PIN обновлён');}
-async function saveTg(){await Promise.all([db.from('settings').upsert({key:'bot_token',value:v('s-token')}),db.from('settings').upsert({key:'bot_username',value:v('s-botname')}),db.from('settings').upsert({key:'my_chat_id',value:v('s-mychat')})]);toast('Токен сохранён');}
-async function testTg(){const{data:ch}=await db.from('settings').select('value').eq('key','my_chat_id').single();const ok=await tgSend(ch?.value,'✅ Тест CRM Гинтер Оптика');toast(ok?'📨 Отправлено!':'Ошибка — проверь токен',ok?'success':'error');}
+async function savePins(){await Promise.all([db.from('settings').upsert({key:'admin_pin',value:v('s-apin')}),db.from('settings').upsert({key:'staff_pin',value:v('s-spin')}),db.from('settings').upsert({key:'ervin_pin',value:v('s-epin')})]);toast(t('pin_updated'));}
+async function saveTg(){await Promise.all([db.from('settings').upsert({key:'bot_token',value:v('s-token')}),db.from('settings').upsert({key:'bot_username',value:v('s-botname')}),db.from('settings').upsert({key:'my_chat_id',value:v('s-mychat')})]);toast(t('tg_saved'));}
+async function testTg(){const{data:ch}=await db.from('settings').select('value').eq('key','my_chat_id').single();const ok=await tgSend(ch?.value,'✅ Тест CRM Гинтер Оптика');toast(ok?t('tg_sent'):t('tg_error'),ok?'success':'error');}
 async function openChatIdHelper(){
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Найти Telegram Chat ID</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">

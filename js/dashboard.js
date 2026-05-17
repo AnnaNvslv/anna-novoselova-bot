@@ -1,6 +1,6 @@
 // ═══ DASHBOARD ═══
 async function renderDashboard() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>Главная</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Приём</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Заказ</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ Пациент</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Приём</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Заказ</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ Пациент</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const todayStr=today();
   const[{data:patients},{data:todayAppts},{data:readyOrders},{data:upcoming},{data:todayOrders}]=await Promise.all([
     db.from('patients').select('id',{count:'exact'}),
@@ -13,7 +13,7 @@ async function renderDashboard() {
   const{data:monthRevOrders}=await db.from('orders').select('frame_price,lens_price,work_price').eq('status','выдан').gte('created_at',nowMonth+'-01');
   const monthRev=(monthRevOrders||[]).reduce((s,o)=>s+orderTotal(o),0);
   document.getElementById('content').innerHTML=`
-<div class="topbar"><h1>Главная</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Приём</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Заказ</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ Пациент</button></div></div>
+<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Приём</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Заказ</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ Пациент</button></div></div>
 <div class="content">
   <div class="stats-grid">
     <div class="stat-card stat-primary"><div class="stat-label">Приёмов сегодня</div><div class="stat-value">${(todayAppts||[]).length}</div><div class="stat-sub">запланировано</div></div>
@@ -24,7 +24,7 @@ async function renderDashboard() {
   </div>
   <div class="two-col">
     <div class="card">
-      <div class="card-header"><span class="card-title">📅 Сегодня</span><button class="btn btn-ghost btn-sm" onclick="nav('appointments')">Все приёмы</button></div>
+      <div class="card-header"><span class="card-title">📅 Сегодня</span><button class="btn btn-ghost btn-sm" onclick="nav('appointments')">${t('all_appts')}</button></div>
       ${(todayAppts||[]).length?(todayAppts||[]).map(a=>`<div class="history-item">
         <div class="history-dot"></div>
         <div style="flex:1">
@@ -47,7 +47,7 @@ async function renderDashboard() {
           </div>
           <div class="flex gap-8">
             ${o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady('${o.id}')">📨</button>`:''}
-            <button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">Выдать</button>
+            <button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">${t('issue')}</button>
           </div>
         </div>`).join('')}
       </div>`:''}
@@ -56,7 +56,7 @@ async function renderDashboard() {
         ${(upcoming||[]).length?(upcoming||[]).map(a=>`<div class="history-item">
           <div class="history-dot" style="background:var(--warn-l);border-color:var(--warn)"></div>
           <div><div class="history-date">${fmt(a.date)} в ${a.time?.substr(0,5)}</div><div class="history-title">${a.patients?.name||'—'}</div><div class="text-sm text-m">${a.type||'Приём'}</div></div>
-        </div>`).join(''):`<div class="text-sm text-m" style="padding:10px 0">Нет запланированных</div>`}
+        </div>`).join(''):`<div class="text-sm text-m" style="padding:10px 0">${t('no_planned')}</div>`}
       </div>
     </div>
   </div>

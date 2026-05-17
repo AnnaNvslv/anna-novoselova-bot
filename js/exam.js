@@ -54,7 +54,9 @@ function _drawExam(p,e,visitNum,apptId){
             <label>Причина обращения (можно несколько)</label>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
               ${VISIT_REASONS.map(r=>{
-                const sel=(ge('visit_reason')||'').split(', ').includes(r);
+                const savedReasons=(ge('visit_reason')||'').split(', ');
+                const bookingReasons=(p?.visit_reason||[]);
+                const sel=savedReasons.includes(r)||bookingReasons.some(br=>br&&r&&(br.includes(r.substr(0,12))||r.includes(br.substr(0,12))));
                 return`<label style="display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:500;cursor:pointer;background:var(--surface2);padding:5px 10px;border-radius:6px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'}">
                   <input type="checkbox" name="visit_reason" value="${r}" ${sel?'checked':''} style="width:auto;accent-color:var(--accent)" onchange="_modalDirty=true"> ${r}
                 </label>`;
@@ -67,7 +69,18 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="form-group"><label>Последнее посещение офтальмолога</label><input id="e-lastoph" value="${ge('last_ophthalmologist')}" style="max-width:280px" oninput="_modalDirty=true"></div>
           <div class="form-group"><label>Глазные заболевания</label><input id="e-eyedis" value="${ge('eye_diseases_notes')||((p?.eye_diseases||[]).join(', '))}" oninput="_modalDirty=true"></div>
           <div class="form-group full"><label>Анамнез (со слов пациента)</label>
-            <textarea id="e-gendis" style="min-height:130px" oninput="_modalDirty=true">${ge('general_diseases_notes')||`Зрение начало портиться с: \nПервые очки - с: \nТравмы головы: \nТравмы глаз: \nАрт. давление: N, ЩЖ: N, Диабет/преддиабет: \nАллергия: \nНаследственность: \nХарактер зрительной нагрузки: `}</textarea>
+            <textarea id="e-gendis" style="min-height:130px" oninput="_modalDirty=true">${ge('general_diseases_notes')||(()=>{
+  const gd=p?.general_diseases||[];
+  const vl=p?.visual_loads||[];
+  const has=kw=>gd.some(d=>d.toLowerCase().includes(kw));
+  const ad=has('давлен')||has('pritisak')?'повышенное':'N';
+  const tj=has('щитовид')||has('štitne')?'патология':'N';
+  const db=has('диабет')||has('dijabet')?'Да':'';
+  const loads=vl.filter(l=>!l.includes('Ничего')&&!l.includes('Ništa')).join('; ')||'';
+  const diopStr=p?.approx_diopters?'\nДиоптрии (со слов): '+p.approx_diopters:'';
+  const preNote=p?.pre_notes?'\nПримечания пациента: '+p.pre_notes:'';
+  return'Зрение начало портиться с: \nПервые очки - с: \nТравмы головы: \nТравмы глаз: \nАрт. давление: '+ad+', ЩЖ: '+tj+', Диабет/преддиабет: '+db+'\nАллергия: \nНаследственность: \nХарактер зрительной нагрузки: '+loads+diopStr+preNote;
+})()}</textarea>
           </div>
         </div>
         <div class="divider"></div>

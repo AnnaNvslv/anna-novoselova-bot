@@ -24,6 +24,8 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
+  const saved=localStorage.getItem('crm_section');
+  if(saved&&saved!=='trash')curSection=saved;
   document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
   _refreshStaticUI();
   // Set active lang button

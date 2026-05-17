@@ -104,7 +104,7 @@ function _apptTab(appts,pid){
     <div class="flex gap-8">
       <button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 Карта</button>
       <button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>
-      ${a.status==='запланирован'?`<button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">${t('cancel')}</button>`:''}
+      ${a.status==='запланирован'?`<button class="btn btn-success btn-sm" title="Završen" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
       ${a.status==='отменён'?`<span class="badge badge-gray">${t('status_cancelled')}</span>`:''}
     </div>
   </div>`).join('');

@@ -299,6 +299,9 @@ input[type=number]{-moz-appearance:textfield}
         <span style="color:rgba(255,255,255,.3);font-size:12px">|</span>
         <button class="lang-btn" data-lang="ru" onclick="switchLang('ru')" style="background:none;border:none;cursor:pointer;font-size:12px;font-weight:400;color:rgba(255,255,255,.5);padding:2px 6px;border-radius:4px;letter-spacing:.5px">RUS</button>
       </div>
+      <div class="sb-item" onclick="nav('trash')" id="nav-trash">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg><span class="sb-label">Korpa</span>
+      </div>
       <div class="sb-item" onclick="logout()" style="color:rgba(255,255,255,.5);font-size:13px">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15" height="15"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Выйти
       </div>
@@ -332,6 +335,7 @@ input[type=number]{-moz-appearance:textfield}
 <script src="js/calendar.js"></script>
 <script src="js/exam.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/trash.js"></script>
 <script src="js/export.js"></script>
 </script>
 </body>

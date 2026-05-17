@@ -140,19 +140,19 @@ function _drawOrderForm(o,prePatient,patients,exams){
           <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams,o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
           <div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>
           <div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
-            <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Быстрый ввод рецепта</div>
+            <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Brzi unos recepta</div>
             <div class="form-grid">
-              <div class="form-group"><label>Тип</label>
+              <div class="form-group"><label>Vrsta</label>
                 <select id="qrx-type" onchange="updateQuickRxFields()">
-                  <option value="far">Очки для дали</option>
-                  <option value="comp">Очки для компьютера</option>
-                  <option value="near">Очки для близи</option>
+                  <option value="far">Naočare za daljinu</option>
+                  <option value="comp">Naočare za računar</option>
+                  <option value="near">Naočare za blizinu</option>
                   <option value="cl">KS</option>
                 </select>
               </div>
               <div class="form-group" style="align-self:flex-end">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">
-                  <input type="checkbox" id="qrx-own" style="width:auto"> Свой рецепт
+                  <input type="checkbox" id="qrx-own" style="width:auto"> Vlastiti recept
                 </label>
               </div>
             </div>
@@ -171,7 +171,7 @@ function _drawOrderForm(o,prePatient,patients,exams){
               <div class="form-group mt-8"><label>Napomena</label><input id="qrx-note"></div>
             </div>
             <div class="flex gap-8 mt-10">
-              <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Сохранить рецепт</button>
+              <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Sačuvaj recept</button>
               <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">${t("cancel")||"Otkaži"}</button>
             </div>
           </div>
@@ -273,7 +273,7 @@ async function saveQuickRx(){
   const isOwn=document.getElementById('qrx-own')?.checked;
   const{count}=await db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',pid);
   const visitNum=(count||0)+1;
-  const note=(isOwn?'Свой рецепт. ':'')+v('qrx-note');
+  const note=(isOwn?'Vlastiti recept. ':'')+v('qrx-note');
   const rxData={
     patient_id:pid, visit_number:visitNum,
     recommendations: note||null,

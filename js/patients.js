@@ -178,8 +178,17 @@ function showAgeHint(dob){const a=calcAge(dob);document.getElementById('age-hint
 async function savePatient(id){
   const name=v('p-name');if(!name){alert(t('enter_name'));return;}
   const data={name,phone:v('p-phone'),email:v('p-email'),dob:v('p-dob')||null,telegram_username:v('p-tguser'),telegram_chat_id:v('p-tgid'),source:v('p-source'),notes:v('p-notes')};
-  if(id){await db.from('patients').update(data).eq('id',id);toast(t('updated'));_lastAddedPatientId=null;}
-  else{const{data:np}=await db.from('patients').insert(data).select().single();_lastAddedPatientId=np?.id;toast(t('added'));}
-  closeModal();render();
+  if(id){
+    await db.from('patients').update(data).eq('id',id);
+    toast(t('updated'));_lastAddedPatientId=null;
+    closeModal();render();
+  } else {
+    const{data:np}=await db.from('patients').insert(data).select().single();
+    _lastAddedPatientId=np?.id;
+    toast(t('added'));
+    closeModal();
+    if(np?.id) openPatientCard(np.id);
+    else render();
+  }
 }
 async function delPatient(id){if(!confirm(t('confirm_delete_patient')))return;await db.from('patients').update({deleted_at:new Date().toISOString()}).eq('id',id);toast(t('moved_to_trash')||'U korpu');render();}

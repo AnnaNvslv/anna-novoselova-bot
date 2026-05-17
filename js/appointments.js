@@ -28,36 +28,61 @@ function openAddAppointmentFor(pid){_apptForm(null,pid);}
 async function openAddAppointmentAtSlot(date,time,slotId){_apptForm(null,null,date,time);}
 async function openEditAppt(id){const{data:a}=await db.from('appointments').select('*').eq('id',id).single();_apptForm(a,null);}
 async function _apptForm(a,prePatient,preDate,preTime){
-  const{data:patients}=await db.from('patients').select('id,name').order('name');
+  const{data:patients}=await db.from('patients').select('id,name').is('deleted_at',null).order('name');
+  // Free slots next 21 days
+  const toD=new Date();toD.setDate(toD.getDate()+21);
+  const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
+  const slotsByDate={};(freeSlots||[]).forEach(s=>{if(!slotsByDate[s.date])slotsByDate[s.date]=[];slotsByDate[s.date].push(s);});
+  const slotDates=Object.keys(slotsByDate).sort();
+  const slotPickerHtml=slotDates.length?`<div class="form-group full"><label>${t('available_slots')||'Slobodni termini'}</label>
+    <div style="max-height:160px;overflow-y:auto;padding:4px 0">
+      ${slotDates.map(d=>`<div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-m);margin-bottom:4px">${fmtDateLong(d)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${slotsByDate[d].map(s=>`<button type="button" class="slot-pick-btn" data-sid="${s.id}" onclick="pickSlot('${s.date}','${s.start_time?.substr(0,5)}','${s.id}')" style="padding:3px 10px;border:1.5px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:13px;font-weight:600">${s.start_time?.substr(0,5)}</button>`).join('')}
+        </div></div>`).join('')}
+    </div></div>`:'<div class="form-group full" style="color:var(--text-m);font-size:13px">Nema slobodnih termina. Izaberite datum i vreme ručno.</div>';
+  const timeOpts=[...Array(45)].map((_,i)=>{const m=8*60+i*15;const ts=minToTime(m);return`<option ${((a?.time||preTime||'10:00').substr(0,5)===ts)?'selected':''}>${ts}</option>`;}).join('');
+  window._pickedSlotId=null;
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group full"><label>${t('patient')} *</label>
-          <select id="a-pid"><option value="">— выберите —</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
-        </div>
-        <div class="form-group full"><label>${t('appt_type')} *</label>
-          <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(t=>`<option value="${t.name}" data-dur="${t.duration}" ${(a?.type||'')===t.name?'selected':''}>${t.name}</option>`).join('')}</select>
-        </div>
-        <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
-        <div class="form-group"><label>${t('time')} *</label>
-          <select id="a-time">${[...Array(40)].map((_,i)=>{const m=8*60+i*15;const t=minToTime(m);return`<option ${(a?.time||preTime||'10:00').substr(0,5)===t?'selected':''}>${t}</option>`;}).join('')}</select>
-        </div>
-        <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
-        <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(t=>t.name===a.type)?.duration||60:60}" readonly></div>
-        <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
-        <div class="form-group full"><label>${t('notify_tg')}</label>
-          <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">Нет</option></select>
-        </div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="form-group full"><label>${t('patient')} *</label>
+        <select id="a-pid"><option value="">— izaberite —</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
-    </div>
+      <div class="form-group full"><label>${t('appt_type')} *</label>
+        <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${tp.name}</option>`).join('')}</select>
+      </div>
+      ${!a?slotPickerHtml:''}
+      <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
+      <div class="form-group"><label>${t('time')} *</label><select id="a-time">${timeOpts}</select></div>
+      <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
+      <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(tp=>tp.name===a.type)?.duration||60:60}" readonly></div>
+      <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
+      <div class="form-group full"><label>${t('notify_tg')}</label>
+        <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">Ne</option></select>
+      </div>
+    </div></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
       <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">${t('save')}</button>
     </div>
   </div>`);
 }
+function pickSlot(date,time,slotId){
+  document.querySelectorAll('.slot-pick-btn').forEach(b=>{
+    const active=b.dataset.sid===slotId;
+    b.style.background=active?'var(--accent)':'white';
+    b.style.color=active?'white':'inherit';
+    b.style.borderColor=active?'var(--accent)':'var(--border)';
+  });
+  document.getElementById('a-date').value=date;
+  const sel=document.getElementById('a-time');
+  for(let o of sel.options) if(o.value===time||o.textContent===time){o.selected=true;break;}
+  window._pickedSlotId=slotId;
+}
 function apptTypeChanged(){const sel=document.getElementById('a-type');const opt=sel.options[sel.selectedIndex];document.getElementById('a-dur').value=opt?.dataset?.dur||60;}
+
 async function saveAppt(id){
   const patient_id=v('a-pid'),date=v('a-date'),time=v('a-time');
   if(!patient_id||!date||!time){alert(t('fill_required'));return;}
@@ -82,7 +107,13 @@ async function saveAppt(id){
       await tgSend(p.telegram_chat_id,msg);
     }
   }
-  closeModal();render();
+  closeModal();
+  // If new appointment for a patient - reopen patient card
+  if(!id && patient_id) {
+    openPatientCard(patient_id);
+  } else {
+    render();
+  }
 }
 async function blockSlotsByDuration(date,startTime,durationMin,appointmentId){
   const{data:slots}=await db.from('available_slots').select('*').eq('date',date).order('start_time');

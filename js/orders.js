@@ -223,6 +223,7 @@ function _drawOrderForm(o,prePatient,patients,exams){
       <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">Сохранить</button>
     </div>
   </div>`);
+}
 // ═══ QUICK ADD in ORDER ═══
 function toggleQuickPatient(){
   const f=document.getElementById('quick-patient-form');

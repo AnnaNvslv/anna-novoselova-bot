@@ -152,6 +152,10 @@ async function cancelAppt(id){
 async function deleteAppt(id){
   if(!confirm(t('confirm_delete')||'Obrisati pregled?'))return;
   await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
+  const{data:apptDel}=await db.from('appointments').select('date,time').eq('id',id).single();
+  if(apptDel?.date&&apptDel?.time){
+    await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('date',apptDel.date).eq('start_time',apptDel.time).eq('is_booked',true);
+  }
   await db.from('appointments').update({deleted_at:new Date().toISOString()}).eq('id',id);
   toast(t('moved_to_trash')||'Premješteno u korpu');
   if(_openPatientId){_renderPatientCard(_openPatientId);}else{renderAppointments();}

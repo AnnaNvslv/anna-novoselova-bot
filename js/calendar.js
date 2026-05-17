@@ -34,7 +34,7 @@ async function renderSlots() {
   const [s,{data:slots},{data:appts}]=await Promise.all([
     loadCalSettings(),
     db.from('available_slots').select('*').in('date',weekDays).order('start_time'),
-    db.from('appointments').select('date,time,type,patient_id,patients(name),appointment_number').in('date',weekDays).neq('status','отменён')
+    db.from('appointments').select('date,time,type,patient_id,patients(name),appointment_number').in('date',weekDays).neq('status','отменён').is('deleted_at',null)
   ]);
   const defaultTimes=generateSlotTimes(s);
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];

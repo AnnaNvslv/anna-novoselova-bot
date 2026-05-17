@@ -17,7 +17,7 @@ function renderPatientsTable(patients) {
         ${p.email?`<div class="table-sub">${p.email}</div>`:''}</div></div></td>
       <td class="text-m">${p.phone||'—'}</td>
       <td>${p.telegram_chat_id?'<span class="badge badge-green">✓ TG</span>':p.telegram_username?`@${p.telegram_username}`:'—'}</td>
-      <td class="text-m">${p.dob?(calcAge(p.dob)+' лет'):'—'}</td>
+      <td class="text-m">${p.dob?(calcAge(p.dob)+' '+(t('years')||'god.')):'—'}</td>
       <td><div class="flex gap-8">
         <button class="btn btn-ghost btn-xs" onclick="openAddAppointmentFor('${p.id}')">+ Приём</button>
         ${isAdmin()?`<button class="btn btn-ghost btn-xs" onclick="openAddOrderFor('${p.id}')">+ Заказ</button>`:''}
@@ -58,7 +58,7 @@ async function _renderPatientCard(pid) {
           <div class="patient-avatar" style="width:52px;height:52px;font-size:20px">${initials(p.name)}</div>
           <div>
             <div style="font-size:20px;font-weight:800">${p.name}</div>
-            <div style="font-size:13px;color:var(--text-m)">${age?age+' лет · ':''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
+            <div style="font-size:13px;color:var(--text-m)">${age?(age+' '+(t('years')||'god.')+' · '):''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
           </div>
         </div>
         <div class="flex gap-8">

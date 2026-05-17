@@ -25,8 +25,11 @@ function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   const saved=localStorage.getItem('crm_section');
-  if(saved&&saved!=='trash')curSection=saved;
+  if(saved&&saved!=='trash'){curSection=saved;}
   document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
+  // Restore active nav highlight
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('nav-'+curSection)?.classList.add('active');
   _refreshStaticUI();
   // Ervin: hide irrelevant nav sections
   const ervinHide=['appointments','orders','analytics','settings','trash'];

@@ -1,6 +1,6 @@
 // ═══ ORDERS ═══
 async function renderOrders() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ Заказ</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ ${t('orders')||'Porudžbina'}</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('created_at',{ascending:false});
   const filtered=orderFilter==='все'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
   document.querySelector('.content').innerHTML=`
@@ -8,7 +8,7 @@ async function renderOrders() {
       <div class="filter-bar">${['все',...ORDER_STATUSES_ALL].map(f=>`<button class="filter-btn${orderFilter===f?' active':''}" onclick="orderFilter='${f}';renderOrders()">${f==='все'?t('all'):statusLabel(f)}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Пациент</th><th>Оправа / Линзы</th><th style="color:var(--text-l)">Рецепт</th><th>Итого</th><th>Срок</th><th>Статус</th><th>💰</th><th></th></tr></thead>
+      <thead><tr><th>${t('date')||'Datum'}</th><th>${t('patient')||'Pacijent'}</th><th>${t('frame')||'Okvir'} / ${t('lenses')||'Sočiva'}</th><th style="color:var(--text-l)">${t('prescription')||'Recept'}</th><th>${t('total')||'Ukupno'}</th><th>${t('promised_date')||'Rok'}</th><th>${t('status')||'Status'}</th><th>💰</th><th></th></tr></thead>
       <tbody>${filtered.map(o=>`<tr style="cursor:pointer" onclick="openOrderCard('${o.id}')" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
         <td class="text-m" onclick="event.stopPropagation()">${fmt(o.created_at?.split('T')[0])}</td>
         <td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span></td>
@@ -57,23 +57,23 @@ async function openOrderCard(id){
     <div class="modal-body">
       <div class="info-grid mb-12">
         <div class="info-item"><label>Тип заказа</label><p>${o.type}</p></div>
-        <div class="info-item"><label>Рецепт</label><p style="color:var(--text-m)">${o.prescription_label||'—'}</p></div>
-        <div class="info-item"><label>Срок изготовления</label><p>${o.promised_date?fmt(o.promised_date):'—'}</p></div>
+        <div class="info-item"><label>${t("prescription")||"Recept"}</label><p style="color:var(--text-m)">${o.prescription_label||'—'}</p></div>
+        <div class="info-item"><label>${t("promised_date")||"Rok izrade"}</label><p>${o.promised_date?fmt(o.promised_date):'—'}</p></div>
       </div>
       <div class="divider"></div>
       <div class="form-grid mb-12">
-        <div class="form-group"><label>Шифр оправы</label><input value="${o.frame_code||'—'}" readonly></div>
+        <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input value="${o.frame_code||'—'}" readonly></div>
         <div class="form-group"><label>Цена оправы</label><input value="${fmtMoney(o.frame_price)}" readonly></div>
-        <div class="form-group"><label>Название линз</label><input value="${o.lens_name||'—'}" readonly></div>
+        <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input value="${o.lens_name||'—'}" readonly></div>
         <div class="form-group"><label>Цена линз (1 шт. × 2)</label><input value="${fmtMoney(o.lens_price)} × 2 = ${fmtMoney(o.lens_price*2)}" readonly></div>
         <div class="form-group"><label>Стоимость работы</label><input value="${o.work_price?fmtMoney(o.work_price):'—'}" readonly></div>
         <div class="form-group"><label>Предоплата</label><input value="${fmtMoney(o.prepayment)}" readonly></div>
       </div>
       <div style="background:${bal>0?'var(--warn-l)':'var(--green-l)'};border:1.5px solid ${bal>0?'var(--warn)':'var(--green)'};border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div><div class="text-sm text-m mb-4">ИТОГО</div><div style="font-size:22px;font-weight:800;color:var(--primary)">${fmtMoney(orderTotal(o))}</div></div>
+        <div><div class="text-sm text-m mb-4">${t("total")||"UKUPNO"}</div><div style="font-size:22px;font-weight:800;color:var(--primary)">${fmtMoney(orderTotal(o))}</div></div>
         <div style="text-align:right"><div class="text-sm text-m mb-4">ДОПЛАТА</div><div style="font-size:22px;font-weight:800;color:${bal>0?'var(--warn)':'var(--green)'}">${fmtMoney(bal)}</div></div>
       </div>
-      ${o.notes?`<div class="form-group mt-12"><label>Примечание</label><input value="${o.notes}" readonly></div>`:''}
+      ${o.notes?`<div class="form-group mt-12"><label>Napomena</label><input value="${o.notes}" readonly></div>`:''}
       ${o.issued_date?`<div class="text-sm text-m mt-8">Выдан: ${fmt(o.issued_date)}</div>`:''}
     </div>
   </div>`);
@@ -115,9 +115,9 @@ function _drawOrderForm(o,prePatient,patients,exams){
       <div class="form-grid">
 
         <div class="form-group full">
-          <div class="flex items-center justify-between mb-4"><label>Пациент *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ Новый пациент</button></div>
+          <div class="flex items-center justify-between mb-4"><label>${t("patient")||"Pacijent"} *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ ${t("new_patient")||"Novi pacijent"}</button></div>
           <select id="o-pid" onchange="onOrderPatientChange(this.value)">
-            <option value="">— выберите —</option>
+            <option value="">— izaberite —</option>
             ${patients.map(p=>`<option value="${p.id}" ${(o?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}
           </select>
           <div id="quick-patient-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
@@ -130,13 +130,13 @@ function _drawOrderForm(o,prePatient,patients,exams){
             </div>
             <div class="flex gap-8 mt-8">
               <button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">Сохранить и выбрать</button>
-              <button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">Отмена</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">${t("cancel")||"Otkaži"}</button>
             </div>
           </div>
         </div>
 
         <div class="form-group full">
-          <div class="flex items-center justify-between mb-4"><label>Рецепт</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Ввести рецепт</button></div>
+          <div class="flex items-center justify-between mb-4"><label>${t("prescription")||"Recept"}</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Recept</button></div>
           <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams,o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
           <div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>
           <div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
@@ -168,59 +168,59 @@ function _drawOrderForm(o,prePatient,patients,exams){
                 <div class="form-group" style="max-width:80px;display:none" id="qrx-dia-wrap"><label>DIA</label><input id="qrx-dia" style="text-align:center"></div>
               </div>
               <div class="form-group mt-8" id="qrx-cl-type-wrap" style="display:none"><label>Вид МКЛ</label><input id="qrx-cl-type" placeholder="однодневные, ежемесячные..."></div>
-              <div class="form-group mt-8"><label>Примечание</label><input id="qrx-note"></div>
+              <div class="form-group mt-8"><label>Napomena</label><input id="qrx-note"></div>
             </div>
             <div class="flex gap-8 mt-10">
               <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Сохранить рецепт</button>
-              <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">Отмена</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">${t("cancel")||"Otkaži"}</button>
             </div>
           </div>
         </div>
 
-        <div class="form-group"><label>Тип заказа *</label>
+        <div class="form-group"><label>Vrsta porudžbine *</label>
           <select id="o-type"><option ${!o||o?.type==='Очки'?'selected':''}>Очки</option><option ${o?.type==='МКЛ'?'selected':''}>МКЛ</option><option ${o?.type==='Другое'?'selected':''}>Другое</option></select>
         </div>
         ${isEdit?`<div class="form-group"><label>Статус</label>
           <select id="o-status">${ORDER_STATUSES_ALL.map(s=>`<option ${o?.status===s?'selected':''}>${s}</option>`).join('')}</select>
         </div>`:'<div></div>'}
         <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
-          <div class="form-group"><label>Шифр оправы</label><input id="o-fcode" value="${o?.frame_code||''}"></div>
+          <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input id="o-fcode" value="${o?.frame_code||''}"></div>
           <div class="form-group">
-            <label>Цена оправы (дин.)</label>
+            <label>${t("frame")||"Okvir"} (din.)</label>
             <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
-              <div><label style="font-size:10.5px;color:var(--text-l)">Базовая</label><input type="number" id="o-fprice" value="${o?.frame_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-              <div><label style="font-size:10.5px;color:var(--text-l)">Скидка %</label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">После скидки</label><input type="number" id="o-fprice-final" value="${o?.frame_price||0}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-fprice" value="${o?.frame_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">Nakon popusta</label><input type="number" id="o-fprice-final" value="${o?.frame_price||0}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
             </div>
           </div>
         </div>
         <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
-          <div class="form-group"><label>Название линз</label><input id="o-lname" value="${o?.lens_name||''}"></div>
+          <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input id="o-lname" value="${o?.lens_name||''}"></div>
           <div class="form-group">
             <label>Цена линз за 1 шт. (дин.)</label>
             <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
-              <div><label style="font-size:10.5px;color:var(--text-l)">Базовая</label><input type="number" id="o-lprice" value="${o?.lens_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-              <div><label style="font-size:10.5px;color:var(--text-l)">Скидка %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-lprice" value="${o?.lens_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
               <div><label style="font-size:10.5px;color:var(--green);font-weight:700">× 2 шт.</label><input type="number" id="o-lprice-final" value="${(o?.lens_price||0)*2}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
             </div>
           </div>
         </div>
-        <div class="form-group"><label>Стоимость работы (дин.)</label><input type="number" id="o-wprice" value="${o?.work_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=''" oninput="recalcOrder()"></div>
-        <div class="form-group"><label>Предоплата (дин.)</label><input type="number" id="o-prepay" value="${o?.prepayment||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-        <div class="form-group"><label>Срок изготовления</label><input type="date" id="o-pdate" value="${o?.promised_date||''}"></div>
+        <div class="form-group"><label>${t("work")||"Obrada"} (din.)</label><input type="number" id="o-wprice" value="${o?.work_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=''" oninput="recalcOrder()"></div>
+        <div class="form-group"><label>${t("prepayment")||"Avans"} (din.)</label><input type="number" id="o-prepay" value="${o?.prepayment||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+        <div class="form-group"><label>${t("promised_date")||"Rok izrade"}</label><input type="date" id="o-pdate" value="${o?.promised_date||''}"></div>
         <div class="form-group" style="align-self:flex-end">
           <div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">
-            <div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">ИТОГО</div>
+            <div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">${t("total")||"UKUPNO"}</div>
             <div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">${fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0))}</div>
             <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">Доплата: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
           </div>
         </div>
-        <div class="form-group full"><label>Примечание</label><textarea id="o-notes">${o?.notes||''}</textarea></div>
+        <div class="form-group full"><label>Napomena</label><textarea id="o-notes">${o?.notes||''}</textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
-      <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">Сохранить</button>
+      <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")||"Otkaži"}</button>
+      <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">${t("save")||"Sačuvaj"}</button>
     </div>
   </div>`);
 }

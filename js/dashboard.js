@@ -1,6 +1,6 @@
 // ═══ DASHBOARD ═══
 async function renderDashboard() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ ${t('appt_type')||'Pregled'}</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ ${t('orders')||'Porudžbina'}</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ ${t('patient')||'Pacijent'}</button></div></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Pregled</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Porudžbina</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ ${t('patient')||'Pacijent'}</button></div></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
   const todayStr=today();
   const[{data:patients},{data:todayAppts},{data:readyOrders},{data:upcoming},{data:todayOrders},{data:todaySlots}]=await Promise.all([
     db.from('patients').select('id',{count:'exact'}).is('deleted_at',null),
@@ -29,7 +29,7 @@ async function renderDashboard() {
         <div style="font-size:13px;font-weight:700;color:#1e3a8a;min-width:40px">${t}</div>
         <div style="flex:1">
           <div style="font-size:13.5px;font-weight:700;color:#1e3a8a">${appt.patients?.name?.split(' ')[0]||'—'}</div>
-          <div style="font-size:11.5px;color:#3b5dbf;opacity:.8">${appt.type?.split('(')[0]?.trim()||''}</div>
+          <div style="font-size:11.5px;color:#3b5dbf;opacity:.8">${apptTypeName(appt.type||'').split('(')[0]?.trim()||''}</div>
         </div>
         <span style="font-size:11px;background:#1e3a8a;color:#fff;padding:2px 7px;border-radius:10px">${statusLabel(appt.status)}</span>
       </div>`;
@@ -50,7 +50,7 @@ async function renderDashboard() {
   }).join('') : `<div style="text-align:center;color:var(--text-m);padding:20px;font-size:14px">${t('no_appts')||'Nema pregleda ni termina'}</div>`;
 
   document.getElementById('content').innerHTML=`
-<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ ${t('appt_type')||'Pregled'}</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ ${t('orders')||'Porudžbina'}</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ ${t('patient')||'Pacijent'}</button></div></div>
+<div class="topbar"><h1>${t('nav_dashboard')}</h1><div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="openAddAppointment()">+ Pregled</button>${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddOrder()">+ Porudžbina</button>`:''}<button class="btn btn-accent btn-sm" onclick="openAddPatient()">+ ${t('patient')||'Pacijent'}</button></div></div>
 <div class="content">
   <div class="stats-grid">
     <div class="stat-card stat-primary"><div class="stat-label">${t('appts_today')}</div><div class="stat-value">${(todayAppts||[]).length}</div><div class="stat-sub">${t('planned')}</div></div>
@@ -89,7 +89,7 @@ async function renderDashboard() {
           <div style="flex:1">
             <div class="history-date">${fmt(a.date)} ${t('time')?'·':''} ${a.time?.substr(0,5)}</div>
             <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</div>
-            <div class="text-sm text-m">${a.type||''}</div>
+            <div class="text-sm text-m">${apptTypeName(a.type||'')}</div>
           </div>
         </div>`).join(''):`<div class="text-sm text-m" style="padding:10px 0">${t('no_planned')}</div>`}
       </div>

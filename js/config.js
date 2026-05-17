@@ -19,6 +19,16 @@ const VISIT_REASONS = ['Подбор очков','Замена очков','По
 const SOURCES = ['Посоветовали друзья','ТГ канал','Реклама в Телеграм','Личное знакомство','Посоветовали коллеги'];
 const STATUS_BADGE = { 'запланирован':'badge-blue','завершён':'badge-green','отменён':'badge-gray','оформлен':'badge-accent','в работе':'badge-blue','готов':'badge-warn','выдан':'badge-green','отменен':'badge-gray','возврат':'badge-red','переделка':'badge-warn' };
 
+
+const APPT_TYPES_SR = {
+  'Первичный приём (подбор очков/МКЛ)': 'Primarni pregled (naočare/KS)',
+  'Повторный приём': 'Ponovni pregled',
+  'Подбор КЛ с обучением': 'Izbor KS s obukom',
+  'Помощь в оптике': 'Pomoć u optici',
+  'Контрольный осмотр': 'Kontrolni pregled',
+};
+function apptTypeName(ru){ return (typeof _lang!=='undefined'&&_lang==='sr'&&APPT_TYPES_SR[ru])||ru; }
+
 // ═══ STATE ═══
 let role = null;
 let curSection = 'dashboard';

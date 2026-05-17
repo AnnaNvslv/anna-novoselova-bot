@@ -1,6 +1,6 @@
 // ═══ APPOINTMENTS ═══
 async function renderAppointments() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ Приём</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ ${t('appointments')||'Pregledi'}</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('date',{ascending:false}).order('time');
   const filtered=apptFilter==='все'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
   document.querySelector('.content').innerHTML=`
@@ -52,7 +52,7 @@ async function _apptForm(a,prePatient,preDate,preTime){
         <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>
-        <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${tp.name}</option>`).join('')}</select>
+        <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${apptTypeName(tp.name)}</option>`).join('')}</select>
       </div>
       ${slotPickerHtml}
       <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>

@@ -130,8 +130,14 @@ async function cancelAppt(id){
   await db.from('appointments').update({status:'отменён'}).eq('id',id);
   await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
   toast(t('appt_cancelled'));
-  render();
-  if(_openPatientId) _renderPatientCard(_openPatientId);
+  if(_openPatientId) _renderPatientCard(_openPatientId); else render();
+}
+async function deleteAppt(id){
+  if(!confirm(t('confirm_delete')||'Obrisati pregled?'))return;
+  await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
+  await db.from('appointments').update({deleted_at:new Date().toISOString()}).eq('id',id);
+  toast(t('moved_to_trash')||'Premješteno u korpu');
+  if(_openPatientId) _renderPatientCard(_openPatientId); else render();
 }
 // ═══ APPOINTMENT NUMBER ═══
 async function generateApptNumber(date){

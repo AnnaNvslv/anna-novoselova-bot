@@ -586,8 +586,15 @@ async function submitBooking(){
   if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.textContent='Оформляем...';
+  btn.disabled=true;btn.textContent=_lang==='sr'?'Zakazujemo...':'Оформляем...';
   try{
+    // Check slot still free
+    const{data:slotCheck}=await db.from('available_slots').select('is_booked,booked_by').eq('id',selectedSlot.id).single();
+    if(slotCheck?.is_booked){
+      alert(_lang==='sr'?'Ovaj termin je već zauzet. Izaberite drugo vreme.':'Этот слот уже занят. Пожалуйста, выберите другое время.');
+      btn.disabled=false;btn.textContent=_lang==='sr'?'Zakaži →':'Записаться →';
+      goPage('cal');return;
+    }
     const{data:p,error:pe}=await db.from('patients').insert({
       name,dob:dob||null,
       phone:v('f-phone')||null,

@@ -44,23 +44,23 @@ async function renderSlots() {
   (slots||[]).forEach(sl=>{const t=sl.start_time?.substr(0,5);if(t&&!defaultTimes.includes(t))extraTimes.add(t);});
   const allTimes=[...new Set([...defaultTimes,...extraTimes])].sort();
 
-  const renderCell=(d,t)=>{
-    const k=`${d}|${t}`, appt=apptMap[k], slot=slotMap[k];
-    const isPast=d<todayStr||(d===todayStr&&t<new Date().toTimeString().substr(0,5));
+  const renderCell=(d,tm)=>{
+    const k=`${d}|${tm}`, appt=apptMap[k], slot=slotMap[k];
+    const isPast=d<todayStr||(d===todayStr&&tm<new Date().toTimeString().substr(0,5));
     if(appt) return`<div class="cal-pill cal-pill-patient" onclick="openPatientCard('${appt.patient_id}')">
       <div class="cal-pill-name">${appt.patients?.name?.split(' ')[0]||'—'}</div>
       <div class="cal-pill-sub">${appt.appointment_number||''}</div></div>`;
     if(slot&&slot.booked_by==='ervin'){
       const can=isErvin()||isAdmin();
-      return`<div class="cal-pill cal-pill-ervin" ${can?`onclick="unbookErvin('${slot.id}')" title="${t('unbook_ervin')}"`:'title="${t('slot_ervin')}"'}>
-        <div class="cal-pill-name">Ervin</div><div class="cal-pill-sub">${slot.ervin_note||''}</div></div>`;}
+      const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')" title="${t('unbook_ervin')}"` : `title="${t('slot_ervin')}"`;
+      return`<div class="cal-pill cal-pill-ervin" ${ervinAttrs}><div class="cal-pill-name">Ervin</div><div class="cal-pill-sub">${slot.ervin_note||''}</div></div>`;}
     if(slot&&!slot.is_booked){
-      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${t}','${slot.id}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_take')}</div></div>`;
+      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_take')}</div></div>`;
       if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="removeSlot('${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_remove')}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
-    if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${t}')">+</div>`;
-    if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${t}',null)">+</div>`;
+    if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${tm}')">+</div>`;
+    if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${tm}',null)">+</div>`;
     return`<div class="cal-pill-empty">—</div>`;
   };
 
@@ -110,8 +110,8 @@ async function renderSlots() {
         <div class="cal-date">${dt.getDate()}</div>
         ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
       </div>`;}).join('')}
-    ${allTimes.map(t=>`
-      <div class="cal-grid-time">${t}</div>
+    ${allTimes.map(tm=>`
+      <div class="cal-grid-time">${tm}</div>
       ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
         return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,t)}</div>`;}).join('')}
     `).join('')}

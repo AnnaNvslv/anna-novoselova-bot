@@ -63,7 +63,7 @@ async function _renderPatientCard(pid) {
         </div>
         <div class="flex gap-8">
           ${!isErvin()?`<button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ ${t('appt_type')?.split(' ')[0]||'Pregled'}</button>`:''}
-          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')||'Porudžbina'}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button>`:''}
+          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')||'Porudžbina'}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard('${pid}')" title="Obriši pacijenta">🗑</button>`:''}
           ${!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="savePatientPDF('${pid}')">💾 PDF</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
         </div>

@@ -48,7 +48,7 @@ async function _apptForm(a,prePatient,preDate,preTime){
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
-      <div class="form-group full"><label>${t('patient')} *<button type="button" class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:12px" onclick="_apptSaveState();openAddPatient()">+ Novi pacijent</button></label>
+      <div class="form-group full"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><label style="margin:0">${t('patient')} *</label><button type="button" class="btn btn-ghost btn-sm" style="font-size:12px" onclick="_apptSaveState();openAddPatient()">+ Novi pacijent</button></div>
         <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>

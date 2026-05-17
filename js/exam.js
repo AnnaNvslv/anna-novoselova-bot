@@ -545,7 +545,7 @@ async function emailExam(examId,target){
     body=`Здравствуйте!\n\nПрикрепляю вашу карту оптометрического обследования.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
   }
   toast('Sačuvajte PDF i priložite uz pismo','info');
-  setTimeout(()=>{ window.open(`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`,'_blank'); },1500);
+  setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1500);
 }
 // ═══ PATIENT CARD PDF ═══
 async function _buildPatientPrintCard(pid) {
@@ -699,5 +699,5 @@ async function emailPatientPDF(pid, target) {
   const body = target==='clinic'
     ? `Карточка пациента ${p.name||''} сформирована ${date_str}.\n\nПрикрепите сохранённый PDF к письму.\n\nС уважением,\nАнна Новосёлова`
     : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАнна Новосёлова\nОптометрист · Нови-Сад`;
-  setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1200);
+  setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1200);
 }

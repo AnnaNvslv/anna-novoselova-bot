@@ -62,11 +62,9 @@ async function _renderPatientCard(pid) {
           </div>
         </div>
         <div class="flex gap-8">
-          <button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ Приём</button>
-          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ Заказ</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️ Редактировать</button>`:''}
-          <button class="btn btn-ghost btn-sm" title="Скачать PDF карточки" onclick="savePatientPDF('${pid}')">💾 PDF</button>
-          <button class="btn btn-ghost btn-sm" title="Отправить PDF пациенту" onclick="emailPatientPDF('${pid}','patient')">📧 Пациенту</button>
-          <button class="btn btn-ghost btn-sm" title="Отправить PDF в оптику" onclick="emailPatientPDF('${pid}','clinic')">📨 В оптику</button>
+          ${!isErvin()?`<button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ ${t('appt_type')?.split(' ')[0]||'Pregled'}</button>`:''}
+          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')||'Porudžbina'}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button>`:''}
+          ${!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="savePatientPDF('${pid}')">💾 PDF</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
         </div>
       </div>
@@ -102,9 +100,9 @@ function _apptTab(appts,pid){
       ${a.consultation_price?`<div class="text-sm text-m">${t('cost')}: ${fmtMoney(a.consultation_price)}</div>`:''}
     </div>
     <div class="flex gap-8">
-      <button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 Карта</button>
+      ${!isErvin()?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 Kartica</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>
-      ${a.status==='запланирован'?`<button class="btn btn-success btn-sm" title="Završen" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
+      ${a.status==='запланирован'&&!isErvin()?`<button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
       ${a.status==='отменён'?`<span class="badge badge-gray">${t('status_cancelled')}</span>`:''}
     </div>
   </div>`).join('');
@@ -136,9 +134,9 @@ function _orderTab(orders,pid){
       <div class="text-sm mt-4">Итого: <b>${fmtMoney(orderTotal(o))}</b> · Предоплата: ${fmtMoney(o.prepayment)} · Остаток: <span class="${bal>0?'money-debt':'money-paid'}">${fmtMoney(bal)}</span></div>
     </div>
     <div class="flex gap-8">
-      ${o.status==='в работе'?`<button class="btn btn-ghost btn-sm" title="Отметить готовым" onclick="updateOrderStatus('${o.id}','готов')">Готов</button>`:''}
-      ${o.status==='готов'?`<button class="btn btn-ghost btn-sm" title="Оповестить о готовности" onclick="notifyOrderReady('${o.id}')">📨</button><button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">Выдать</button>`:''}
-      ${o.status==='выдан'?`<button class="btn btn-ghost btn-sm" title="Опрос через 2 нед." onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
+      ${o.status==='в работе'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="updateOrderStatus('${o.id}','готов')">Spreman</button>`:''}
+      ${o.status==='готов'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady('${o.id}')">📨</button><button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">Preuzmi</button>`:''}
+      ${o.status==='выдан'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="openOrderCard('${o.id}')">${t('card')}</button>
     </div>
   </div>`;}).join('');

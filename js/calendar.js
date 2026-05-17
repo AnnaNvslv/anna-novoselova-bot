@@ -52,10 +52,13 @@ async function renderSlots() {
       <div class="cal-pill-sub">${appt.appointment_number||''}</div></div>`;
     if(slot&&slot.booked_by==='ervin'){
       const can=isErvin()||isAdmin();
-      const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')" title="${t('unbook_ervin')}"` : `title="${t('slot_ervin')}"`;
-      return`<div class="cal-pill cal-pill-ervin" ${ervinAttrs}><div class="cal-pill-name">Ervin</div><div class="cal-pill-sub">${slot.ervin_note||''}</div></div>`;}
+      const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')"` : '';
+      return`<div class="cal-pill cal-pill-ervin" style="display:flex;align-items:center;justify-content:space-between;gap:4px" ${ervinAttrs}>
+        <div><div class="cal-pill-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div></div>
+        ${can?`<span style="font-size:11px;padding:2px 7px;background:rgba(0,0,0,.18);border-radius:4px;flex-shrink:0">Otkaži</span>`:''}
+      </div>`;}
     if(slot&&!slot.is_booked){
-      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_take')}</div></div>`;
+      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">Zauzimi</div></div>`;
       if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="removeSlot('${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_remove')}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
@@ -217,7 +220,7 @@ async function removeSlot(id){await db.from('available_slots').delete().eq('id',
 async function bookErvinAt(date,time,slotId){
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('ervin_booking')} — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Пациент (необязательно)</label><input id="erv-note" placeholder="Имя пациента" autofocus></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||''}')">${t('slot_take')}</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||''}') " style="text-transform:none">Zauzimi</button></div>
   </div>`);
 }
 
@@ -239,7 +242,7 @@ async function openAddErvinBooking(){
       </div>
       <div class="form-group" style="margin-top:12px"><label>Пациент (необязательно)</label><input id="erv-note2" placeholder="Имя пациента"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_saveErvinBooking()">${t('slot_take')}</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_saveErvinBooking()">Zauzimi</button></div>
   </div>`);
 }
 

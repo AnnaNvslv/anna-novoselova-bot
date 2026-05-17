@@ -49,7 +49,7 @@ async function _apptForm(a,prePatient,preDate,preTime){
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
       <div class="form-group full"><label>${t('patient')} *</label>
-        <select id="a-pid"><option value="">— izaberite —</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
+        <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>
         <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${tp.name}</option>`).join('')}</select>
@@ -61,12 +61,12 @@ async function _apptForm(a,prePatient,preDate,preTime){
       <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(tp=>tp.name===a.type)?.duration||60:60}" readonly></div>
       <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
       <div class="form-group full"><label>${t('notify_tg')}</label>
-        <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">Ne</option></select>
+        <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">${isErvin()?'Ne':'Нет'}</option></select>
       </div>
     </div></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button>
-      <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">${t('save')}</button>
+      <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">${isErvin()?'Zauzimi':t('save')}</button>
     </div>
   </div>`);
 }

@@ -28,6 +28,12 @@ function showApp() {
   if(saved&&saved!=='trash')curSection=saved;
   document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
   _refreshStaticUI();
+  // Ervin: hide irrelevant nav sections
+  const ervinHide=['appointments','orders','analytics','settings','trash'];
+  ervinHide.forEach(s=>{
+    const el=document.getElementById('nav-'+s);
+    if(el) el.style.display=isErvin()?'none':'';
+  });
   // Set active lang button
   document.querySelectorAll('.lang-btn').forEach(b=>{
     b.style.fontWeight=b.dataset.lang===_lang?'800':'400';

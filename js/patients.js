@@ -1,6 +1,6 @@
 // ═══ PATIENTS ═══
 async function renderPatients() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('patients')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="${t('search')}" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">+ Пациент</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('patients')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="${t('search')}" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">${t('add_patient_short')}</button></div></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
   const{data:patients}=await db.from('patients').select('*').is('deleted_at',null).order('name');
   _allPatients=patients||[];
   renderPatientsTable(_allPatients);
@@ -19,8 +19,8 @@ function renderPatientsTable(patients) {
       <td>${p.telegram_chat_id?'<span class="badge badge-green">✓ TG</span>':p.telegram_username?`@${p.telegram_username}`:'—'}</td>
       <td class="text-m">${p.dob?(calcAge(p.dob)+' '+(t('years')||'god.')):'—'}</td>
       <td><div class="flex gap-8">
-        <button class="btn btn-ghost btn-xs" onclick="openAddAppointmentFor('${p.id}')">+ Приём</button>
-        ${isAdmin()?`<button class="btn btn-ghost btn-xs" onclick="openAddOrderFor('${p.id}')">+ Заказ</button>`:''}
+        <button class="btn btn-ghost btn-xs" onclick="openAddAppointmentFor('${p.id}')">${t('add_appt_short')}</button>
+        ${isAdmin()?`<button class="btn btn-ghost btn-xs" onclick="openAddOrderFor('${p.id}')">${t('add_order_short')}</button>`:''}
         <button class="btn btn-accent btn-sm" onclick="openPatientCard('${p.id}')">${t('card')}</button>
         ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEditPatient('${p.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatient('${p.id}')">🗑</button>`:''}
       </div></td>

@@ -25,6 +25,7 @@ const TRANSLATIONS = {
     full_name: 'ФИО', phone: 'Телефон', email: 'Email', age: 'Возраст',
     dob: 'Дата рождения', source: 'Откуда узнал', notes: 'Заметки', card: 'Карточка',
     no_patients: 'Нет пациентов', added: 'Добавлен', updated: 'Обновлено', deleted: 'Удалено',
+    add_appt_short: '+ Приём', add_order_short: '+ Заказ', add_patient_short: '+ Пациент',
     confirm_delete_patient: 'Удалить пациента со всеми данными?', enter_name: 'Введите имя',
     // APPOINTMENTS
     appointments: 'Приёмы', new_appt: 'Новый приём', edit_appt: 'Редактировать приём',
@@ -111,6 +112,7 @@ const TRANSLATIONS = {
     full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Godine',
     dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Beleške', card: 'Kartica',
     no_patients: 'Nema pacijenata', added: 'Dodat', updated: 'Ažurirano', deleted: 'Obrisano',
+    add_appt_short: '+ Pregled', add_order_short: '+ Porudžbina', add_patient_short: '+ Pacijent',
     confirm_delete_patient: 'Obrisati pacijenta sa svim podacima?', enter_name: 'Unesite ime',
     // APPOINTMENTS
     appointments: 'Pregledi', new_appt: 'Novi pregled', edit_appt: 'Uredi pregled',

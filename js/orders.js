@@ -103,14 +103,14 @@ function _rxOpts(exams,selVal){
     if(e.rx_far_od_sph)opts.push(`<option value="${e.id}|far" ${selVal===e.id+'|far'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Даль</option>`);
     if(e.rx_comp_od_sph)opts.push(`<option value="${e.id}|comp" ${selVal===e.id+'|comp'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Компьютер</option>`);
     if(e.rx_near_od_sph)opts.push(`<option value="${e.id}|near" ${selVal===e.id+'|near'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Близь</option>`);
-    if(e.rx_cl_od_sph)opts.push(`<option value="${e.id}|cl" ${selVal===e.id+'|cl'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — МКЛ</option>`);
+    if(e.rx_cl_od_sph)opts.push(`<option value="${e.id}|cl" ${selVal===e.id+'|cl'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — KS</option>`);
   });
   return opts.join('');
 }
 function _drawOrderForm(o,prePatient,patients,exams){
   const isEdit=!!o;
   openModal(`<div class="modal modal-xl">
-    <div class="modal-header"><span class="modal-title">${isEdit?'Редактировать заказ':'Новый заказ'}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porudžbinu'):(t('new_order')||'Nova porudžbina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
 
@@ -147,7 +147,7 @@ function _drawOrderForm(o,prePatient,patients,exams){
                   <option value="far">Очки для дали</option>
                   <option value="comp">Очки для компьютера</option>
                   <option value="near">Очки для близи</option>
-                  <option value="cl">МКЛ</option>
+                  <option value="cl">KS</option>
                 </select>
               </div>
               <div class="form-group" style="align-self:flex-end">
@@ -178,7 +178,7 @@ function _drawOrderForm(o,prePatient,patients,exams){
         </div>
 
         <div class="form-group"><label>Vrsta porudžbine *</label>
-          <select id="o-type"><option ${!o||o?.type==='Очки'?'selected':''}>Очки</option><option ${o?.type==='МКЛ'?'selected':''}>МКЛ</option><option ${o?.type==='Другое'?'selected':''}>Другое</option></select>
+          <select id="o-type"><option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Naočare</option><option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna sočiva)</option><option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option></select>
         </div>
         ${isEdit?`<div class="form-group"><label>Статус</label>
           <select id="o-status">${ORDER_STATUSES_ALL.map(s=>`<option ${o?.status===s?'selected':''}>${s}</option>`).join('')}</select>
@@ -197,11 +197,11 @@ function _drawOrderForm(o,prePatient,patients,exams){
         <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
           <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input id="o-lname" value="${o?.lens_name||''}"></div>
           <div class="form-group">
-            <label>Цена линз за 1 шт. (дин.)</label>
+            <label>${t("lenses")||"Sočiva"} / kom (din.)</label>
             <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
               <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-lprice" value="${o?.lens_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
               <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">× 2 шт.</label><input type="number" id="o-lprice-final" value="${(o?.lens_price||0)*2}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
+              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">× 2 kom</label><input type="number" id="o-lprice-final" value="${(o?.lens_price||0)*2}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
             </div>
           </div>
         </div>
@@ -212,7 +212,7 @@ function _drawOrderForm(o,prePatient,patients,exams){
           <div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">
             <div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">${t("total")||"UKUPNO"}</div>
             <div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">${fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0))}</div>
-            <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">Доплата: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
+            <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">${t('balance')||'Ostatak'}: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
           </div>
         </div>
         <div class="form-group full"><label>Napomena</label><textarea id="o-notes">${o?.notes||''}</textarea></div>
@@ -302,7 +302,7 @@ async function saveQuickRx(){
   const{data:ne}=await db.from('examinations').insert(rxData).select().single();
   if(!ne){toast('Ошибка сохранения рецепта','error');return;}
   // Add to prescription dropdown and select
-  const typeLabels={far:'Даль',comp:'Компьютер',near:'Близь',cl:'МКЛ'};
+  const typeLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const sel=document.getElementById('o-rx');
   const opt=document.createElement('option');
   const val=`${ne.id}|${type}`;
@@ -325,7 +325,7 @@ async function showRxPreview(val){
   const{data:e}=await db.from('examinations').select('*').eq('id',examId).single();
   if(!e){prev.style.display='none';return;}
   const fieldMap={far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']};
-  if(type==='cl'){prev.innerHTML=`<b>МКЛ:</b> OD: ${e.rx_cl_od_sph||'—'} / ${e.rx_cl_od_cyl||''} ax${e.rx_cl_od_ax||''} BC${e.rx_cl_od_bc||''} DIA${e.rx_cl_od_dia||''}<br>OS: ${e.rx_cl_os_sph||'—'} / ${e.rx_cl_os_cyl||''} ax${e.rx_cl_os_ax||''} · ${e.rx_cl_od_type||''}`;prev.style.display='block';return;}
+  if(type==='cl'){prev.innerHTML=`<b>KS:</b> OD: ${e.rx_cl_od_sph||'—'} / ${e.rx_cl_od_cyl||''} ax${e.rx_cl_od_ax||''} BC${e.rx_cl_od_bc||''} DIA${e.rx_cl_od_dia||''}<br>OS: ${e.rx_cl_os_sph||'—'} / ${e.rx_cl_os_cyl||''} ax${e.rx_cl_os_ax||''} · ${e.rx_cl_od_type||''}`;prev.style.display='block';return;}
   const f=fieldMap[type];if(!f){prev.style.display='none';return;}
   prev.innerHTML=`OD: <b>${e[f[0]]||'—'}</b> / ${e[f[1]]||''} ax${e[f[2]]||''} PD${e[f[3]]||''}<br>OS: <b>${e[f[4]]||'—'}</b> / ${e[f[5]]||''} ax${e[f[6]]||''}`;
   prev.style.display='block';
@@ -347,7 +347,7 @@ function recalcOrder(){
   const total=fFinal+lFinal+work;
   const balance=Math.max(total-prepay,0);
   if(document.getElementById('o-total-display')) document.getElementById('o-total-display').textContent=total.toLocaleString('ru-RU')+' дин.';
-  if(document.getElementById('o-balance-display')) document.getElementById('o-balance-display').textContent='Доплата: '+balance.toLocaleString('ru-RU')+' дин.';
+  if(document.getElementById('o-balance-display')) document.getElementById('o-balance-display').textContent=(t('balance')||'Ostatak')+': '+balance.toLocaleString('ru-RU')+' din.';
 }
 function applyDiscount(){} // legacy stub
 function calcTotal(){}
@@ -355,7 +355,7 @@ async function saveOrder(id){
   const patient_id=v('o-pid'); if(!patient_id){alert('Выберите пациента');return;}
   const rxSel=document.getElementById('o-rx')?.value||'';
   const[examId,rxType]=rxSel.split('|');
-  const rxLabels={far:'Даль',comp:'Компьютер',near:'Близь',cl:'МКЛ'};
+  const rxLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const fFinal=Math.max(+(document.getElementById('o-fprice-final')?.value||v('o-fprice'))||0,0);
   // lens_price saved as per-piece (÷2 from the "за пару" display)
   const lPairFinal=Math.max(+(document.getElementById('o-lprice-final')?.value)||0,0);
@@ -386,7 +386,7 @@ async function notifyOrderReady(id){
   if(!o?.patients?.telegram_chat_id){toast('Нет Telegram у пациента','error');return;}
   const bal=orderBalance(o);
   const paymentText=bal>0
-    ?`Доплата по вашему заказу: ${fmtMoney(bal)}.\nОплата возможна картой или наличными.`
+    ?`Ostatak po vašoj porudžbini: ${fmtMoney(bal)}.\nPlačanje karticom ili gotovinom.`
     :`Заказ полностью оплачен.`;
   const msg=`Здравствуйте!\n\nОчки для ${o.patients.name} готовы!\n\n${paymentText}\n\nВы можете забрать их в любое удобное для вас время.\n\nРежим работы оптики Ginter:\nпо будням — с 09:00 до 19:00\nсуббота — с 09:00 до 13:00\nвоскресенье — выходной.\n\nПри получении очков не забудьте проверить, комфортна ли посадка. Если очки сидят не плотно — сообщите сотрудникам оптики, они поправят.\n\nЕсли возникнут вопросы или дискомфорт при ношении — обращайтесь к Анне @AnnaNvslv. Всё можно решить 😊\n\nДоброго дня!`;
   const ok=await tgSend(o.patients.telegram_chat_id,msg);

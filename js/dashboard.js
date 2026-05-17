@@ -6,7 +6,7 @@ async function renderDashboard() {
     db.from('patients').select('id',{count:'exact'}).is('deleted_at',null),
     db.from('appointments').select('*, patients(name,telegram_chat_id)').eq('date',todayStr).neq('status','отменён').is('deleted_at',null).order('time'),
     db.from('orders').select('*, patients(name,telegram_chat_id)').eq('status','готов').is('deleted_at',null),
-    db.from('appointments').select('*, patients(name,patient_id)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(6),
+    db.from('appointments').select('*, patients(name)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(6),
     db.from('orders').select('id').eq('status','оформлен').gte('created_at',todayStr),
     db.from('available_slots').select('*').eq('date',todayStr).order('start_time'),
   ]);

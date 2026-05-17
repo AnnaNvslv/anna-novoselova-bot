@@ -20,11 +20,11 @@ async function renderAnalytics() {
   const apptCount=(monthAppts||[]).length;
   document.querySelector('.content').innerHTML=`
     <div class="stats-grid">
-      <div class="stat-card stat-green"><div class="stat-label">${t('revenue')}</div><div class="stat-value">${monthRev.toLocaleString(loc)}</div><div class="stat-sub">дин. (${t('issued_orders')})</div></div>
-      <div class="stat-card stat-accent"><div class="stat-label">${t('avg_check')}</div><div class="stat-value">${avgCheck.toLocaleString(loc)}</div><div class="stat-sub">дин.</div></div>
+      <div class="stat-card stat-green"><div class="stat-label">${t('revenue')}</div><div class="stat-value">${monthRev.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')} (${t('issued_orders')})</div></div>
+      <div class="stat-card stat-accent"><div class="stat-label">${t('avg_check')}</div><div class="stat-value">${avgCheck.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')}</div></div>
       <div class="stat-card"><div class="stat-label">${t('total_patients')}</div><div class="stat-value">${(patients||[]).length}</div><div class="stat-sub"></div></div>
       <div class="stat-card"><div class="stat-label">${t('total_orders')}</div><div class="stat-value">${orders.length}</div><div class="stat-sub"></div></div>
-      <div class="stat-card" style="background:var(--primary);color:#fff"><div class="stat-label" style="color:rgba(255,255,255,.6)">${t('my_salary')}</div><div class="stat-value" style="color:#fff">${totalSalary.toLocaleString(loc)}</div><div class="stat-sub" style="color:rgba(255,255,255,.5)">дин.</div></div>
+      <div class="stat-card" style="background:var(--primary);color:#fff"><div class="stat-label" style="color:rgba(255,255,255,.6)">${t('my_salary')}</div><div class="stat-value" style="color:#fff">${totalSalary.toLocaleString(loc)}</div><div class="stat-sub" style="color:rgba(255,255,255,.5)">${t('currency_din')}</div></div>
     </div>
     <div class="two-col">
       <div class="card">

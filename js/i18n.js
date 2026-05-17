@@ -56,6 +56,7 @@ const TRANSLATIONS = {
     revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
     my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
     appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
+    currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
     // SETTINGS
     settings: 'Настройки', general: 'Основное', doctor_name: 'Имя врача', clinic_name: 'Название клиники',
@@ -140,7 +141,8 @@ const TRANSLATIONS = {
     analytics: 'Analitika', admin_only: 'Samo za administratora',
     revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
     my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
-    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine ≥10 000 din. (×%s):',
+    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
+    currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
     // SETTINGS
     settings: 'Podešavanja', general: 'Osnovno', doctor_name: 'Ime doktora', clinic_name: 'Naziv klinike',

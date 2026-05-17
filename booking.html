@@ -10,9 +10,9 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--t);font-size:16px;min-height:100vh}
 .hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:14px 16px 12px;text-align:center}
-.hdr-av{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.3)}
-.hdr h1{font-size:17px;font-weight:700;margin-bottom:2px}
-.hdr p{font-size:12px;opacity:.8;line-height:1.4}
+.hdr-av{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2.5px solid rgba(255,255,255,.3)}
+.hdr h1{font-size:17px;font-weight:700;margin-bottom:3px}
+.hdr p{font-size:13px;opacity:.8;line-height:1.5}
 .pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
 .pg.on{display:block}
 /* STEPS */
@@ -101,36 +101,22 @@ textarea{resize:none;min-height:80px}
 .sep{height:1px;background:var(--b);margin:14px 0}
 .hint{font-size:12.5px;color:var(--tm);margin-top:4px}
 
-/* LANG SWITCHER */
-.lang-sw{display:flex;justify-content:center;gap:6px;margin-top:8px}
-.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.lang-sw{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit}
 .lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
-/* DISCLAIMER */
-.disc{border-radius:12px;padding:16px;margin-bottom:14px;font-size:14px;line-height:1.6}
+.disc{border-radius:12px;padding:16px;margin:0 0 14px;font-size:14px;line-height:1.6}
 .disc-block{background:#fff1f2;border:2px solid #fca5a5}
 .disc-warn{background:#fffbeb;border:2px solid #fcd34d}
 .disc h3{font-size:15px;font-weight:700;margin-bottom:8px}
-.disc-block h3{color:#991b1b}
-.disc-warn h3{color:#92400e}
-.disc p{color:#374151;margin-bottom:8px}
-.disc a{color:var(--a);font-weight:600}
-/* REASON CHIPS */
-.reason-chip{padding:8px 14px;border:1.5px solid var(--b);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit;line-height:1.4;display:inline-block}
-.reason-chip.on{background:var(--a);color:#fff;border-color:var(--a)}
-/* MOBILE */
-@media(max-width:540px){
-  .pg{padding:12px 10px 60px}
-  .card{padding:14px}
-  .card-title{font-size:14px}
-  .type-card{padding:12px;gap:10px}
-  .type-name{font-size:14px}
-  .type-sub{font-size:12px}
-  input,select,textarea{font-size:16px;padding:11px 12px}
-  .chip{font-size:13px;padding:6px 11px}
-  .time-btn{padding:8px 13px;font-size:14px}
+.disc-block h3{color:#991b1b}.disc-warn h3{color:#92400e}
+.disc p{color:#374151;margin-bottom:6px}.disc a{color:var(--a);font-weight:600}
+@media(max-width:600px){
+  .pg{padding:12px 12px 60px}
+  .card{padding:14px;margin-bottom:10px}
+  input,select,textarea{font-size:16px}
+  .chip{font-size:13px;padding:6px 10px}
+  .time-btn{padding:8px 12px;font-size:14px}
   .btn-next{font-size:15px;padding:14px}
-  .hdr h1{font-size:16px}
-  .cal-cell{font-size:13px}
 }
 </style>
 </head>
@@ -184,16 +170,16 @@ textarea{resize:none;min-height:80px}
 
   <div class="card">
     <div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div>
-    <div class="chips" id="ch-reason" style="gap:8px">
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Плановая проверка зрения" data-sr="Planska provera vida">Плановая проверка зрения</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Подбор очков для дали" data-sr="Izbor naočara za daljinu">Подбор очков для дали</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Подбор очков для близи/работы" data-sr="Izbor naočara za blizinu/rad">Подбор очков для близи/работы</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Подбор очков с прогрессивными линзами" data-sr="Izbor naočara s progresivnim sočivima">Подбор очков с прогрессивными линзами</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Нужны новые очки (старые не подходят / сломались / потерялись)" data-sr="Potrebne nove naočare (stare ne odgovaraju / slomljene / izgubljene)">Нужны новые очки (старые не подходят / сломались / потерялись)</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Подбор контактных линз" data-sr="Izbor kontaktnih sočiva">Подбор контактных линз</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Подбор КЛ с обучением" data-sr="Izbor KS s obukom nošenja">Подбор КЛ с обучением</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Сложности с адаптацией к очкам / КЛ" data-sr="Teškoće s adaptacijom na naočare / KS">Сложности с адаптацией к очкам / КЛ</div>
-      <div class="chip reason-chip" onclick="tog(this)" data-ru="Консультация по гигиене зрения, ношению очков и КЛ" data-sr="Konsultacija o higijeni vida i nošenju naočara/KS">Консультация по гигиене зрения, ношению очков и КЛ</div>
+    <div class="chips" id="ch-reason">
+      <div class="chip" onclick="tog(this)" data-ru="Плановая проверка зрения" data-sr="Planska provera vida">Плановая проверка зрения</div>
+      <div class="chip" onclick="tog(this)" data-ru="Подбор очков для дали" data-sr="Izbor naočara za daljinu">Подбор очков для дали</div>
+      <div class="chip" onclick="tog(this)" data-ru="Подбор очков для близи/работы" data-sr="Izbor naočara za blizinu/rad">Подбор очков для близи/работы</div>
+      <div class="chip" onclick="tog(this)" data-ru="Подбор очков с прогрессивными линзами" data-sr="Izbor naočara s progresivnim sočivima">Подбор очков с прогрессивными линзами</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нужны новые очки (старые не подходят/сломались/потерялись)" data-sr="Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)">Нужны новые очки (старые не подходят/сломались/потерялись)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Подбор контактных линз" data-sr="Izbor kontaktnih sočiva">Подбор контактных линз</div>
+      <div class="chip" onclick="tog(this)" data-ru="Подбор КЛ с обучением" data-sr="Izbor KS s obukom">Подбор КЛ с обучением</div>
+      <div class="chip" onclick="tog(this)" data-ru="Сложности с адаптацией к очкам/КЛ" data-sr="Teškoće s adaptacijom na naočare/KS">Сложности с адаптацией к очкам/КЛ</div>
+      <div class="chip" onclick="tog(this)" data-ru="Консультация по гигиене зрения и ношению очков/КЛ" data-sr="Konsultacija o higijeni vida i nošenju naočara/KS">Консультация по гигиене зрения и ношению очков/КЛ</div>
     </div>
   </div>
 
@@ -208,23 +194,22 @@ textarea{resize:none;min-height:80px}
       <input id="f-name" type="text" placeholder="Ivanova Maria" autocomplete="name">
       <div class="hint">Пример: Ivanova Maria Petrovna</div>
     </div>
+    <div class="fg">
+      <label>Дата рождения <span class="req">*</span></label>
+      <input id="f-dob" type="date" onchange="checkAge(this.value)">
     </div>
     <div id="age-disc-10" class="disc disc-block" style="display:none">
       <h3 id="ad10-title">⛔ Приём детей до 10 лет не проводится</h3>
-      <p id="ad10-text">Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии.<br><br>Оптометрист может помочь с выбором оправы по готовому рецепту и проконсультировать по оформлению заказа.</p>
+      <p id="ad10-text">Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии. Оптометрист может помочь с выбором оправы по готовому рецепту.</p>
       <p>По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p>
     </div>
     <div id="age-disc-17" class="disc disc-warn" style="display:none">
       <h3 id="ad17-title">⚠️ Важно для пациентов от 10 до 17 лет</h3>
-      <p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев).<br><br>Подросткам настоятельно рекомендуется обследование у офтальмолога с циклоплегией — только оно позволяет достоверно определить рефракцию. Если в ходе приёма будут выявлены данные, требующие медицинской оценки, вы будете направлены к офтальмологу.<br><br>По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p>
+      <p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам настоятельно рекомендуется обследование у офтальмолога с циклоплегией. По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p>
       <label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;cursor:pointer">
         <input type="checkbox" id="age-17-ok" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--a)" onchange="updateSubmitBtn()">
         <span id="ad17-check" style="font-size:13.5px;color:#374151">Я ознакомлен(а) с условиями и соглашаюсь</span>
       </label>
-    </div>
-    <div class="fg">
-      <label>Дата рождения <span class="req">*</span></label>
-      <input id="f-dob" type="date" onchange="checkAge()">
     </div>
     <div class="fg">
       <label>Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label>
@@ -351,260 +336,70 @@ textarea{resize:none;min-height:80px}
 <script>
 
 // ═══ I18N ═══
-let _lang = 'ru';
-const BK = {
-  ru: {
-    title: 'Запись к оптометристу',
-    subtitle: 'Анна Новосёлова · Оптика Ginter · Нови-Сад',
-    step1:'Вид приёма', step2:'Расписание', step3:'Анкета',
-    selType:'Выбранный вид приёма', selAppt:'Ваша запись',
-    backCal:'← Назад к расписанию',
-    nextForm:'Далее — заполнить анкету →',
-    contacts:'Контактные данные',
-    reason:'Причина обращения',
-    tg:'Telegram (для подтверждения)',
-    name:'Фамилия и имя (латиницей)',
-    nameHint:'Пример: Ivanova Maria Petrovna',
-    dob:'Дата рождения',
-    phone:'Телефон (необязательно)',
-    complaints:'Жалобы',
-    correction:'Используете ли вы коррекцию зрения?',
-    diop:'Диоптрии (если знаете, примерно)',
-    diopHint:'Например: OD -2.5, OS -2.0',
-    eye:'Заболевания глаз',
-    general:'Общие заболевания',
-    loads:'Зрительные нагрузки',
-    notes:'Что хотели бы сообщить перед приёмом?',
-    notesHint:'Любая важная информация...',
-    source:'Откуда вы узнали о нас?',
-    sourceSel:'— выберите —',
-    promo:'Промокод (если есть)',
-    promoHint:'Введите промокод',
-    consent:'Нажимая кнопку «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',
-    submit:'Записаться →',
-    submitting:'Оформляем...',
-    confirmed:'Вы записаны!',
-    confSub:'Ждём вас на приёме.',
-    patient:'Пациент', apptType:'Вид приёма', date:'Дата', time:'Время', cost:'Стоимость', num:'Номер записи',
-    addr:'Адрес', addrVal:'Trg Republike 25 (Рибља пијаца, там где Ночной Базар)',
-    mapLink:'📍 Открыть на карте',
-    tgNotify:'Напишите боту — получите подтверждение и напоминание о приёме:',
-    tgBtn:'✈️ Написать боту',
-    tgContact:'По вопросам пишите:',
-    selTime:'Выберите время — ',
+let _lang='ru';
+const BK={
+  ru:{title:'Запись к оптометристу',subtitle:'Анна Новосёлова · Оптика Ginter · Нови-Сад',
+    reason:'Причина обращения',contacts:'Контактные данные',confirmed:'Вы записаны!',confSub:'Ждём вас на приёме.',
+    submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',nextForm:'Далее — заполнить анкету →',
     ad10t:'⛔ Приём детей до 10 лет не проводится',
     ad10:'Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии. Оптометрист может помочь с выбором оправы по готовому рецепту.',
     ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',
-    ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам настоятельно рекомендуется обследование у офтальмолога с циклоплегией. При необходимости будете направлены к офтальмологу.',
+    ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам рекомендуется обследование с циклоплегией. По вопросам: @AnnaNvslv',
     ad17check:'Я ознакомлен(а) с условиями и соглашаюсь',
-    qContact:'По вопросам:',
-    errTg:'Пожалуйста, укажите Telegram username',
-    errName:'Пожалуйста, введите ваше имя',
-    errDob:'Пожалуйста, укажите дату рождения',
-    errReason:'Пожалуйста, укажите причину обращения',
-    errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',
-    errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',
-    errEye:'Пожалуйста, отметьте заболевания глаз',
-    errGeneral:'Пожалуйста, отметьте общие заболевания',
-    errLoads:'Пожалуйста, отметьте зрительные нагрузки',
-    err10:'Запись детей до 10 лет недоступна онлайн. Напишите: @AnnaNvslv',
-    err17:'Пожалуйста, подтвердите ознакомление с условиями для подростков',
-    errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',
+    srcPlaceholder:'— выберите —',
+    srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],
   },
-  sr: {
-    title: 'Zakazivanje kod optometriste',
-    subtitle: 'Anna Novoselova · Optika Ginter · Novi Sad',
-    step1:'Vrsta pregleda', step2:'Raspored', step3:'Anketa',
-    selType:'Odabrana vrsta pregleda', selAppt:'Vaša rezervacija',
-    backCal:'← Nazad na raspored',
-    nextForm:'Dalje — popunite anketu →',
-    contacts:'Kontaktni podaci',
-    reason:'Razlog dolaska',
-    tg:'Telegram (za potvrdu)',
-    name:'Prezime i ime (latinicom)',
-    nameHint:'Primer: Ivanova Maria Petrovna',
-    dob:'Datum rođenja',
-    phone:'Telefon (nije obavezno)',
-    complaints:'Tegobe',
-    correction:'Da li koristite korekciju vida?',
-    diop:'Dioptrije (okvirno, ako znate)',
-    diopHint:'Npr: OD -2.5, OS -2.0',
-    eye:'Bolesti oka',
-    general:'Opšte bolesti',
-    loads:'Vizuelna opterećenja',
-    notes:'Šta biste voleli da saopštite pre pregleda?',
-    notesHint:'Bilo koja važna informacija...',
-    source:'Kako ste saznali za nas?',
-    sourceSel:'— izaberite —',
-    promo:'Promo kod (ako imate)',
-    promoHint:'Unesite promo kod',
-    consent:'Klikom na dugme „Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram-bota.',
-    submit:'Zakaži →',
-    submitting:'Zakazujemo...',
-    confirmed:'Zakazano!',
-    confSub:'Radujemo se vašem dolasku.',
-    patient:'Pacijent', apptType:'Vrsta pregleda', date:'Datum', time:'Vreme', cost:'Cena', num:'Broj termina',
-    addr:'Adresa', addrVal:'Trg Republike 25 (Riblja pijaca, gde prolazi Noćni Bazar)',
-    mapLink:'📍 Otvori na mapi',
-    tgNotify:'Napišite botu — dobićete potvrdu i podsetnik:',
-    tgBtn:'✈️ Piši botu',
-    tgContact:'Za pitanja pišite:',
-    selTime:'Izaberite vreme — ',
+  sr:{title:'Zakazivanje kod optometriste',subtitle:'Anna Novoselova · Optika Ginter · Novi Sad',
+    reason:'Razlog dolaska',contacts:'Kontaktni podaci',confirmed:'Zakazano!',confSub:'Radujemo se vašem dolasku.',
+    submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',nextForm:'Dalje — popunite anketu →',
     ad10t:'⛔ Prijem dece do 10 godina nije dostupan',
-    ad10:'Optometrista ne pregleda decu mlađu od 10 godina. Za proveru vida i recept za naočare potreban je pregled kod dečijeg oftalmologa s cikloplegijom. Optometrista može pomoći sa izborom okvira prema gotovom receptu.',
+    ad10:'Optometrista ne pregleda decu mlađu od 10 godina. Za proveru vida i recept potreban je pregled dečijeg oftalmologa s cikloplegijom. Optometrista može pomoći sa izborom okvira prema gotovom receptu.',
     ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',
-    ad17:'Prijem je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Adolescentima se preporučuje pregled kod oftalmologa s cikloplegijom. Po potrebi bićete upućeni oftalomologu.',
+    ad17:'Prijem je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Adolescentima se preporučuje pregled s cikloplegijom. Za pitanja: @AnnaNvslv',
     ad17check:'Upoznat/a sam s uslovima i slažem se',
-    qContact:'Za pitanja:',
-    errTg:'Molimo unesite Telegram username',
-    errName:'Molimo unesite vaše ime',
-    errDob:'Molimo unesite datum rođenja',
-    errReason:'Molimo izaberite razlog dolaska',
-    errComplaints:'Molimo označite barem jednu tegoba',
-    errCorrection:'Molimo naznačite da li koristite korekciju',
-    errEye:'Molimo označite bolesti oka',
-    errGeneral:'Molimo označite opšte bolesti',
-    errLoads:'Molimo označite vizuelna opterećenja',
-    err10:'Zakazivanje dece do 10 godina nije dostupno online. Pišite: @AnnaNvslv',
-    err17:'Molimo potvrdite upoznatost s uslovima za maloletnike',
-    errBook:'Greška pri zakazivanju. Pišite: @AnnaNvslv',
+    srcPlaceholder:'— izaberite —',
+    srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],
   }
 };
 function T(k){return BK[_lang]?.[k]||BK.ru[k]||k;}
-
 function setLang(lang){
   _lang=lang;
   document.getElementById('btn-ru').classList.toggle('act',lang==='ru');
   document.getElementById('btn-sr').classList.toggle('act',lang==='sr');
   applyLang();
 }
-
 function applyLang(){
-  // Header
   document.querySelector('.hdr h1').textContent=T('title');
   document.querySelector('.hdr p').textContent=T('subtitle');
-  // Steps labels
-  const stl=document.querySelectorAll('.st-label');
-  [T('step1'),T('step2'),T('step3')].forEach((t,i)=>{if(stl[i])stl[i].textContent=t;});
-  // Buttons
+  const rc=document.getElementById('rc-reason-title');if(rc)rc.innerHTML=T('reason')+' <span class="req">*</span>';
+  const cc=document.getElementById('rc-contacts');if(cc)cc.textContent=T('contacts');
+  document.querySelectorAll('.btn-back').forEach(b=>b.textContent=T('backCal'));
   const bf=document.getElementById('btn-to-form');if(bf&&!bf.disabled)bf.textContent=T('nextForm');
-  else if(bf)bf.dataset.label=T('nextForm');
-  // Form labels
-  const ids={
-    'rc-reason-title':T('reason')+'<span class="req"> *</span>',
-    'rc-contacts':T('contacts'),
-  };
-  Object.entries(ids).forEach(([id,html])=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
-  // Cards by title text content - update labels
-  setLabel('f-tg',T('tg'));
-  setLabel('f-name',T('name'));
-  setLabel('f-dob',T('dob'));
-  setLabel('f-phone',T('phone'));
-  setLabel('f-diop',T('diop'));
-  setLabel('f-notes',T('notes'));
-  setLabel('f-source',T('source'));
-  setLabel('f-promo',T('promo'));
-  // Placeholders
-  setPh('f-tg','@username');
-  setPh('f-name',T('nameHint'));
-  setPh('f-diop',T('diopHint'));
-  setPh('f-notes',T('notesHint'));
-  setPh('f-promo',T('promoHint'));
-  // Source options
-  updateSourceOpts();
-  // Card titles
-  updateCardTitles();
-  // Chips text
-  updateChips();
-  // Consent text
-  const con=document.querySelector('[data-consent]');if(con)con.textContent=T('consent');
-  // Submit btn
   const sb=document.getElementById('submit-btn');if(sb&&!sb.disabled)sb.textContent=T('submit');
-  // Age disclaimers
   document.getElementById('ad10-title').textContent=T('ad10t');
   document.getElementById('ad10-text').textContent=T('ad10');
   document.getElementById('ad17-title').textContent=T('ad17t');
   document.getElementById('ad17-text').textContent=T('ad17');
-  document.getElementById('ad17-check').textContent=T('ad17check');
-  // Back buttons
-  document.querySelectorAll('.btn-back').forEach(b=>b.textContent=T('backCal'));
-  // Confirm page
-  updateConfirmPage();
-}
-
-function setLabel(inputId,text){
-  const el=document.getElementById(inputId);
-  if(el){const lb=el.closest('.fg')?.querySelector('label');if(lb){lb.innerHTML=text+(lb.querySelector('.req')?' <span class="req">*</span>':'');}}
-}
-function setPh(id,ph){const el=document.getElementById(id);if(el)el.placeholder=ph;}
-
-function updateSourceOpts(){
-  const sel=document.getElementById('f-source');if(!sel)return;
-  const opts={
-    ru:['— выберите —','Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],
-    sr:['— izaberite —','Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo']
-  };
-  const list=opts[_lang]||opts.ru;
-  const cur=sel.value;
-  sel.innerHTML=list.map((o,i)=>`<option value="${i===0?'':o}">${o}</option>`).join('');
-  sel.value=cur;
-}
-
-function updateCardTitles(){
-  const map=[
-    ['ch-complaints','complaints'],['ch-correction','correction'],
-    ['ch-eye','eye'],['ch-general','general'],['ch-loads','loads']
-  ];
-  map.forEach(([chipId,key])=>{
-    const ct=document.getElementById(chipId)?.closest('.card')?.querySelector('.card-title');
-    if(ct){const req=ct.innerHTML.includes('req');ct.innerHTML=T(key)+(req?' <span class="req">*</span>':'');}
-  });
-}
-
-function updateChips(){
-  // Reason chips use data-ru / data-sr
-  document.querySelectorAll('.reason-chip').forEach(c=>{
-    c.textContent=c.dataset[_lang]||c.dataset.ru||c.textContent;
-  });
-  // Other chips - static bilingual map
-  const chipMap={
-    ru:{
-      'ch-complaints':['Снижение остроты зрения вдаль','Снижение остроты зрения вблизи','Усталость глаз','Головные боли','Двоение','Дискомфорт в очках','Мушки / точки перед глазами','Нет выраженных жалоб'],
-      'ch-correction':['Пользуюсь очками','Пользуюсь контактными линзами','Не пользуюсь'],
-      'ch-eye':['Катаракта','Глаукома','Косоглазие','Амблиопия','Заболевания сетчатки','Макулодистрофия','Кератоконус','Синдром сухого глаза','Частые воспаления (конъюктивит, блефарит)','Операции на глазах (LASIK, PRK, замена хрусталика)','Нет заболеваний'],
-      'ch-general':['Повышенное / нестабильное АД','Заболевания щитовидной железы','Сахарный диабет или преддиабет','Мигрень (с аурой)','ЧМТ / сотрясения','Эпилепсия','Инсульт','Операция на голове','Нет заболеваний'],
-      'ch-loads':['Работа за монитором более 5–6 часов','Частое использование смартфона','Вождение в тёмное время суток','Специфические занятия (вышивание, ювелирное дело)','Ночные смены','Ничего из перечисленного']
-    },
-    sr:{
-      'ch-complaints':['Slabljenje vida na daljinu','Slabljenje vida na blizinu','Zamor očiju','Glavobolje','Dvojenje','Nelagodnost u naočarama','Mušice / tačke pred očima','Nema izraženih tegoba'],
-      'ch-correction':['Nosim naočare','Nosim kontaktna sočiva','Ne koristim korekciju'],
-      'ch-eye':['Katarakta','Glaukom','Strabizam','Ambliopija','Bolesti mrežnjače','Makularna degeneracija','Keratokonus','Sindrom suvog oka','Česte upale (konjuktivitis, blefaritis)','Operacije oka (LASIK, PRK, zamena sočiva)','Nema bolesti'],
-      'ch-general':['Povišen / nestabilan krvni pritisak','Bolesti štitne žlezde','Dijabetes ili predijabetes','Migrena (s aurom)','Povrede glave / potres mozga','Epilepsija','Moždani udar','Operacija glave','Nema bolesti'],
-      'ch-loads':['Rad za monitorom više od 5–6 sati','Česta upotreba telefona','Vožnja noću','Specifične aktivnosti (vez, nakit)','Noćne smene','Ništa od navedenog']
-    }
-  };
-  const map=chipMap[_lang]||chipMap.ru;
-  Object.entries(map).forEach(([chipId,texts])=>{
-    const chips=[...document.querySelectorAll('#'+chipId+' .chip:not(.reason-chip)')];
-    chips.forEach((c,i)=>{if(texts[i])c.textContent=texts[i];});
-  });
-}
-
-function updateConfirmPage(){
-  document.querySelector('.conf-title').textContent=T('confirmed');
-  document.querySelector('.conf-sub').textContent=T('confSub');
+  const ac=document.getElementById('ad17-check');if(ac)ac.textContent=T('ad17check');
+  document.querySelectorAll('.conf-title').forEach(e=>e.textContent=T('confirmed'));
+  document.querySelectorAll('.conf-sub').forEach(e=>e.textContent=T('confSub'));
+  // Chips reason
+  document.querySelectorAll('#ch-reason .chip').forEach(c=>{c.textContent=c.dataset[_lang]||c.dataset.ru||c.textContent;});
+  // Source dropdown
+  const sel=document.getElementById('f-source');
+  if(sel){const cur=sel.value;sel.innerHTML=`<option value="">- ${T('srcPlaceholder')} -</option>`+T('srcOpts').map(o=>`<option value="${o}">${o}</option>`).join('');sel.value=cur;}
 }
 
 // ═══ AGE CHECK ═══
-function calcAgeFromDob(dob){
+function calcAge(dob){
   if(!dob)return null;
   const b=new Date(dob),n=new Date();
   let a=n.getFullYear()-b.getFullYear();
   if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;
   return a;
 }
-function checkAge(){
-  const age=calcAgeFromDob(document.getElementById('f-dob').value);
+function checkAge(dob){
+  const age=calcAge(dob);
   const d10=document.getElementById('age-disc-10');
   const d17=document.getElementById('age-disc-17');
   if(age!==null&&age<10){d10.style.display='block';d17.style.display='none';}
@@ -613,9 +408,8 @@ function checkAge(){
   updateSubmitBtn();
 }
 function updateSubmitBtn(){
-  const age=calcAgeFromDob(document.getElementById('f-dob').value);
-  const btn=document.getElementById('submit-btn');
-  if(!btn)return;
+  const age=calcAge(v('f-dob'));
+  const btn=document.getElementById('submit-btn');if(!btn)return;
   if(age!==null&&age<10){btn.disabled=true;return;}
   if(age!==null&&age<18&&!document.getElementById('age-17-ok')?.checked){btn.disabled=true;return;}
   btn.disabled=false;
@@ -778,21 +572,21 @@ function v(id){return(document.getElementById(id)?.value||'').trim();}
 
 async function submitBooking(){
   const tg=v('f-tg'),name=v('f-name'),dob=v('f-dob');
-  const age=calcAgeFromDob(dob);
-  if(age!==null&&age<10){alert(T('err10'));return;}
-  if(age!==null&&age<18&&!document.getElementById('age-17-ok')?.checked){alert(T('err17'));return;}
-  if(!chips('ch-reason').length){alert(T('errReason'));return;}
-  if(!tg){alert(T('errTg'));return;}
-  if(!name){alert(T('errName'));return;}
-  if(!dob){alert(T('errDob'));return;}
-  if(!chips('ch-complaints').length){alert(T('errComplaints'));return;}
-  if(!chips('ch-correction').length){alert(T('errCorrection'));return;}
-  if(!chips('ch-eye').length){alert(T('errEye'));return;}
-  if(!chips('ch-general').length){alert(T('errGeneral'));return;}
-  if(!chips('ch-loads').length){alert(T('errLoads'));return;}
+  const age=calcAge(v('f-dob'));
+  if(age!==null&&age<10){alert('Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv');return;}
+  if(age!==null&&age<18&&!document.getElementById('age-17-ok')?.checked){alert('Подтвердите ознакомление с условиями для подростков.');return;}
+  if(!chips('ch-reason').length){alert('Пожалуйста, укажите причину обращения');return;}
+  if(!tg){alert('Пожалуйста, укажите Telegram username');return;}
+  if(!name){alert('Пожалуйста, введите ваше имя');return;}
+  if(!dob){alert('Пожалуйста, укажите дату рождения');return;}
+  if(!chips('ch-complaints').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»');return;}
+  if(!chips('ch-correction').length){alert('Пожалуйста, укажите используете ли вы коррекцию зрения');return;}
+  if(!chips('ch-eye').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»');return;}
+  if(!chips('ch-general').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»');return;}
+  if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.textContent=T('submitting');
+  btn.disabled=true;btn.textContent='Оформляем...';
   try{
     const{data:p,error:pe}=await db.from('patients').insert({
       name,dob:dob||null,
@@ -828,7 +622,7 @@ async function submitBooking(){
     showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg);
   }catch(e){
     console.error(e);
-    alert(T('errBook'));
+    alert('Ошибка записи. Напишите нам: @AnnaNvslv');
     btn.disabled=false;btn.textContent='Записаться →';
   }
 }

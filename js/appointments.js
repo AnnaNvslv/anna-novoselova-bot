@@ -84,6 +84,8 @@ function pickSlot(date,time,slotId){
 function apptTypeChanged(){const sel=document.getElementById('a-type');const opt=sel.options[sel.selectedIndex];document.getElementById('a-dur').value=opt?.dataset?.dur||60;}
 
 async function saveAppt(id){
+  const btn=document.querySelector('.modal-footer .btn-accent');
+  if(btn){if(btn.disabled)return;btn.disabled=true;}
   const patient_id=v('a-pid'),date=v('a-date'),time=v('a-time');
   if(!patient_id||!date||!time){alert(t('fill_required'));return;}
   const typeName=v('a-type');

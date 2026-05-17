@@ -15,6 +15,7 @@ const fmtDateLong = d => { if(!d)return'—'; const dt=new Date(d+'T12:00:00'); 
 const apptDurText = type => { const t=APPT_TYPES.find(a=>a.name===type); const m=t?.duration||60; return m>=60?`${m/60} час`:`${m} минут`; };
 const markOrderReady = id => updateOrderStatus(id,'готов'); // alias
 const minToTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const timeToMin = s => { if(!s)return 0; const[h,m]=(s.substr(0,5)).split(':').map(Number); return h*60+(m||0); };
 const calcAge = dob => { if(!dob)return null; const b=new Date(dob),n=new Date(); let a=n.getFullYear()-b.getFullYear(); if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--; return a; };
 const v = id => (document.getElementById(id)?.value||'').trim();
 const checked = id => document.getElementById(id)?.checked;

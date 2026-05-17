@@ -263,12 +263,12 @@ function _drawExam(p,e,visitNum,apptId){
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="if(_modalDirty&&!confirm('Есть несохранённые данные. Закрыть без сохранения?'))return;closeModal()">Закрыть</button>
       ${e?.id?`
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 В оптику</button>
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 Пациенту</button>
+        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 Optici</button>
+        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 Pacijentu</button>
         <button class="btn btn-ghost" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ Печать</button>
       `:''}
-      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 Сохранить</button>
-      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 Сохранить и печать</button>
+      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 Sačuvaj</button>
+      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ Štampaj</button>
     </div>
   </div>`;
 }
@@ -536,10 +536,16 @@ async function emailExam(examId,target){
   _openPrintWindow(title, html);
   let toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p?.email||'');
   if(target==='patient'&&!toEmail){ toast('Email пациента не указан','error'); return; }
-  const subj=`Карта обследования — ${p?.name||''} — ${date}`;
-  const body=`Здравствуйте!\n\nПрикрепляю карту оптометрического обследования пациента ${p?.name||''}.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
-  toast('Сохраните PDF и прикрепите к письму','info');
-  setTimeout(()=>{ window.location.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; },1500);
+  let subj, body;
+  if(target==='clinic'){
+    subj=`${p?.name||''}`;
+    body=`Karta pacijenta ${p?.name||''}`;
+  } else {
+    subj=`${p?.name||''}`;
+    body=`Здравствуйте!\n\nПрикрепляю вашу карту оптометрического обследования.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
+  }
+  toast('Sačuvajte PDF i priložite uz pismo','info');
+  setTimeout(()=>{ window.open(`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`,'_blank'); },1500);
 }
 // ═══ PATIENT CARD PDF ═══
 async function _buildPatientPrintCard(pid) {

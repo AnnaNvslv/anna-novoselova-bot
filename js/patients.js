@@ -179,7 +179,7 @@ async function savePatient(id){
   if(id){
     await db.from('patients').update(data).eq('id',id);
     toast(t('updated'));_lastAddedPatientId=null;
-    closeModal();render();
+    closeModal();openPatientCard(id);
   } else {
     const{data:np}=await db.from('patients').insert(data).select().single();
     _lastAddedPatientId=np?.id;
@@ -190,3 +190,10 @@ async function savePatient(id){
   }
 }
 async function delPatient(id){if(!confirm(t('confirm_delete_patient')))return;await db.from('patients').update({deleted_at:new Date().toISOString()}).eq('id',id);toast(t('moved_to_trash')||'U korpu');render();}
+
+async function delPatientFromCard(pid){
+  if(!confirm(t('confirm_delete_patient')))return;
+  await db.from('patients').update({deleted_at:new Date().toISOString()}).eq('id',pid);
+  toast(t('moved_to_trash')||'U korpu');
+  closeModal();render();
+}

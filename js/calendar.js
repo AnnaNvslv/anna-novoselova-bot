@@ -49,7 +49,7 @@ async function renderSlots() {
     const isPast=d<todayStr||(d===todayStr&&tm<new Date().toTimeString().substr(0,5));
     if(appt) return`<div class="cal-pill cal-pill-patient" onclick="openPatientCard('${appt.patient_id}')">
       <div class="cal-pill-name">${appt.patients?.name?.split(' ')[0]||'—'}</div>
-      <div class="cal-pill-sub">${appt.appointment_number||''}</div></div>`;
+      <div class="cal-pill-sub" style="font-size:10px;opacity:.8">${(apptTypeName(appt.type||'')||appt.type||''||appt.appointment_number||'').substr(0,12)+((apptTypeName(appt.type||'')||appt.appointment_number||''||"").length>12?"…":"")}</div></div>`;
     if(slot&&slot.booked_by==='ervin'){
       const can=isErvin()||isAdmin();
       const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')"` : '';

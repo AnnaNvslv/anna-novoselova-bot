@@ -17,7 +17,7 @@ async function renderAppointments() {
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="flex gap-8">
           ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
-          ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>`:''}
+          ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
@@ -48,7 +48,7 @@ async function _apptForm(a,prePatient,preDate,preTime){
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
-      <div class="form-group full"><label>${t('patient')} *</label>
+      <div class="form-group full"><label>${t('patient')} *<button type="button" class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:12px" onclick="_apptSaveState();openAddPatient()">+ Novi pacijent</button></label>
         <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>
@@ -88,7 +88,12 @@ async function saveAppt(id){
   const btn=document.querySelector('.modal-footer .btn-accent');
   if(btn){if(btn.disabled)return;btn.disabled=true;}
   const patient_id=v('a-pid'),date=v('a-date'),time=v('a-time');
-  if(!patient_id||!date||!time){alert(t('fill_required'));return;}
+  if(!patient_id||!date||!time){
+    const inv = !patient_id?'a-pid':!date?'a-date':'a-time';
+    const el=document.getElementById(inv);
+    if(el){el.style.border='2px solid #ef4444';el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.style.border='',2000);}
+    alert(t('fill_required'));return;
+  }
   const typeName=v('a-type');
   const dur=+(v('a-dur'))||60;
   const data={patient_id,date,time,type:typeName,notes:v('a-notes'),consultation_price:+(v('a-price'))||0};
@@ -187,4 +192,18 @@ async function generateApptNumber(date){
   const prefix=`OG-${mon}${yr}`;
   const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',`${prefix}-%`);
   return`${prefix}-${String((count||0)+1).padStart(2,'0')}`;
+}
+
+async function revertApptToPlanned(id){
+  if(!confirm('Vratiti status pregleda na zakazan?'))return;
+  await db.from('appointments').update({status:'запланирован'}).eq('id',id);
+  toast('Status vraćen na zakazan');
+  if(_openPatientId){_renderPatientCard(_openPatientId);}else{renderAppointments();}
+}
+
+function _apptSaveState(){
+  window._pendingApptPid=v('a-pid');
+  window._pendingApptType=v('a-type');
+  window._pendingApptDate=v('a-date');
+  window._pendingApptTime=v('a-time');
 }

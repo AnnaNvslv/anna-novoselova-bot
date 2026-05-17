@@ -2,10 +2,10 @@
 async function renderAppointments() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ Приём</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').order('date',{ascending:false}).order('time');
-  const filtered=apptFilter==='sve'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
+  const filtered=apptFilter==='все'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
-      <div class="filter-bar">${[t('all'),t('status_planned'),t('status_done'),t('status_cancelled')].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${f}</button>`).join('')}</div>
+      <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${{'все':t('all'),'запланирован':t('status_planned'),'завершён':t('status_done'),'отменён':t('status_cancelled')}[f]||f}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
       <thead><tr><th>${t('patient')}</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>

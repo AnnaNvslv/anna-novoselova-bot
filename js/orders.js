@@ -2,10 +2,10 @@
 async function renderOrders() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ Заказ</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').order('created_at',{ascending:false});
-  const filtered=orderFilter==='sve'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
+  const filtered=orderFilter==='все'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
-      <div class="filter-bar">${['все',...ORDER_STATUSES_ALL].map(f=>`<button class="filter-btn${orderFilter===f?' active':''}" onclick="orderFilter='${f}';renderOrders()">${f}</button>`).join('')}</div>
+      <div class="filter-bar">${['все',...ORDER_STATUSES_ALL].map(f=>`<button class="filter-btn${orderFilter===f?' active':''}" onclick="orderFilter='${f}';renderOrders()">${t('order_status_'+f)||f}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
       <thead><tr><th>Дата</th><th>Пациент</th><th>Оправа / Линзы</th><th style="color:var(--text-l)">Рецепт</th><th>Итого</th><th>Срок</th><th>Статус</th><th>💰</th><th></th></tr></thead>
@@ -401,4 +401,3 @@ async function sendFollowUpSurvey(orderId){
   toast(ok?'📨 Опрос отправлен':'Ошибка',ok?'success':'error');
 }
 async function delOrder(id){if(!confirm(t('confirm_delete_order')))return;await db.from('orders').delete().eq('id',id);render();}
-}

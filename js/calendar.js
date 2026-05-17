@@ -55,12 +55,12 @@ async function renderSlots() {
       const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')" title="${t('unbook_ervin')}"` : `title="${t('slot_ervin')}"`;
       return`<div class="cal-pill cal-pill-ervin" ${ervinAttrs}><div class="cal-pill-name">Ervin</div><div class="cal-pill-sub">${slot.ervin_note||''}</div></div>`;}
     if(slot&&!slot.is_booked){
-      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_take')}</div></div>`;
+      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_take')}</div></div>`;
       if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="removeSlot('${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_remove')}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
     if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${tm}')">+</div>`;
-    if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${tm}',null)">+</div>`;
+    if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${tm}','')">+</div>`;
     return`<div class="cal-pill-empty">—</div>`;
   };
 
@@ -113,7 +113,7 @@ async function renderSlots() {
     ${allTimes.map(tm=>`
       <div class="cal-grid-time">${tm}</div>
       ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
-        return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,t)}</div>`;}).join('')}
+        return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,tm)}</div>`;}).join('')}
     `).join('')}
   </div>
   <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap">

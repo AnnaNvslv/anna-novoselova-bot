@@ -393,7 +393,7 @@ async function _buildPrintCard(examId) {
     ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Причина обращения</div><div class="pc-text">${rx('visit_reason')}</div></div>`:'' }
     ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Жалобы</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
     ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Глазные заболевания</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
-    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(Boolean).join('; ')}</div></div>`:''}
+    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}
 
     ${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Используемая коррекция</div>

@@ -96,10 +96,10 @@ async function renderSlots() {
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2++;renderSlots()">${t('forward')}</button>
     </div>
     <div class="flex gap-8 items-center">
-      ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">+ Свой слот</button>
-        <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">📅 День</button>
-        <button class="btn btn-accent btn-sm" onclick="openWeekSlots('${weekDays[0]}','${weekDays[4]}')">📅 Неделя</button>`:''}
-      ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">+ Моя запись</button>`:''}
+      ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">${t('custom_slot')}</button>
+        <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">${`📅 ${t('open_day')}`}</button>
+        <button class="btn btn-accent btn-sm" onclick="openWeekSlots('${weekDays[0]}','${weekDays[4]}')">${`📅 ${t('open_week')}`}</button>`:''}
+      ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">${`+ ${t('my_slot')}`}</button>`:''}
     </div>
   </div>
   <div class="cal-grid">
@@ -133,7 +133,7 @@ async function openDaySlots(date){
   const s=_calSettings||await loadCalSettings();
   const times=generateSlotTimes(s);
   const targetDate=date||today();
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Открыть слоты на день</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('open_slots_day')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Дата</label><input type="date" id="ds-date" value="${targetDate}"></div>
       <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке — можно редактировать)</label>
@@ -157,7 +157,7 @@ async function openWeekSlots(from,to){
   const s=_calSettings||await loadCalSettings();
   const times=generateSlotTimes(s);
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Открыть неделю</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('open_slots_week')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>С даты</label><input type="date" id="ws-from" value="${from}"></div>
@@ -194,7 +194,7 @@ async function saveWeekSlots(){
 }
 
 function openAddCustomSlot(){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить слот</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('add_slot')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>Дата</label><input type="date" id="cs-date" value="${today()}"></div>
@@ -215,9 +215,9 @@ async function saveCustomSlot(){
 async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);renderSlots();}
 
 async function bookErvinAt(date,time,slotId){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Запись Ervin — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('ervin_booking')} — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Пациент (необязательно)</label><input id="erv-note" placeholder="Имя пациента" autofocus></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||''}')">${t('slot_take').charAt(0).toUpperCase()+t('slot_take').slice(1)}</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||''}')">${t('slot_take')}</button></div>
   </div>`);
 }
 
@@ -231,7 +231,7 @@ async function _confirmErvinBook(date,time,slotId){
 async function unbookErvin(id){if(!confirm(t('unbook_ervin')))return;await db.from('available_slots').delete().eq('id',id);renderSlots();}
 
 async function openAddErvinBooking(){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Моя запись</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('my_slot')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>Дата</label><input type="date" id="erv-date" value="${today()}"></div>
@@ -239,7 +239,7 @@ async function openAddErvinBooking(){
       </div>
       <div class="form-group" style="margin-top:12px"><label>Пациент (необязательно)</label><input id="erv-note2" placeholder="Имя пациента"></div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_saveErvinBooking()">${t('slot_take').charAt(0).toUpperCase()+t('slot_take').slice(1)}</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_saveErvinBooking()">${t('slot_take')}</button></div>
   </div>`);
 }
 

@@ -39,11 +39,12 @@ async function _apptForm(a,prePatient,preDate,preTime){
       ${slotDates.map(d=>`<div style="margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:var(--text-m);margin-bottom:4px">${fmtDateLong(d)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">
-          ${slotsByDate[d].map(s=>`<button type="button" class="slot-pick-btn" data-sid="${s.id}" onclick="pickSlot('${s.date}','${s.start_time?.substr(0,5)}','${s.id}')" style="padding:3px 10px;border:1.5px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:13px;font-weight:600">${s.start_time?.substr(0,5)}</button>`).join('')}
+          ${slotsByDate[d].map(s=>`<button type="button" class="slot-pick-btn" data-sid="${s.id}" onclick="pickSlot('${s.date}','${s.start_time?.substr(0,5)}','${s.id}')" style="padding:3px 10px;border:1.5px solid ${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'var(--accent)':'var(--border)'};border-radius:6px;background:${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'var(--accent)':'white'};color:${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'white':'inherit'};cursor:pointer;font-size:13px;font-weight:600">${s.start_time?.substr(0,5)}</button>`).join('')}
         </div></div>`).join('')}
     </div></div>`:'<div class="form-group full" style="color:var(--text-m);font-size:13px">Nema slobodnih termina. Izaberite datum i vreme ručno.</div>';
   const timeOpts=[...Array(45)].map((_,i)=>{const m=8*60+i*15;const ts=minToTime(m);return`<option ${((a?.time||preTime||'10:00').substr(0,5)===ts)?'selected':''}>${ts}</option>`;}).join('');
   window._pickedSlotId=null;
+  if(a){const curSlot=(freeSlots||[]).find(s=>s.date===a.date&&s.start_time?.substr(0,5)===a.time?.substr(0,5));if(curSlot)window._pickedSlotId=curSlot.id;}
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
@@ -53,7 +54,7 @@ async function _apptForm(a,prePatient,preDate,preTime){
       <div class="form-group full"><label>${t('appt_type')} *</label>
         <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${tp.name}</option>`).join('')}</select>
       </div>
-      ${!a?slotPickerHtml:''}
+      ${slotPickerHtml}
       <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
       <div class="form-group"><label>${t('time')} *</label><select id="a-time">${timeOpts}</select></div>
       <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
@@ -92,7 +93,20 @@ async function saveAppt(id){
   const dur=+(v('a-dur'))||60;
   const data={patient_id,date,time,type:typeName,notes:v('a-notes'),consultation_price:+(v('a-price'))||0};
   let apptId=id;
-  if(id){await db.from('appointments').update(data).eq('id',id);toast(t('appt_updated'));}
+  if(id){
+    // Check duplicate on new time (exclude current appt)
+    const{data:dupCheck}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('id',id);
+    if(dupCheck?.length){toast('Pregled već postoji u to vreme!','error');const b=document.querySelector('.modal-footer .btn-accent');if(b)b.disabled=false;return;}
+    // Free old slot, book new slot
+    await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
+    await db.from('appointments').update(data).eq('id',id);
+    if(window._pickedSlotId){
+      await db.from('available_slots').update({is_booked:true,appointment_id:id}).eq('id',window._pickedSlotId);
+    } else {
+      await blockSlotsByDuration(date,time,dur,id);
+    }
+    toast(t('appt_updated'));
+  }
   else{
     // Check for duplicate
     const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null);

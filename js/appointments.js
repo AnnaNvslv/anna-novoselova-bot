@@ -1,7 +1,7 @@
 // ═══ APPOINTMENTS ═══
 async function renderAppointments() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ Приём</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
-  const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').order('date',{ascending:false}).order('time');
+  const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('date',{ascending:false}).order('time');
   const filtered=apptFilter==='все'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
@@ -14,7 +14,7 @@ async function renderAppointments() {
         <td><b>${fmt(a.date)}</b> в ${a.time?.substr(0,5)}</td>
         <td style="font-size:13.5px">${a.type||'—'}</td>
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
-        <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${a.status}</span></td>
+        <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="flex gap-8">
           ${a.status==='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Карта</button><button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">✕</button>`:''}
           ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>`:''}

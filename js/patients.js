@@ -1,7 +1,7 @@
 // ═══ PATIENTS ═══
 async function renderPatients() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('patients')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="${t('search')}" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">+ Пациент</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
-  const{data:patients}=await db.from('patients').select('*').order('name');
+  const{data:patients}=await db.from('patients').select('*').is('deleted_at',null).order('name');
   _allPatients=patients||[];
   renderPatientsTable(_allPatients);
 }
@@ -182,4 +182,4 @@ async function savePatient(id){
   else{const{data:np}=await db.from('patients').insert(data).select().single();_lastAddedPatientId=np?.id;toast(t('added'));}
   closeModal();render();
 }
-async function delPatient(id){if(!confirm(t('confirm_delete_patient')))return;await db.from('patients').delete().eq('id',id);toast(t('deleted'));render();}
+async function delPatient(id){if(!confirm(t('confirm_delete_patient')))return;await db.from('patients').update({deleted_at:new Date().toISOString()}).eq('id',id);toast(t('moved_to_trash')||'U korpu');render();}

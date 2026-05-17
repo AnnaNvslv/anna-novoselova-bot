@@ -41,7 +41,7 @@ async function renderDashboard() {
         <div class="card-header"><span class="card-title">✅ Готовы к выдаче</span><span class="badge badge-warn">${(readyOrders||[]).length}</span></div>
         ${(readyOrders||[]).map(o=>`<div class="history-item">
           <div style="flex:1">
-            <div class="history-date">${o.type} · обещано ${fmt(o.promised_date)}</div>
+            <div class="history-date">${o.type} · ${t('promised_date')||'obećano'} ${fmt(o.promised_date)}</div>
             <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</div>
             ${orderBalance(o)>0?`<div class="text-sm" style="color:var(--warn)">Остаток: ${fmtMoney(orderBalance(o))}</div>`:''}
           </div>

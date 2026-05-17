@@ -82,6 +82,10 @@ const TRANSLATIONS = {
     months_gen: ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],
     days_full: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
     years: 'лет',
+    nav_trash: 'Корзина', trash_empty: 'Корзина пуста', empty_trash: 'Очистить корзину',
+    restore: 'Восстановить', restored: 'Восстановлено', deleted_at: 'удалено',
+    moved_to_trash: 'Перемещено в корзину', confirm_empty_trash: 'Удалить всё из корзины навсегда?',
+    trash_emptied: 'Корзина очищена',
   },
   sr: {
     // NAV
@@ -163,8 +167,28 @@ const TRANSLATIONS = {
     months_gen: ['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],
     days_full: ['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],
     years: 'god.',
+    nav_trash: 'Korpa', trash_empty: 'Korpa je prazna', empty_trash: 'Isprazni korpu',
+    restore: 'Vrati', restored: 'Vraćeno', deleted_at: 'obrisano',
+    moved_to_trash: 'Premješteno u korpu', confirm_empty_trash: 'Trajno obrisati sve iz korpe?',
+    trash_emptied: 'Korpa ispraznjena',
   }
 };
+
+
+// Status label maps (DB value → display)
+const STATUS_SR = {
+  'запланирован':'zakazan','завершён':'završen','отменён':'otkazan',
+  'оформлен':'kreirana','в работе':'u izradi','готов':'spreman',
+  'выдан':'izdata','отменен':'otkazana','возврат':'povrat','переделка':'prepravka',
+  'u korpi':'u korpi'
+};
+const STATUS_RU = {
+  'запланирован':'запланирован','завершён':'завершён','отменён':'отменён',
+  'оформлен':'оформлен','в работе':'в работе','готов':'готов',
+  'выдан':'выдан','отменен':'отменен','возврат':'возврат','переделка':'переделка',
+  'u korpi':'в корзине'
+};
+function statusLabel(s){ return (_lang==='sr'?STATUS_SR:STATUS_RU)[s]||s; }
 
 function t(key) {
   return TRANSLATIONS[_lang]?.[key] ?? TRANSLATIONS.ru?.[key] ?? key;
@@ -184,7 +208,7 @@ function switchLang(lang) {
 function _refreshStaticUI() {
   // Sidebar nav labels
   const navMap = {dashboard:'nav_dashboard',patients:'nav_patients',appointments:'nav_appointments',
-    orders:'nav_orders',analytics:'nav_analytics',slots:'nav_slots',settings:'nav_settings'};
+    orders:'nav_orders',analytics:'nav_analytics',slots:'nav_slots',settings:'nav_settings',trash:'nav_trash'};
   Object.entries(navMap).forEach(([section, key]) => {
     const el = document.querySelector(`#nav-${section} .sb-label`);
     if (el) el.textContent = t(key);

@@ -94,6 +94,9 @@ async function saveAppt(id){
   let apptId=id;
   if(id){await db.from('appointments').update(data).eq('id',id);toast(t('appt_updated'));}
   else{
+    // Check for duplicate
+    const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null);
+    if(existing?.length){toast('Pregled već postoji u to vreme!','error');const btn=document.querySelector('.modal-footer .btn-accent');if(btn)btn.disabled=false;return;}
     const apptNum=await generateApptNumber(date);
     const{data:a}=await db.from('appointments').insert({...data,status:'запланирован',appointment_number:apptNum}).select().single();
     apptId=a?.id;

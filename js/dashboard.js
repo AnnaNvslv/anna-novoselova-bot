@@ -4,9 +4,9 @@ async function renderDashboard() {
   const todayStr=today();
   const[{data:patients},{data:todayAppts},{data:readyOrders},{data:upcoming},{data:todayOrders}]=await Promise.all([
     db.from('patients').select('id',{count:'exact'}),
-    db.from('appointments').select('*, patients(name,telegram_chat_id)').eq('date',todayStr).neq('status','отменён').order('time'),
+    db.from('appointments').select('*, patients(name,telegram_chat_id)').eq('date',todayStr).neq('status','отменён').is('deleted_at',null).order('time'),
     db.from('orders').select('*, patients(name,telegram_chat_id)').eq('status','готов'),
-    db.from('appointments').select('*, patients(name)').gt('date',todayStr).eq('status','запланирован').order('date').order('time').limit(5),
+    db.from('appointments').select('*, patients(name)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(5),
     db.from('orders').select('id').eq('status','оформлен').gte('created_at',todayStr),
   ]);
   const nowMonth=todayStr.substr(0,7);

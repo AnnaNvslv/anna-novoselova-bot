@@ -45,7 +45,7 @@ async function _renderPatientCard(pid) {
   _openPatientId = pid;
   const[{data:p},{data:appts},{data:orders},{data:exams}]=await Promise.all([
     db.from('patients').select('*').eq('id',pid).single(),
-    db.from('appointments').select('*').eq('patient_id',pid).order('date',{ascending:false}),
+    db.from('appointments').select('*').eq('patient_id',pid).is('deleted_at',null).order('date',{ascending:false}),
     db.from('orders').select('*').eq('patient_id',pid).order('created_at',{ascending:false}),
     db.from('examinations').select('*').eq('patient_id',pid).order('created_at',{ascending:false})
   ]);

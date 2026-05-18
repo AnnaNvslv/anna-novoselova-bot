@@ -1,11 +1,8 @@
 // mobile.js — нижняя навигация и патчи для Android
-// Подключить в crm-v3.html последним скриптом, перед </body>:
-//   <script src="mobile.js?v=1"></script>
 
 (function () {
-  if (window.innerWidth > 768) return; // только мобиле
+  if (window.innerWidth > 768) return;
 
-  /* ── Нижняя навигация ── */
   const NAV_ITEMS = [
     {
       section: 'dashboard',
@@ -52,10 +49,10 @@
     },
   ];
 
-  function buildNav() {
+  // Делаем buildNav глобальной — нужна для запасного запуска из crm-v3.html
+  window.buildNav = function () {
     if (document.getElementById('mobile-nav')) return;
 
-    // Bottom nav bar
     const nav = document.createElement('div');
     nav.id = 'mobile-nav';
     nav.innerHTML =
@@ -76,13 +73,11 @@
       </button>`;
     document.body.appendChild(nav);
 
-    // Overlay
     const overlay = document.createElement('div');
     overlay.id = 'mob-drawer-overlay';
     overlay.onclick = _mobCloseDrawer;
     document.body.appendChild(overlay);
 
-    // Drawer
     const curLang = localStorage.crm_lang || 'sr';
     const drawer = document.createElement('div');
     drawer.id = 'mob-drawer';
@@ -112,9 +107,8 @@
     document.body.appendChild(drawer);
 
     _mobUpdateActive();
-  }
+  };
 
-  /* ── Глобальные хелперы (нужны inline onclick) ── */
   window._mobUpdateActive = function () {
     document.querySelectorAll('.mob-nav-item').forEach((btn) => {
       btn.classList.toggle(
@@ -144,23 +138,20 @@
     });
   };
 
-  /* ── Патч showApp: инициализировать nav после логина ── */
   function patchShowApp() {
     const orig = window.showApp;
     if (typeof orig !== 'function') return;
     window.showApp = function (...args) {
       orig(...args);
-      setTimeout(buildNav, 120);
+      setTimeout(window.buildNav, 120);
     };
   }
 
-  /* ── Патч renderSlots: оборачиваем cal-grid в scrollable wrapper ── */
   function patchRenderSlots() {
     const orig = window.renderSlots;
     if (typeof orig !== 'function') return;
     window.renderSlots = async function (...args) {
       await orig(...args);
-      // wrap
       const grid = document.querySelector('.cal-grid');
       if (grid && !grid.parentElement.classList.contains('cal-grid-wrapper')) {
         const wrap = document.createElement('div');
@@ -172,7 +163,6 @@
     };
   }
 
-  /* ── Патч nav(): после перехода обновлять активный пункт ── */
   function patchNav() {
     const orig = window.nav;
     if (typeof orig !== 'function') return;
@@ -182,26 +172,23 @@
     };
   }
 
-  /* ── Запуск ── */
-  // Патчим сразу (функции могут быть уже объявлены)
   patchShowApp();
   patchRenderSlots();
   patchNav();
 
-  // Если приложение уже показано (например, после перезагрузки с сохранённой сессией)
-  if (document.getElementById('app') && document.getElementById('app').style.display !== 'none') {
-    setTimeout(buildNav, 200);
-  }
-
-  // Fallback: слушаем момент когда app становится видимым
+  // MutationObserver — ждём когда app станет видимым
   const appEl = document.getElementById('app');
   if (appEl) {
-    const obs = new MutationObserver(() => {
-      if (appEl.style.display !== 'none') {
-        buildNav();
-        obs.disconnect();
-      }
-    });
-    obs.observe(appEl, { attributes: true, attributeFilter: ['style'] });
+    if (appEl.style.display !== 'none') {
+      setTimeout(window.buildNav, 200);
+    } else {
+      const obs = new MutationObserver(() => {
+        if (appEl.style.display !== 'none') {
+          window.buildNav();
+          obs.disconnect();
+        }
+      });
+      obs.observe(appEl, { attributes: true, attributeFilter: ['style'] });
+    }
   }
 })();

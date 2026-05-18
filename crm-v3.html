@@ -22,8 +22,6 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
-
-/* LOGIN */
 #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1B4F72,#0891b2);display:flex;align-items:center;justify-content:center;z-index:999}
 .login-box{background:#fff;border-radius:18px;padding:44px 52px;width:340px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.28)}
 .login-logo{font-size:36px;margin-bottom:10px}
@@ -34,8 +32,6 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);font-
 .login-box button{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
 .login-box button:hover{background:var(--accent-h)}
 .login-err{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
-
-/* APP */
 #app{display:none;min-height:100vh;flex-direction:row}
 .sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--primary);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .sb-logo{padding:22px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -53,8 +49,6 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);font-
 .topbar h1{font-size:23px;font-weight:800;letter-spacing:-.5px}
 .topbar-actions{display:flex;gap:8px}
 .content{padding:20px 28px 48px}
-
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 17px;border-radius:var(--r-sm);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
 .btn svg{width:15px;height:15px}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-h)}
@@ -66,8 +60,6 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);font-
 .btn-sm{padding:5px 12px;font-size:13px}
 .btn-xs{padding:3px 9px;font-size:12px}
 .btn-icon{padding:7px;border-radius:6px}
-
-/* CARDS */
 .card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:20px}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .card-title{font-size:15.5px;font-weight:700}
@@ -81,8 +73,6 @@ body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--text);font-
 .stat-accent .stat-value{color:var(--accent)}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-
-/* TABLES */
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;font-size:12px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;border-bottom:1.5px solid var(--border);background:var(--surface2)}
@@ -91,8 +81,6 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--surface2)}
 .table-name{font-weight:600;font-size:15px}
 .table-sub{font-size:12px;color:var(--text-m)}
-
-/* BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .badge-green{background:var(--green-l);color:var(--green)}
 .badge-warn{background:var(--warn-l);color:var(--warn)}
@@ -100,8 +88,6 @@ tr:hover td{background:var(--surface2)}
 .badge-blue{background:var(--blue-l);color:var(--blue)}
 .badge-gray{background:var(--surface2);color:var(--text-m)}
 .badge-accent{background:var(--accent-l);color:var(--accent-h)}
-
-/* FORMS */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
@@ -113,8 +99,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 input[readonly]{background:var(--surface2);color:var(--text-m)}
 textarea{resize:vertical;min-height:72px}
 .age-hint{font-size:12px;color:var(--accent);font-weight:600;margin-top:2px}
-
-/* OPTOMETRY TABLES */
 .rx-table{width:100%;border-collapse:collapse;margin:4px 0;border:1px solid var(--border)}
 .rx-table th{font-size:11.5px;font-weight:600;color:var(--text-m);text-align:center;padding:5px 3px;background:var(--surface2);border:1px solid var(--border)}
 .rx-table td{border:1px solid var(--border);padding:3px}
@@ -127,22 +111,16 @@ textarea{resize:vertical;min-height:72px}
 .rx-shared-row .form-group{flex:1}
 .rx-shared-row label{font-size:11.5px}
 .rx-shared-row input{font-size:14px;text-align:center}
-
-/* TABS */
 .tab-bar{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px;overflow-x:auto}
 .tab{padding:9px 16px;font-size:13.5px;font-weight:600;color:var(--text-m);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab:hover{color:var(--text)}
 .tab-content{display:none}.tab-content.active{display:block}
-
-/* HISTORY */
 .history-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 .history-item:last-child{border-bottom:none}
 .history-dot{width:10px;height:10px;border-radius:50%;background:var(--primary-l);border:2px solid var(--primary);margin-top:5px;flex-shrink:0}
 .history-date{font-size:12.5px;color:var(--text-m);margin-bottom:2px}
 .history-title{font-size:15px;font-weight:600}
-
-/* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;backdrop-filter:blur(3px)}
 .overlay.hidden{display:none}
 .modal{background:var(--surface);border-radius:14px;width:100%;max-width:700px;box-shadow:var(--shadow-md);animation:slideUp .18s ease}
@@ -155,8 +133,6 @@ textarea{resize:vertical;min-height:72px}
 .exam-tab-wrap{min-height:380px}
 .modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--surface2);border-radius:0 0 14px 14px}
 @keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-/* MISC */
 .chip{display:inline-block;background:var(--accent-l);color:var(--accent-h);font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:20px}
 .salary-badge{display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px}
 .divider{height:1px;background:var(--border);margin:14px 0}
@@ -164,7 +140,7 @@ textarea{resize:vertical;min-height:72px}
 .empty p{font-size:15px;font-weight:500}
 .spinner{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--text-m);font-size:15px}
 .search-wrap{position:relative}.search-wrap input{padding-left:36px;width:270px}
-.search-wrap::before{content:'\1F50D';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px}
+.search-wrap::before{content:'🔍';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px}
 .filter-bar{display:flex;gap:6px;flex-wrap:wrap}
 .filter-btn{padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--text-m);font-family:inherit}
 .filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -184,8 +160,6 @@ textarea{resize:vertical;min-height:72px}
 .step-list{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:6px}
 .step-list li{counter-increment:s;display:flex;gap:8px;font-size:13.5px}
 .step-list li::before{content:counter(s);width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-
-/* CALENDAR */
 .cal-week{overflow-x:auto;margin-top:8px}
 .cal-table{border-collapse:collapse;min-width:100%}
 .cal-table th{padding:8px 10px;font-size:12px;font-weight:700;color:var(--text-m);text-align:center;background:var(--surface2);border:1px solid var(--border);min-width:110px}
@@ -200,16 +174,8 @@ textarea{resize:vertical;min-height:72px}
 .cal-empty-cell{background:var(--surface);cursor:pointer}.cal-empty-cell:hover{background:var(--accent-l)}
 .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .cal-nav h3{font-size:16px;font-weight:700;flex:1;text-align:center}
-
-/* CORRECTION ITEM */
 .corr-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
-
-/* PRINT */
-@media print{
-  body>*:not(#print-area){display:none!important}
-  #print-area{display:block!important}
-  @page{margin:14mm 16mm;size:A4}
-}
+@media print{body>*:not(#print-area){display:none!important}#print-area{display:block!important}@page{margin:14mm 16mm;size:A4}}
 #print-area{display:none}
 .print-card{font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1a1a2e;background:#fff;max-width:185mm;margin:0 auto;line-height:1.45}
 .pc-bar{height:3.5pt;background:linear-gradient(to right,#1B4F72,#0891b2);margin-bottom:10pt;border-radius:2pt}
@@ -238,17 +204,14 @@ textarea{resize:vertical;min-height:72px}
 .pc-footer{margin-top:10pt;padding-top:6pt;border-top:0.5pt solid #dde;display:flex;justify-content:space-between;align-items:flex-end}
 .pc-note{font-size:6.5pt;color:#999;max-width:130mm}
 .pc-control{font-size:8.5pt;font-weight:700;color:#1B4F72;text-align:right}
-
-/* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast-msg{padding:11px 18px;border-radius:9px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:slideUp .2s ease;pointer-events:auto}
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
 .discount-row{display:grid;grid-template-columns:1fr 80px 1fr;gap:8px;align-items:flex-end}
 .discount-label{font-size:11px;color:var(--accent);font-weight:600;margin-top:2px}
 
-/* MOBILE NAV */
+/* ===== MOBILE ===== */
 @media(max-width:768px){
   .sidebar{display:none!important}
   #app{flex-direction:column!important;padding-bottom:64px}
@@ -277,19 +240,16 @@ input[type=number]{-moz-appearance:textfield}
   .login-box{width:92vw!important;padding:32px 24px!important}
   .filter-bar{overflow-x:auto;flex-wrap:nowrap!important}
   .tab-bar{overflow-x:auto;flex-wrap:nowrap!important}
-  .cal-grid-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08)}
 }
-
-/* MOBILE NAV BAR */
-#mobile-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--primary);display:none;align-items:stretch;z-index:200;box-shadow:0 -2px 12px rgba(0,0,0,.18)}
-@media(max-width:768px){#mobile-nav{display:flex}}
+#mobile-nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--primary);display:none;align-items:stretch;z-index:9999;box-shadow:0 -2px 12px rgba(0,0,0,.18)}
+@media(max-width:768px){#mobile-nav{display:flex!important}}
 .mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;border:none;background:transparent;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
-.mob-nav-item.active,.mob-nav-item:active{color:#fff}
+.mob-nav-item.active{color:#fff}
 .mob-nav-item svg{width:22px;height:22px}
 #mob-more-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;border:none;background:transparent;font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}
-#mob-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300}
+#mob-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998}
 #mob-drawer-overlay.open{display:block}
-#mob-drawer{position:fixed;bottom:64px;left:0;right:0;background:var(--primary);border-radius:16px 16px 0 0;padding:12px 0 8px;z-index:301;transform:translateY(100%);transition:transform .22s ease}
+#mob-drawer{position:fixed;bottom:64px;left:0;right:0;background:var(--primary);border-radius:16px 16px 0 0;padding:12px 0 8px;z-index:9999;transform:translateY(100%);transition:transform .22s ease}
 #mob-drawer.open{transform:translateY(0)}
 .mob-drawer-item{display:flex;align-items:center;gap:12px;padding:13px 20px;color:rgba(255,255,255,.8);font-size:15px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .mob-drawer-item svg{width:20px;height:20px;flex-shrink:0}
@@ -299,12 +259,11 @@ input[type=number]{-moz-appearance:textfield}
 .mob-drawer-lang button{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
 .mob-drawer-lang button.active{background:rgba(255,255,255,.3);color:#fff}
 </style>
-<link rel="stylesheet" href="mobile.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
-<!-- MOBILE NAV (hidden on desktop via CSS) -->
+<!-- MOBILE NAV -->
 <div id="mobile-nav">
   <button class="mob-nav-item" id="mob-nav-dashboard" onclick="nav('dashboard');_mobActive()">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -327,25 +286,19 @@ input[type=number]{-moz-appearance:textfield}
     <span>Ещё</span>
   </button>
 </div>
-
-<!-- MOBILE DRAWER -->
 <div id="mob-drawer-overlay" onclick="_mobCloseDrawer()"></div>
 <div id="mob-drawer">
   <div class="mob-drawer-item" onclick="nav('orders');_mobCloseDrawer();_mobActive()">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    Заказы
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Заказы
   </div>
   <div class="mob-drawer-item" onclick="nav('analytics');_mobCloseDrawer();_mobActive()">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    Аналитика
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Аналитика
   </div>
   <div class="mob-drawer-item" onclick="nav('settings');_mobCloseDrawer();_mobActive()">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    Настройки
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Настройки
   </div>
   <div class="mob-drawer-item" onclick="nav('trash');_mobCloseDrawer();_mobActive()">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-    Корзина
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Корзина
   </div>
   <div class="mob-drawer-sep"></div>
   <div class="mob-drawer-lang">
@@ -355,8 +308,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <div class="mob-drawer-sep"></div>
   <div class="mob-drawer-item" onclick="logout()" style="color:rgba(255,100,100,.9)">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    Выйти
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Выйти
   </div>
 </div>
 
@@ -417,15 +369,8 @@ input[type=number]{-moz-appearance:textfield}
   <div class="main"><div id="content"></div></div>
 </div>
 
-<!-- MODAL -->
-<div class="overlay hidden" id="overlay" onclick="overlayClick(event)">
-  <div id="modal-container"></div>
-</div>
-
-<!-- PRINT -->
+<div class="overlay hidden" id="overlay" onclick="overlayClick(event)"><div id="modal-container"></div></div>
 <div id="print-area"></div>
-
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script src="js/i18n.js?v=9"></script>
@@ -450,11 +395,6 @@ function _mobActive(){
   document.querySelectorAll('.mob-nav-item').forEach(function(b){
     b.classList.toggle('active',b.id==='mob-nav-'+s);
   });
-  var lang=localStorage.crm_lang||'sr';
-  var sr=document.getElementById('mob-lang-sr');
-  var ru=document.getElementById('mob-lang-ru');
-  if(sr)sr.classList.toggle('active',lang==='sr');
-  if(ru)ru.classList.toggle('active',lang==='ru');
 }
 function _mobDrawer(){
   document.getElementById('mob-drawer').classList.toggle('open');
@@ -464,15 +404,10 @@ function _mobCloseDrawer(){
   document.getElementById('mob-drawer').classList.remove('open');
   document.getElementById('mob-drawer-overlay').classList.remove('open');
 }
-// Патчим nav() чтобы обновлять активную кнопку
 var _origNav=window.nav;
 if(typeof _origNav==='function'){
-  window.nav=function(){
-    _origNav.apply(this,arguments);
-    setTimeout(_mobActive,50);
-  };
+  window.nav=function(){_origNav.apply(this,arguments);setTimeout(_mobActive,50);};
 }
-// Инициализация при загрузке
 _mobActive();
 </script>
 </body>

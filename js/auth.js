@@ -24,7 +24,7 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  // Show mobile nav only on mobile
+  // Show our mobile nav
   const mn = document.getElementById('mobile-nav');
   if (mn && window.innerWidth <= 768) mn.style.display = 'flex';
   const saved=localStorage.getItem('crm_section');
@@ -47,6 +47,18 @@ function showApp() {
 }
 function logout() { role=null; localStorage.removeItem('crm_role'); location.reload(); }
 window.onload = () => {
+  // Kill any rogue nav elements from old mobile.js
+  document.querySelectorAll('body > div').forEach(function(el) {
+    if (el.id !== 'mobile-nav' && el.id !== 'mob-drawer-overlay' && el.id !== 'mob-drawer' &&
+        el.id !== 'login-screen' && el.id !== 'app' && el.id !== 'overlay' &&
+        el.id !== 'print-area' && el.id !== 'toast') {
+      // Check if it looks like a nav bar (fixed bottom, dark background)
+      var s = window.getComputedStyle(el);
+      if (s.position === 'fixed' && s.bottom === '0px') {
+        el.remove();
+      }
+    }
+  });
   const s = localStorage.getItem('crm_role');
   if (s === 'ervin') { role = 'ervin'; showApp(); return; }
   if (s) { role=s; showApp(); } else document.getElementById('login-screen').style.display='flex';

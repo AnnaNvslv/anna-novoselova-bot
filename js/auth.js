@@ -24,28 +24,32 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
+  // Show mobile nav
+  const mn = document.getElementById('mobile-nav');
+  if (mn) mn.style.display = '';
   const saved=localStorage.getItem('crm_section');
   if(saved&&saved!=='trash'){curSection=saved;}
   document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
-  // Restore active nav highlight
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+curSection)?.classList.add('active');
   _refreshStaticUI();
-  // Ervin: hide irrelevant nav sections
   const ervinHide=['appointments','orders','analytics','settings','trash'];
   ervinHide.forEach(s=>{
     const el=document.getElementById('nav-'+s);
     if(el) el.style.display=isErvin()?'none':'';
   });
-  // Set active lang button
   document.querySelectorAll('.lang-btn').forEach(b=>{
     b.style.fontWeight=b.dataset.lang===_lang?'800':'400';
     b.style.color=b.dataset.lang===_lang?'white':'rgba(255,255,255,.5)';
   });
+  if(typeof _mobActive==='function') _mobActive();
   render();
 }
 function logout() { role=null; localStorage.removeItem('crm_role'); location.reload(); }
 window.onload = () => {
+  // Hide mobile nav until logged in
+  const mn = document.getElementById('mobile-nav');
+  if (mn) mn.style.display = 'none';
   const s = localStorage.getItem('crm_role');
   if (s === 'ervin') { role = 'ervin'; showApp(); return; }
   if (s) { role=s; showApp(); } else document.getElementById('login-screen').style.display='flex';

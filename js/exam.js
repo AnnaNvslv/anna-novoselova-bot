@@ -18,7 +18,7 @@ async function openExamForm(apptId,patientId){
   _autosaveTimer = setInterval(()=>{
     if(_modalDirty && document.getElementById('e-complaints')){
       saveExam(_currentExamId||'',apptId,patientId,visitNum).then(()=>{
-        if(document.getElementById('e-complaints')) toast('Автосохранение ✓','info');
+        if(document.getElementById('e-complaints')) toast(t('autosave'),'info');
       });
     }
   },120000);
@@ -67,7 +67,7 @@ function _rs(id, type, val) {
   if(type==='sph')    { opts=_sphVals(); }
   else if(type==='cyl'){ opts=_cylVals(); }
   else if(type==='ax') { opts=_axVals(); style=SN; }
-  else if(type==='pd') { const def=val||62; opts=_pdVals(); style=SN; val=def; }
+  else if(type==='pd') { opts=_pdVals(); style=SN; /* val только если уже сохранено */ }
   else if(type==='add'){ opts=_addVals(); style=SN; }
   else if(type==='degr'){opts=_addVals(); style=SN; }
   else if(type==='bc') { const def=val||'8.6'; opts=_bcVals(); style=SN; val=def; }
@@ -86,21 +86,49 @@ function addCustomRx(id){
   sel.appendChild(opt);sel.value=val;_modalDirty=true;
 }
 // Legacy _ri for ave/non-rx fields
-function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}" oninput="_modalDirty=true">`;
-}
+function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}" oninput="_modalDirty=true">`;}
 // wide input (no validation) for text fields
 function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
+
+const DEFAULT_RECS = `Контроль остроты зрения через 1 год / 6 мес. / 3 мес.
+Плановый осмотр врача-офтальмолога 1 р/год.
+Рекомендован осмотр врача-офтальмолога.
+
+Рекомендовано соблюдение гигиены зрения при работе за компьютером/телефоном:
+
+• Правило 20-20-20: каждые 20 минут смотреть вдаль (~6 м) в течение 20 секунд.
+• Работать в хорошо освещённом помещении.
+• Установить на мониторе режим «Тёплые тона» (снижение синего спектра).
+• Увлажняющие капли с гиалуроновой кислотой: по 1 капле в каждый глаз каждые 3 часа.
+• Увлажнение помещения 40–60%.
+• Следить за правильным положением тела, делать разминку для шеи каждые 2 часа.
+
+При появлении дискомфорта в новых очках (слабое головокружение, непривычные и слабые болевые ощущения в глазах и голове) перейти к схеме адаптации к очкам:
+Утром, проснувшись, надеть очки.
+15 мин. в очках / 5 мин. без очков →
+20 мин. в очках / 5 мин. без очков →
+25 мин. в очках / 5 мин. без очков →
+35 мин. в очках / 5 мин. без очков →
+Привыкать каждый день, начиная с той длительности, на которой остановились.
+Старые очки не использовать!
+Адаптация может длиться до 2 недель.
+При сохранении дискомфорта через 2 недели — контрольный приём (напишите @AnnaNvslv)`;
+
 function _drawExam(p,e,visitNum,apptId){
   const ge=f=>e?.[f]||'';
+  const apptNum = e?.appointment_number || '';
   document.getElementById('modal-container').innerHTML=`
   <div class="modal modal-xl">
     <div class="modal-header">
-      <div><span class="modal-title">📋 Карта — ${p?.name||''}</span> <span class="badge badge-accent" style="margin-left:6px">Визит №${visitNum}</span></div>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+      <div>
+        <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
+        ${apptNum?`<span class="badge badge-accent" style="margin-left:6px">${apptNum}</span>`:`<span class="badge badge-accent" style="margin-left:6px">${t('visit')}${visitNum}</span>`}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="if(_modalDirty&&!confirm('${t('close_unsaved')}'))return;closeModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="tab-bar">
-        ${[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['rx','Рекомендации'],['concl','Заключение']].map(([t,l])=>`<div class="tab${_examTab===t?' active':''}" onclick="_examTab='${t}';_switchExamTab()">${l}</div>`).join('')}
+        ${[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['rx','Рецепты'],['concl','Заключение']].map(([tab,l])=>`<div class="tab${_examTab===tab?' active':''}" onclick="_examTab='${tab}';_switchExamTab()">${l}</div>`).join('')}
       </div>
 
       <div id="exam-tab-anamn" class="tab-content${_examTab==='anamn'?' active':''}">
@@ -233,18 +261,7 @@ function _drawExam(p,e,visitNum,apptId){
       </div>
 
       <div id="exam-tab-concl" class="tab-content${_examTab==='concl'?' active':''}">
-        <div class="form-group"><label>Рекомендации</label><textarea id="e-recs" style="min-height:220px" oninput="_modalDirty=true">${ge('recommendations')||`Контроль остроты зрения через 1 год / 6 мес. / 3 мес.
-Плановый осмотр врача-офтальмолога 1 р/год.
-Рекомендован осмотр врача-офтальмолога.
-
-Рекомендовано соблюдение гигиены зрения при работе за компьютером/телефоном:
-
-• Правило 20-20-20: каждые 20 минут смотреть вдаль (~6 м) в течение 20 секунд.
-• Работать в хорошо освещённом помещении.
-• Установить на мониторе режим «Тёплые тона» (снижение синего спектра).
-• Увлажняющие капли с гиалуроновой кислотой: по 1 капле в каждый глаз каждые 3 часа.
-• Увлажнение помещения 40–60%.
-• Следить за правильным положением тела, делать разминку для шеи каждые 2 часа.`}</textarea></div>
+        <div class="form-group"><label>Рекомендации</label><textarea id="e-recs" style="min-height:220px" oninput="_modalDirty=true">${ge('recommendations')||DEFAULT_RECS}</textarea></div>
         <div class="divider"></div>
         <div class="form-grid">
           <div class="form-group"><label>Дата контрольного визита</label>
@@ -261,14 +278,13 @@ function _drawExam(p,e,visitNum,apptId){
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="if(_modalDirty&&!confirm('Есть несохранённые данные. Закрыть без сохранения?'))return;closeModal()">Закрыть</button>
+      <button class="btn btn-ghost" onclick="if(_modalDirty&&!confirm(t('close_unsaved')))return;closeModal()">${t('btn_close')}</button>
       ${e?.id?`
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 Optici</button>
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 Pacijentu</button>
-        <button class="btn btn-ghost" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ Печать</button>
+        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 ${t('btn_email_clinic')}</button>
+        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 ${t('btn_email_patient')}</button>
       `:''}
-      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 Sačuvaj</button>
-      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ Štampaj</button>
+      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 ${t('btn_save')}</button>
+      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ ${t('btn_print')}</button>
     </div>
   </div>`;
 }
@@ -318,8 +334,8 @@ function _renderCorrs(){
           <div class="form-group full" style="grid-column:span 2"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value"></div>
         `}
       </div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}
-    </div>`;
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`
+  ;
   }).join('');
 }
 function addCorrection(){_examData.corrections.push({type:'Очки для дали'});document.getElementById('corr-list').innerHTML=_renderCorrs();}
@@ -335,33 +351,33 @@ async function saveExam(id,apptId,patientId,visitNum){
     refr_os_sph:v('r-os-sph'),refr_os_cyl:v('r-os-cyl'),refr_os_ax:v('r-os-ax'),refr_os_pd:v('r-pd'),refr_os_ave:v('r-os-ave'),
     exam_od_without:v('x-od-wo'),exam_od_cosph:v('x-od-cs'),exam_od_cyl:v('x-od-cyl'),exam_od_ax:v('x-od-ax'),exam_od_with:v('x-od-wi'),
     exam_os_without:v('x-os-wo'),exam_os_cosph:v('x-os-cs'),exam_os_cyl:v('x-os-cyl'),exam_os_ax:v('x-os-ax'),exam_os_with:v('x-os-wi'),
-    exam_ou:v('x-ou'),
+    exam_ou:v('x-ou'),exam_ou_note:v('x-note'),
     rx_far_enabled:true,rx_far_od_sph:v('rf-od-sph'),rx_far_od_cyl:v('rf-od-cyl'),rx_far_od_ax:v('rf-od-ax'),rx_far_od_pd:v('rf-pd'),
-    rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),rx_far_os_pd:v('rf-add'),
+    rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),rx_far_os_pd:v('rf-add'),rx_far_lens:v('rf-lens'),rx_far_note:v('rf-note'),
     rx_comp_enabled:true,rx_comp_od_sph:v('rc-od-sph'),rx_comp_od_cyl:v('rc-od-cyl'),rx_comp_od_ax:v('rc-od-ax'),rx_comp_od_pd:v('rc-pd'),rx_comp_od_add:v('rc-add'),
-    rx_comp_os_sph:v('rc-os-sph'),rx_comp_os_cyl:v('rc-os-cyl'),rx_comp_os_ax:v('rc-os-ax'),
+    rx_comp_os_sph:v('rc-os-sph'),rx_comp_os_cyl:v('rc-os-cyl'),rx_comp_os_ax:v('rc-os-ax'),rx_comp_lens:v('rc-lens'),rx_comp_note:v('rc-note'),
     rx_near_enabled:true,rx_near_od_sph:v('rn-od-sph'),rx_near_od_cyl:v('rn-od-cyl'),rx_near_od_ax:v('rn-od-ax'),rx_near_od_pd:v('rn-pd'),rx_near_od_add:v('rn-degr'),
-    rx_near_os_sph:v('rn-os-sph'),rx_near_os_cyl:v('rn-os-cyl'),rx_near_os_ax:v('rn-os-ax'),
+    rx_near_os_sph:v('rn-os-sph'),rx_near_os_cyl:v('rn-os-cyl'),rx_near_os_ax:v('rn-os-ax'),rx_near_lens:v('rn-lens'),rx_near_note:v('rn-note'),
     rx_cl_enabled:true,rx_cl_od_sph:v('rcl-od-sph'),rx_cl_od_cyl:v('rcl-od-cyl'),rx_cl_od_ax:v('rcl-od-ax'),rx_cl_od_bc:v('rcl-bc'),rx_cl_od_dia:v('rcl-dia'),rx_cl_od_type:v('rcl-type'),
-    rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),
+    rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),rx_cl_type_rec:v('rcl-lens'),rx_cl_note:v('rcl-note'),
     recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
   };
   try{
     if(effectiveId){
       const{error}=await db.from('examinations').update(data).eq('id',effectiveId);
       if(error)throw error;
-      toast('Карта сохранена ✓','success');
+      toast(t('save_card'),'success');
     }else{
       const{data:ne,error}=await db.from('examinations').insert(data).select().single();
       if(error)throw error;
       if(ne?.id){ _currentExamId=ne.id; window._lastExamId=ne.id; }
-      toast('Карта создана ✓','success');
+      toast(t('card_created'),'success');
     }
     _modalDirty=false;
     return _currentExamId||effectiveId;
   }catch(err){
     console.error('saveExam error:',err);
-    toast('❌ Ошибка сохранения: '+(err.message||'нет связи'),'error');
+    toast('❌ '+t('save_error')+': '+(err.message||'нет связи'),'error');
     return null;
   }
 }
@@ -461,8 +477,8 @@ async function _buildPrintCard(examId) {
         ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Вид МКЛ: ${c.cl_type}</div>`:''}
         ${c.note?`<div style="font-size:7.5pt;color:#555">Примечание: ${c.note}</div>`:''}
       </div>`).join('')}
-    </div>`:''}
-
+    </div>`:''}`
+    +`
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Авторефрактометрия</div>
       <table class="pc-table">
@@ -531,7 +547,7 @@ async function emailExam(examId,target){
   const{data:sRows}=await db.from('settings').select('key,value').in('key',['doctor_name']);
   const s={}; (sRows||[]).forEach(r=>s[r.key]=r.value);
   const date=fmt((e?.created_at||today()).split('T')[0]);
-  const title=`Карта — ${p?.name||'пациент'} — ${date}`;
+  const title=`${t('exam_card')} — ${p?.name||'пациент'} — ${date}`;
   const html=document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
   let toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p?.email||'');
@@ -562,16 +578,17 @@ async function _buildPatientPrintCard(pid) {
   const apptRows = (appts||[]).map(a=>`
     <tr>
       <td>${fmt(a.date)}</td>
+      <td>${a.appointment_number||''}</td>
       <td>${a.type||'—'}</td>
       <td>${a.time?.substr(0,5)||'—'}</td>
       <td>${a.status||'—'}</td>
       <td>${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
-    </tr>`).join('') || '<tr><td colspan="5" style="color:#999;text-align:center">Нет приёмов</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="6" style="color:#999;text-align:center">Нет приёмов</td></tr>';
 
   const lastExam = (exams||[])[0];
   const examBlock = lastExam ? `
     <div class="pc-sec">
-      <div class="pc-sec-label">Последняя карта обследования — Визит №${lastExam.visit_number||'—'} (${fmt(lastExam.created_at?.split('T')[0])})</div>
+      <div class="pc-sec-label">Последняя карта обследования — ${lastExam.appointment_number||('Визит №'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
       <table class="pc-table" style="font-size:8pt">
         <tr><th></th><th>Sph даль</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td></tr>
@@ -597,11 +614,11 @@ async function _buildPatientPrintCard(pid) {
         <div class="pc-doctor-sub">Оптометрист · Нови-Сад, Сербия · Оптика Ginter</div>
       </div>
       <div class="pc-meta">
-        <div class="pc-meta-num">Карточка пациента</div>
+        <div class="pc-meta-num">${t('patient_profile')}</div>
         <div>Дата: ${today_str}</div>
       </div>
     </div>
-    <div class="pc-title">Карточка пациента</div>
+    <div class="pc-title">${t('patient_profile')}</div>
     <div class="pc-patient-block">
       <div class="pc-patient-name">${p.name||''}</div>
       <div class="pc-patient-sub">${age?age+' лет':''}${p.dob?' · Д.р.: '+fmt(p.dob):''}</div>
@@ -621,7 +638,7 @@ async function _buildPatientPrintCard(pid) {
     <div class="pc-sec">
       <div class="pc-sec-label">История приёмов</div>
       <table class="pc-table" style="font-size:8pt">
-        <tr><th>Дата</th><th>Вид</th><th>Время</th><th>Статус</th><th>Стоимость</th></tr>
+        <tr><th>Дата</th><th>№ приёма</th><th>Вид</th><th>Время</th><th>Статус</th><th>Стоимость</th></tr>
         ${apptRows}
       </table>
     </div>
@@ -680,7 +697,7 @@ async function savePatientPDF(pid) {
   toast('Строим карточку...','info');
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
-  const title = `Карточка — ${p.name||'пациент'} — ${new Date().toLocaleDateString('ru-RU')}`;
+  const title = `${t('patient_profile')} — ${p.name||'пациент'} — ${new Date().toLocaleDateString('ru-RU')}`;
   const html = document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
 }
@@ -690,14 +707,14 @@ async function emailPatientPDF(pid, target) {
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
   const date_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const title = `Карточка — ${p.name||'пациент'} — ${date_str}`;
+  const title = `${t('patient_profile')} — ${p.name||'пациент'} — ${date_str}`;
   const html = document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
   const toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p.email||'');
   if(target==='patient' && !toEmail) { toast('Email пациента не указан в карточке','error'); return; }
-  const subj = `Карточка пациента — ${p.name||''} — ${date_str}`;
+  const subj = `${t('patient_profile')} — ${p.name||''} — ${date_str}`;
   const body = target==='clinic'
-    ? `Карточка пациента ${p.name||''} сформирована ${date_str}.\n\nПрикрепите сохранённый PDF к письму.\n\nС уважением,\nАнна Новосёлова`
+    ? `Kartica pacijenta ${p.name||''} formirana ${date_str}.\n\nPriložite sačuvani PDF uz pismo.\n\nS poštovanjem,\nАнна Новосёлова`
     : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАнна Новосёлова\nОптометрист · Нови-Сад`;
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1200);
 }

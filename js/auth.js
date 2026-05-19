@@ -24,8 +24,9 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  const mn = document.getElementById('mobile-nav');
-  if (mn && window.innerWidth <= 768) mn.style.display = 'flex';
+  // Показать мобильную навигацию только на мобиле
+  var mn = document.getElementById('mobile-nav');
+  if (mn) mn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
   const saved=localStorage.getItem('crm_section');
   if(saved&&saved!=='trash'){curSection=saved;}
   document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
@@ -46,15 +47,6 @@ function showApp() {
 }
 function logout() { role=null; localStorage.removeItem('crm_role'); location.reload(); }
 window.onload = () => {
-  // Убить лишние fixed-bottom элементы от старого mobile.js
-  document.querySelectorAll('body > div').forEach(function(el) {
-    if (el.id !== 'mobile-nav' && el.id !== 'mob-drawer-overlay' && el.id !== 'mob-drawer' &&
-        el.id !== 'login-screen' && el.id !== 'app' && el.id !== 'overlay' &&
-        el.id !== 'print-area' && el.id !== 'toast') {
-      var s = window.getComputedStyle(el);
-      if (s.position === 'fixed' && s.bottom === '0px') { el.remove(); }
-    }
-  });
   const s = localStorage.getItem('crm_role');
   if (s === 'ervin') { role = 'ervin'; showApp(); return; }
   if (s) { role=s; showApp(); } else document.getElementById('login-screen').style.display='flex';

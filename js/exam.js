@@ -67,7 +67,7 @@ function _rs(id, type, val) {
   if(type==='sph')    { opts=_sphVals(); }
   else if(type==='cyl'){ opts=_cylVals(); }
   else if(type==='ax') { opts=_axVals(); style=SN; }
-  else if(type==='pd') { opts=_pdVals(); style=SN; /* val только если уже сохранено */ }
+  else if(type==='pd') { opts=_pdVals(); style=SN; }
   else if(type==='add'){ opts=_addVals(); style=SN; }
   else if(type==='degr'){opts=_addVals(); style=SN; }
   else if(type==='bc') { const def=val||'8.6'; opts=_bcVals(); style=SN; val=def; }
@@ -85,9 +85,7 @@ function addCustomRx(id){
   const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;
   sel.appendChild(opt);sel.value=val;_modalDirty=true;
 }
-// Legacy _ri for ave/non-rx fields
 function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}" oninput="_modalDirty=true">`;}
-// wide input (no validation) for text fields
 function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
 
 const DEFAULT_RECS = `Контроль остроты зрения через 1 год / 6 мес. / 3 мес.
@@ -334,8 +332,8 @@ function _renderCorrs(){
           <div class="form-group full" style="grid-column:span 2"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value"></div>
         `}
       </div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`
-  ;
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}
+    </div>`;
   }).join('');
 }
 function addCorrection(){_examData.corrections.push({type:'Очки для дали'});document.getElementById('corr-list').innerHTML=_renderCorrs();}
@@ -344,14 +342,15 @@ async function saveExam(id,apptId,patientId,visitNum){
   const effectiveId = _currentExamId || id || '';
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
-    visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),complaints_notes:v('e-complaints'),last_ophthalmologist:v('e-lastoph'),
+    visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),
+    complaints_notes:v('e-complaints'),last_ophthalmologist:v('e-lastoph'),
     eye_diseases_notes:v('e-eyedis'),general_diseases_notes:v('e-gendis'),
     current_corrections:_examData.corrections,
     refr_od_sph:v('r-od-sph'),refr_od_cyl:v('r-od-cyl'),refr_od_ax:v('r-od-ax'),refr_od_pd:v('r-pd'),refr_od_ave:v('r-od-ave'),
     refr_os_sph:v('r-os-sph'),refr_os_cyl:v('r-os-cyl'),refr_os_ax:v('r-os-ax'),refr_os_pd:v('r-pd'),refr_os_ave:v('r-os-ave'),
     exam_od_without:v('x-od-wo'),exam_od_cosph:v('x-od-cs'),exam_od_cyl:v('x-od-cyl'),exam_od_ax:v('x-od-ax'),exam_od_with:v('x-od-wi'),
     exam_os_without:v('x-os-wo'),exam_os_cosph:v('x-os-cs'),exam_os_cyl:v('x-os-cyl'),exam_os_ax:v('x-os-ax'),exam_os_with:v('x-os-wi'),
-    exam_ou:v('x-ou'),exam_ou_note:v('x-note'),
+    exam_ou:v('x-ou'),
     rx_far_enabled:true,rx_far_od_sph:v('rf-od-sph'),rx_far_od_cyl:v('rf-od-cyl'),rx_far_od_ax:v('rf-od-ax'),rx_far_od_pd:v('rf-pd'),
     rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),rx_far_os_pd:v('rf-add'),rx_far_lens:v('rf-lens'),rx_far_note:v('rf-note'),
     rx_comp_enabled:true,rx_comp_od_sph:v('rc-od-sph'),rx_comp_od_cyl:v('rc-od-cyl'),rx_comp_od_ax:v('rc-od-ax'),rx_comp_od_pd:v('rc-pd'),rx_comp_od_add:v('rc-add'),
@@ -390,30 +389,6 @@ async function saveAndPrint(id,apptId,patientId,visitNum){
 async function saveBeforeEmail(id,apptId,patientId,visitNum,target){
   const eid = await saveExam(id,apptId,patientId,visitNum);
   if(eid) await emailExam(eid,target);
-}
-
-function _collectExamData(apptId,patientId,visitNum){
-  const reasons=[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', ');
-  return{
-    appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
-    visit_reason:reasons,complaints_notes:v('e-complaints'),last_ophthalmologist:v('e-lastoph'),
-    eye_diseases_notes:v('e-eyedis'),general_diseases_notes:v('e-gendis'),
-    current_corrections:_examData.corrections,
-    refr_od_sph:v('r-od-sph'),refr_od_cyl:v('r-od-cyl'),refr_od_ax:v('r-od-ax'),refr_od_pd:v('r-pd'),refr_od_ave:v('r-od-ave'),
-    refr_os_sph:v('r-os-sph'),refr_os_cyl:v('r-os-cyl'),refr_os_ax:v('r-os-ax'),refr_os_pd:v('r-pd'),refr_os_ave:v('r-os-ave'),
-    exam_od_without:v('x-od-wo'),exam_od_cosph:v('x-od-cs'),exam_od_cyl:v('x-od-cyl'),exam_od_ax:v('x-od-ax'),exam_od_with:v('x-od-wi'),
-    exam_os_without:v('x-os-wo'),exam_os_cosph:v('x-os-cs'),exam_os_cyl:v('x-os-cyl'),exam_os_ax:v('x-os-ax'),exam_os_with:v('x-os-wi'),
-    exam_ou:v('x-ou'),
-    rx_far_enabled:true,rx_far_od_sph:v('rf-od-sph'),rx_far_od_cyl:v('rf-od-cyl'),rx_far_od_ax:v('rf-od-ax'),rx_far_od_pd:v('rf-pd'),rx_far_os_pd:v('rf-add'),
-    rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),
-    rx_comp_enabled:true,rx_comp_od_sph:v('rc-od-sph'),rx_comp_od_cyl:v('rc-od-cyl'),rx_comp_od_ax:v('rc-od-ax'),rx_comp_od_pd:v('rc-pd'),rx_comp_od_add:v('rc-add'),
-    rx_comp_os_sph:v('rc-os-sph'),rx_comp_os_cyl:v('rc-os-cyl'),rx_comp_os_ax:v('rc-os-ax'),
-    rx_near_enabled:true,rx_near_od_sph:v('rn-od-sph'),rx_near_od_cyl:v('rn-od-cyl'),rx_near_od_ax:v('rn-od-ax'),rx_near_od_pd:v('rn-pd'),rx_near_od_add:v('rn-degr'),
-    rx_near_os_sph:v('rn-os-sph'),rx_near_os_cyl:v('rn-os-cyl'),rx_near_os_ax:v('rn-os-ax'),
-    rx_cl_enabled:true,rx_cl_od_sph:v('rcl-od-sph'),rx_cl_od_cyl:v('rcl-od-cyl'),rx_cl_od_ax:v('rcl-od-ax'),rx_cl_od_bc:v('rcl-bc'),rx_cl_od_dia:v('rcl-dia'),rx_cl_od_type:v('rcl-type'),
-    rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),
-    recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
-  };
 }
 
 // ═══ PRINT ═══
@@ -460,12 +435,10 @@ async function _buildPrintCard(examId) {
       <div style="font-size:14pt;font-weight:800;color:#1a1a2e">${p?.name||''}</div>
       <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' лет':''}</div>
     </div>
-
     ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Причина обращения</div><div class="pc-text">${rx('visit_reason')}</div></div>`:'' }
     ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Жалобы</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
     ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Глазные заболевания</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
     ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}
-
     ${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Используемая коррекция</div>
       ${e.current_corrections.map(c=>`<div style="margin-bottom:5pt">
@@ -477,8 +450,7 @@ async function _buildPrintCard(examId) {
         ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Вид МКЛ: ${c.cl_type}</div>`:''}
         ${c.note?`<div style="font-size:7.5pt;color:#555">Примечание: ${c.note}</div>`:''}
       </div>`).join('')}
-    </div>`:''}`
-    +`
+    </div>`:''}
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Авторефрактометрия</div>
       <table class="pc-table">
@@ -488,7 +460,6 @@ async function _buildPrintCard(examId) {
       </table>
       ${rx('refr_od_pd')?`<div style="font-size:8pt;margin-top:4pt"><b>PD:</b> ${rx('refr_od_pd')}</div>`:''}
     </div>
-
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Результаты обследования</div>
       <table class="pc-table">
@@ -498,7 +469,6 @@ async function _buildPrintCard(examId) {
       </table>
       ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>OU с коррекцией:</b> ${rx('exam_ou')}</div>`:''}
     </div>
-
     ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock('Параметры для изготовления очков для дали',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax')}],
       [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}]):''}
@@ -521,12 +491,10 @@ async function _buildPrintCard(examId) {
         ${rx('rx_cl_od_type')?`<span><b>Вид МКЛ:</b> ${rx('rx_cl_od_type')}</span>`:''}
       </div>
     </div>`:''}
-
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Рекомендации и заключение</div>
       <div class="pc-recs">${rx('recommendations')||'—'}</div>
     </div>
-
     <div class="pc-footer">
       <div class="pc-note">Документ предназначен для подбора и изготовления оптической коррекции (очки / МКЛ). При наличии заболеваний глаз, болях или резком ухудшении зрения обратитесь к врачу-офтальмологу.</div>
       ${e?.control_date?`<div class="pc-control">Контрольный визит:<br>${fmt(e.control_date)}</div>`:''}
@@ -563,6 +531,7 @@ async function emailExam(examId,target){
   toast('Sačuvajte PDF i priložite uz pismo','info');
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1500);
 }
+
 // ═══ PATIENT CARD PDF ═══
 async function _buildPatientPrintCard(pid) {
   const [{data:p},{data:appts},{data:orders},{data:exams}] = await Promise.all([
@@ -578,7 +547,7 @@ async function _buildPatientPrintCard(pid) {
   const apptRows = (appts||[]).map(a=>`
     <tr>
       <td>${fmt(a.date)}</td>
-      <td>${a.appointment_number||''}</td>
+      <td>${a.appointment_number||'—'}</td>
       <td>${a.type||'—'}</td>
       <td>${a.time?.substr(0,5)||'—'}</td>
       <td>${a.status||'—'}</td>
@@ -588,13 +557,12 @@ async function _buildPatientPrintCard(pid) {
   const lastExam = (exams||[])[0];
   const examBlock = lastExam ? `
     <div class="pc-sec">
-      <div class="pc-sec-label">Последняя карта обследования — ${lastExam.appointment_number||('Визит №'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
+      <div class="pc-sec-label">Последняя карта — ${lastExam.appointment_number||('Визит №'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
       <table class="pc-table" style="font-size:8pt">
         <tr><th></th><th>Sph даль</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td></tr>
         <tr><td class="eye">OS</td><td>${lastExam.rx_far_os_sph||'—'}</td><td>${lastExam.rx_far_os_cyl||'—'}</td><td>${lastExam.rx_far_os_ax||'—'}</td></tr>
       </table>
-      ${lastExam.recommendations?`<div style="margin-top:6pt;font-size:8pt"><b>Рекомендации:</b> ${lastExam.recommendations}</div>`:''}
       ${lastExam.control_date?`<div style="margin-top:4pt;font-size:8pt;color:#b45309"><b>Контрольный визит:</b> ${fmt(lastExam.control_date)}</div>`:''}
     </div>` : '';
 
@@ -676,7 +644,6 @@ function _openPrintWindow(title, html) {
     .pc-sec{margin-bottom:8pt}
     .pc-sec-label{font-size:7pt;font-weight:700;color:#0891b2;text-transform:uppercase;letter-spacing:0.8pt;margin-bottom:3pt}
     .pc-text{font-size:8.5pt;padding:3pt 0;color:#333}
-    .pc-anam{background:#fafafa;border-left:2pt solid #0891b2;padding:5pt 8pt;font-size:8.5pt;white-space:pre-wrap;line-height:1.5}
     .pc-table{width:100%;border-collapse:collapse;margin-bottom:2pt;font-size:8.5pt}
     .pc-table th{text-align:center;padding:3pt 5pt;font-size:7pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4pt;border-bottom:1pt solid #c8d8e8;background:#f0f5fb}
     .pc-table td{padding:3.5pt 5pt;text-align:center;border-bottom:0.5pt solid #e8eef4}

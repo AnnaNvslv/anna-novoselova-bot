@@ -219,7 +219,7 @@ textarea{resize:vertical;min-height:72px}
 .pc-footer{margin-top:10pt;padding-top:6pt;border-top:0.5pt solid #dde;display:flex;justify-content:space-between;align-items:flex-end}
 .pc-note{font-size:6.5pt;color:#999;max-width:130mm}
 .pc-control{font-size:8.5pt;font-weight:700;color:#1B4F72;text-align:right}
-#toast{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast-msg{padding:11px 18px;border-radius:9px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:slideUp .2s ease;pointer-events:auto}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
@@ -233,7 +233,8 @@ input[type=number]{-moz-appearance:textfield}
 @media(max-width:768px){
   /* Bottom nav */
   #mobile-nav{
-    display:flex;position:fixed;bottom:0;left:0;right:0;
+    display:flex!important;
+    position:fixed;bottom:0;left:0;right:0;
     height:58px;background:var(--primary);z-index:9999;
     align-items:stretch;box-shadow:0 -2px 12px rgba(0,0,0,.18);
     overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -469,22 +470,22 @@ input[type=number]{-moz-appearance:textfield}
 <div id="print-area"></div>
 <div id="toast"></div>
 
-<script src="js/i18n.js?v=9"></script>
-<script src="js/config.js?v=9"></script>
-<script src="js/utils.js?v=9"></script>
-<script src="js/auth.js?v=11"></script>
-<script src="js/telegram.js?v=9"></script>
-<script src="js/router.js?v=9"></script>
-<script src="js/dashboard.js?v=9"></script>
-<script src="js/patients.js?v=9"></script>
-<script src="js/appointments.js?v=9"></script>
-<script src="js/orders.js?v=9"></script>
-<script src="js/analytics.js?v=9"></script>
-<script src="js/calendar.js?v=9"></script>
-<script src="js/exam.js?v=9"></script>
-<script src="js/settings.js?v=9"></script>
-<script src="js/trash.js?v=9"></script>
-<script src="js/export.js?v=9"></script>
+<script src="js/i18n.js?v=10"></script>
+<script src="js/config.js?v=10"></script>
+<script src="js/utils.js?v=10"></script>
+<script src="js/auth.js?v=12"></script>
+<script src="js/telegram.js?v=10"></script>
+<script src="js/router.js?v=10"></script>
+<script src="js/dashboard.js?v=10"></script>
+<script src="js/patients.js?v=10"></script>
+<script src="js/appointments.js?v=10"></script>
+<script src="js/orders.js?v=10"></script>
+<script src="js/analytics.js?v=10"></script>
+<script src="js/calendar.js?v=10"></script>
+<script src="js/exam.js?v=10"></script>
+<script src="js/settings.js?v=10"></script>
+<script src="js/trash.js?v=10"></script>
+<script src="js/export.js?v=10"></script>
 <script>
 function _mobActive(){
   var s=window.curSection||'dashboard';

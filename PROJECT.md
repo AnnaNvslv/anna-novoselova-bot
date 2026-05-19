@@ -1,21 +1,28 @@
 # Гинтер Оптика — CRM (контекст проекта)
 
-Документ для разработчиков и LLM-ассистентов. Описывает **зачем** существует проект, **как устроен** код и **какие бизнес-правила** нельзя ломать.
+Документ для разработчиков и LLM-ассистентов.
 
 ---
 
 ## Назначение
 
-Веб-CRM для **сербской оптики «Гинтер Оптика»** (Ginter Optika). Основной пользователь — **оптометрист Анна Новосёлова**: ведёт пациентов, записывает и проводит приёмы, заполняет карты обследования, оформляет заказы на очки/линзы, считает зарплату.
+Веб-CRM для сербской оптики «Гинтер Оптика». Основной пользователь — **оптометрист Анна Новосёлова**. Ведёт пациентов, приёмы, карты обследования, заказы на очки/линзы, зарплату.
 
-Дополнительные задачи системы:
+- Общее расписание с коллегой (роль `ervin`)
+- Онлайн-запись пациентов — `booking.html`
+- Уведомления в Telegram
+- Двуязычный UI: сербский (default) и русский
 
-- **Общее расписание** с коллегой (роль `ervin`) — параллельная запись: свободные слоты, занятые приёмы пациентов, блокировки под работу Ervin в оптике.
-- **Онлайн-запись пациентов** — отдельная публичная страница `booking.html`.
-- **Уведомления в Telegram** — готовность заказа, напоминания (бот настраивается в CRM).
-- **Двуязычный UI** — сербский (по умолчанию) и русский.
+Валюта: **сербский динар (дин.)**. Даты в UI: `ДД.ММ.ГГГГ`, в БД: ISO `YYYY-MM-DD`.
 
-Валюта в интерфейсе: **сербский динар (дин.)**. Даты в UI часто `ДД.ММ.ГГГГ`, в БД — ISO `YYYY-MM-DD`.
+---
+
+## Деплой
+
+- **Репозиторий:** https://github.com/AnnaNvslv/anna-novoselova-bot
+- **GitHub Pages:** https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html
+- **Booking:** https://annanvslv.github.io/anna-novoselova-bot/booking.html
+- Деплой автоматический при пуше в `main`
 
 ---
 
@@ -23,213 +30,143 @@
 
 | Слой | Решение |
 |------|---------|
-| Frontend | Один HTML-шелл + vanilla JS (без React/Vue) |
+| Frontend | Один HTML-шелл + vanilla JS |
 | Стили | Встроенный CSS в `crm-v3.html` |
-| Backend / БД | [Supabase](https://supabase.com) (PostgreSQL + REST через JS client v2) |
-| PDF | html2pdf.js (рецепты/печать из `exam.js`) |
-| Деплой | Статические файлы (GitHub Pages или любой static host) |
-
-**Точка входа CRM:** открыть `crm-v3.html` в браузере.
-
-**Точка входа записи:** `booking.html`.
-
-Подключение к Supabase: `js/config.js` (и дубликат констант в `booking.html`). Ключ — **anon public**; секреты сервис-роли в репозитории **не хранить**.
-
----
-
-## Роли и доступ
-
-Вход по **PIN** (`js/auth.js`). PINы хранятся в таблице `settings` (`admin_pin`, `staff_pin`, `ervin_pin`), с fallback на захардкоженные значения при недоступности БД.
-
-| Роль | Кто | Права |
-|------|-----|--------|
-| `admin` | Анна (полный доступ) | Всё: пациенты, приёмы, заказы, аналитика/ЗП, настройки, расписание, корзина |
-| `staff` | Сотрудник оптики | Ограниченное редактирование (`canEdit()` = false для staff) |
-| `ervin` | Коллега в оптике | Только **расписание**: бронирует слоты под себя (`booked_by='ervin'`). Скрыты разделы: приёмы, заказы, аналитика, настройки, корзина |
-
-Сессия: `localStorage.crm_role`. Последний раздел: `localStorage.crm_section` (восстанавливается в `nav()`, кроме `trash`).
-
-Язык: `localStorage.crm_lang` — `sr` (default) или `ru` (`js/i18n.js`).
+| Backend / БД | Supabase (PostgreSQL + REST, JS client v2) |
+| Supabase project | `ncfqiznpilikwmpqhapb` (anon key в `js/config.js`) |
+| PDF | html2pdf.js |
+| Деплой | GitHub Pages |
 
 ---
 
 ## Структура файлов
 
 ```
-crm-v3.html          # Shell: login, sidebar, modal, CSS, порядок <script>
-booking.html         # Публичная онлайн-запись (свой inline JS + Supabase)
+crm-v3.html     # Shell: login, sidebar, мобильная навигация, весь CSS, порядок <script>
+booking.html    # Публичная онлайн-запись
+mobile.css      # ПУСТОЙ — мобильные стили перенесены в crm-v3.html
+mobile.js       # ПУСТОЙ — мобильная логика перенесена в crm-v3.html
 js/
-  config.js          # Supabase client, константы, глобальный state
-  i18n.js            # RU/SR переводы, switchLang()
-  auth.js            # PIN login, showApp(), logout
-  router.js          # nav(section), render() → dispatch по разделам
-  utils.js           # fmt, fmtMoney, toast, modal, orderTotal, права
-  dashboard.js       # Главная: сегодня, готовые заказы, выручка
-  patients.js        # Список и карточка пациента
-  appointments.js    # Приёмы, слоты, статусы
-  orders.js          # Заказы, быстрый RX, выдача
-  exam.js            # Карта обследования (анамнез, RX, печать/PDF)
-  calendar.js        # Недельная сетка слотов (параллель с Ervin)
-  analytics.js       # Выручка и расчёт зарплаты (только admin)
-  settings.js        # Клиника, расписание, PIN, Telegram, экспорт
-  trash.js           # Мягкое удаление → корзина → восстановление
-  telegram.js        # tgSend(), recalcSalary()
-  export.js          # JSON backup всех таблиц
+  config.js     # Supabase client, константы, глобальный state
+  i18n.js       # RU/SR переводы, switchLang()
+  auth.js       # PIN login, showApp(), logout, инит мобильной навигации
+  router.js     # nav(section), render()
+  utils.js      # fmt, fmtMoney, toast, modal, orderTotal, права
+  dashboard.js  # Главная
+  patients.js   # Список и карточка пациента
+  appointments.js # Приёмы, слоты, статусы
+  orders.js     # Заказы, RX, выдача
+  exam.js       # Карта обследования, RX, печать/PDF
+  calendar.js   # Недельная сетка слотов
+  analytics.js  # Выручка и зарплата (только admin)
+  settings.js   # Настройки клиники, PIN, Telegram, экспорт
+  trash.js      # Мягкое удаление → корзина
+  telegram.js   # tgSend(), recalcSalary()
+  export.js     # JSON backup
 ```
-
-**Паттерн модулей:** каждый файл экспортирует `renderXxx()` / функции в глобальную область; `router.js` вызывает их по `curSection`. HTML генерируется строками в JS.
 
 ---
 
-## Разделы CRM (навигация)
+## Роли и доступ
 
-| `curSection` | Файл | Содержание |
-|--------------|------|------------|
-| `dashboard` | `dashboard.js` | Статистика дня/месяца, сетка сегодня, готовые к выдаче |
-| `patients` | `patients.js` | База пациентов, карточка (приёмы / заказы / осмотры) |
-| `appointments` | `appointments.js` | Список приёмов, создание из свободного слота |
-| `orders` | `orders.js` | Заказы очков/МКЛ, статусы, привязка к осмотру |
-| `analytics` | `analytics.js` | Только `admin`: выручка, средний чек, **зарплата** |
-| `slots` | `calendar.js` | Недельное расписание, слоты, Ervin |
-| `settings` | `settings.js` | Имя врача, часы работы, PIN, Telegram, backup |
-| `trash` | `trash.js` | Удалённые сущности (`deleted_at`) |
+Вход по PIN (`js/auth.js`). PINы в таблице `settings`, fallback: admin=`1234`, staff=`0000`, ervin=`2222`.
+
+| Роль | Права |
+|------|-------|
+| `admin` | Всё |
+| `staff` | Ограниченное редактирование |
+| `ervin` | Только расписание |
+
+Сессия: `localStorage.crm_role`. Последний раздел: `localStorage.crm_section`. Язык: `localStorage.crm_lang`.
+
+---
+
+## Мобильная версия
+
+### Архитектура (всё в `crm-v3.html`)
+
+`mobile.css` и `mobile.js` — **пустые файлы**, не использовать.
+
+**CSS** (внутри `<style>` в crm-v3.html):
+- `@media(max-width:768px)` — скрывает сайдбар, адаптирует таблицы/формы/модалки
+- `#mobile-nav { display:none }` — по умолчанию скрыт
+
+**HTML** (в начале `<body>`, до `#login-screen`):
+- `<div id="mobile-nav" style="display:none">` — 5 кнопок: Главная, Расписание, Приёмы, Пациенты, Ещё
+- `<div id="mob-drawer">` — выдвижное меню: Заказы, Аналитика, Настройки, Корзина, язык, Выйти
+
+**JS** (inline `<script>` в конце `<body>`):
+- `_mobActive()` — подсвечивает активную кнопку
+- `_mobDrawer()` / `_mobCloseDrawer()` — управление drawer
+- Патч `window.nav()` — обновляет активную кнопку при переходе
+
+**`js/auth.js` — `showApp()`:**
+- После логина: `mn.style.display = 'flex'` (только если `window.innerWidth <= 768`)
+- `window.onload`: убивает лишние `position:fixed; bottom:0` элементы (артефакты старого mobile.js)
+
+### ⚠️ Известная проблема (не решена)
+
+На реальном телефоне (Chrome Android) внизу видна полоса «Заказы» вместо полноценного меню.
+
+**Данные из DevTools:**
+- `document.getElementById('mobile-nav').style.display` → `'flex'` ✓
+- `document.getElementById('mobile-nav').children.length` → `5` ✓
+- Полоса «Заказы» видна поверх навигации
+- В Console нет JS ошибок
+
+**Гипотеза:** поверх `#mobile-nav` лежит другой `position:fixed; bottom:0` элемент — возможно Service Worker кэшировал старый `mobile.js` который динамически создавал nav с одной кнопкой «Заказы».
+
+**Что проверить следующему LLM:**
+1. `document.querySelector('[style*="fixed"][style*="bottom"]')?.id` — найти лишний элемент
+2. Проверить есть ли Service Worker: `navigator.serviceWorker.getRegistrations()`
+3. Убедиться что `#mobile-nav` не перекрыт по z-index
 
 ---
 
 ## Модель данных (Supabase)
 
 ### `patients`
-ФИО, телефон, email, дата рождения, источник (`SOURCES` в config), Telegram (`telegram_username`, `telegram_chat_id`), заметки.  
-**Мягкое удаление:** `deleted_at` (не физический delete из UI).
+ФИО, телефон, email, дата рождения, источник, Telegram, заметки. Мягкое удаление: `deleted_at`.
 
 ### `appointments`
-Приём: `patient_id`, `date`, `time`, `type` (из `APPT_TYPES`), `status` (`запланирован` | `завершён` | `отменён`), `consultation_price` (обычно 3000 дин.), `appointment_number`, заметки.  
-Связь со слотом: при создании/редактировании обновляется `available_slots` (`is_booked`, `appointment_id`).
+`patient_id`, `date`, `time`, `type`, `status` (`запланирован`|`завершён`|`отменён`), `consultation_price` (3000 дин.), `appointment_number`.
 
 ### `available_slots`
-Слоты для записи: `date`, `start_time`, `is_booked`, `appointment_id`, `booked_by` (`null` | `'ervin'`), `ervin_note`.  
-Админ открывает дни/недели; Ervin занимает жёлтые ячейки; пациенты бронируют через `booking.html` или CRM.
+`date`, `start_time`, `is_booked`, `appointment_id`, `booked_by` (`null`|`'ervin'`), `ervin_note`.
 
 ### `examinations`
-Карта обследования (много полей): анамнез, текущая коррекция, табы RX:
-- даль (`rx_far_*`), компьютер (`rx_comp_*`), близь (`rx_near_*`), МКЛ (`rx_cl_*`)
-- `visit_number`, `appointment_id`, `patient_id`, `current_corrections` (JSON)
-- Автосохранение каждые 2 мин при открытой форме (`exam.js`)
+Анамнез, RX (даль/компьютер/близь/МКЛ), `visit_number`, `appointment_id`, `patient_id`. Автосохранение каждые 2 мин.
 
 ### `orders`
-Заказ: оправа, линзы (цена ×2 в `orderTotal`), работа, предоплата, статус, даты, тип коррекции (`CORR_TYPES`), ссылка на осмотр.  
-Статусы: `оформлен` → `в работе` → `готов` → `выдан` (+ `отменен`, `возврат`, `переделка`).  
-`counts_for_salary` — флаг для расчёта 10% (см. ниже).  
-`orderTotal(o) = frame_price + lens_price*2 + work_price`, баланс = total − prepayment.
+`frame_price`, `lens_price` (×2 в orderTotal), `work_price`, предоплата, статус, тип коррекции.  
+`orderTotal = frame_price + lens_price*2 + work_price`  
+Статусы: `оформлен` → `в работе` → `готов` → `выдан`
 
 ### `settings`
-Key-value: `doctor_name`, `clinic_name`, `cal_start`, `cal_end`, `cal_duration`, `cal_break`, `cal_work_days`, PINы, `bot_token`, `bot_username`, `my_chat_id`.
+Key-value: `doctor_name`, `clinic_name`, часы работы, PINы, `bot_token`, `bot_username`, `my_chat_id`.
 
 ---
 
-## Ключевые бизнес-процессы
+## Расчёт зарплаты
 
-### 1. Запись пациента
-1. Админ открывает слоты в **Расписание** (`calendar.js`) или пациент идёт на **booking.html**.
-2. В CRM: **Приёмы** → выбор свободного `available_slots` → пациент, тип приёма, цена.
-3. Конфликты: проверка дубля date+time+patient; занятость слота.
-
-### 2. Приём и обследование
-1. Из карточки пациента или приёма → `openExamForm(apptId, patientId)`.
-2. Заполнение анамнеза и RX, сохранение в `examinations`.
-3. Печать/PDF рецепта (`exam.js`).
-
-### 3. Заказ
-1. `openAddOrder()` / из карточки пациента.
-2. Можно подтянуть RX из осмотра (far/comp/near/cl).
-3. При сохранении вызывается `recalcSalary(patientId)` (`telegram.js`).
-4. Выдача: `issueOrder()` — статус `выдан`, проверка остатка оплаты.
-
-### 4. Параллельное расписание с Ervin
-- Зелёные ячейки — свободный слот для пациентов.
-- Синие — приём пациента (клик → карточка).
-- Жёлтые — `booked_by='ervin'` (коллега в оптике, не пациент).
-- Ervin видит только расписание и кнопку «мой слот».
-
-### 5. Расчёт зарплаты (`analytics.js`, только admin)
-
-За **текущий месяц**:
-
-1. **Приёмы:** сумма `consultation_price` по appointments с `created_at` в месяце (в UI часто ориентир 3000 дин. × количество).
-2. **Заказы:** для каждого пациента, если сумма его заказов за месяц **≥ 10 000 дин.**, все его заказы месяца получают `counts_for_salary=true` (`recalcSalary`).
-3. **10%** от суммы таких заказов добавляется к зарплате.
-
-Итого: `salaryFromAppts + round(salaryFromOrders * 0.10)`.
-
-### 6. Telegram
-- Токен и chat id в settings.
-- `notifyOrderReady` и др. — через `tgSend(chatId, text)`.
-
-### 7. Корзина
-Удаление = `deleted_at = now()`. Восстановление или окончательное удаление из `trash.js` (admin).
+1. Сумма `consultation_price` по приёмам месяца
+2. Если сумма заказов пациента за месяц **≥ 10 000 дин.** → `counts_for_salary=true`
+3. **+10%** от таких заказов
 
 ---
 
-## Онлайн-запись (`booking.html`)
+## Соглашения
 
-Отдельное одностраничное приложение:
-
-1. Выбор типа приёма (цены 3000 / 2000 / 3500 / 1000 / 0 дин.).
-2. Календарь по свободным `available_slots` (60 дней вперёд).
-3. Форма пациента (возрастные ограничения: &lt;10 — запрет, &lt;18 — согласие родителя).
-4. Создание/поиск `patients` + `appointments` + бронь слота.
-
-Использует тот же Supabase project, что и CRM.
-
----
-
-## Константы и справочники (`config.js`)
-
-- **Типы приёмов:** `APPT_TYPES` (+ сербские названия `APPT_TYPES_SR`)
-- **Статусы заказов:** `ORDER_STATUSES_ALL`
-- **Типы коррекции:** `CORR_TYPES`
-- **Причины визита:** `VISIT_REASONS`
-- **Источники пациентов:** `SOURCES`
+1. Не ломать глобальные функции: `nav()`, `openPatientCard()`, `saveExam()`
+2. Мобильное — только в `crm-v3.html`, НЕ в `mobile.css`/`mobile.js`
+3. Мягкое удаление: `deleted_at`, фильтр `.is('deleted_at', null)`
+4. i18n: новые строки в `TRANSLATIONS.ru` и `TRANSLATIONS.sr` в `i18n.js`
+5. Деньги: `fmtMoney()`, расчёт через `orderTotal()` из `utils.js`
+6. Скрипты: `?v=9` (auth.js — `?v=11`)
+7. Нет сборщика, TypeScript, тестов — правки напрямую в `.js`
 
 ---
 
-## Соглашения для изменений кода
+## Владелец
 
-1. **Не ломать глобальные функции** — onclick в HTML ссылается на `nav()`, `openPatientCard()`, `saveExam()` и т.д.
-2. **Новый раздел** — добавить пункт в sidebar `crm-v3.html`, case в `router.js`, файл `js/xxx.js` и `<script>` в конце HTML.
-3. **Права** — проверять `isAdmin()`, `canEdit()`, `isErvin()` перед опасными действиями.
-4. **Мягкое удаление** — предпочитать `deleted_at`, фильтр `.is('deleted_at', null)` в запросах.
-5. **i18n** — новые строки UI добавлять в `TRANSLATIONS.ru` и `TRANSLATIONS.sr` в `i18n.js`; в разметке использовать `t('key')`.
-6. **Деньги** — `fmtMoney()`, расчёт заказа через `orderTotal()` / `orderBalance()` из `utils.js`.
-7. **Не дублировать** логику Supabase в корне репозитория — только `js/*.js` и `booking.html`.
-
----
-
-## Типичные задачи при доработке
-
-| Задача | Где смотреть |
-|--------|----------------|
-| Новое поле пациента | `patients.js` формы + Supabase migration |
-| Новый статус заказа | `config.js` + `orders.js` + `STATUS_BADGE` |
-| Изменить правила ЗП | `analytics.js`, `telegram.js` (`recalcSalary`) |
-| Логика слотов | `calendar.js`, `appointments.js`, `booking.html` |
-| Печать рецепта | `exam.js` |
-| Перевод | `i18n.js` |
-
----
-
-## Ограничения и риски
-
-- **Нет серверного API** — вся логика в браузере; безопасность зависит от RLS в Supabase (проверять политики при изменении схемы).
-- **Anon key в клиенте** — нормально только с жёстким RLS; не добавлять service role в JS.
-- **Один HTML** — большой `crm-v3.html`; стили не выносить без необходимости.
-- Проект **не** использует сборщик, TypeScript, тесты — правки вносятся напрямую в `.js`.
-
----
-
-## Владелец и контекст использования
-
-**Анна Новосёлова**, оптометрист, Гинтер Оптика (Сербия).  
-CRM — рабочий инструмент на каждый день: запись, приём, RX, заказы, координация с Ervin, расчёт зарплаты, редкий экспорт backup JSON.
-
-При ответах LLM: учитывать медицинскую/оптометрическую терминологию (сфера, цилиндр, ось, PD, ADD, МКЛ/KS), двуязычие SR/RU и динары.
+**Анна Новосёлова**, оптометрист, Гинтер Оптика, Нови Сад, Сербия.

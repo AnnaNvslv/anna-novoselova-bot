@@ -23,13 +23,15 @@ const TRANSLATIONS = {
     // PATIENTS
     patients: 'Пациенты', patient: 'Пациент', new_patient: 'Новый пациент', edit_patient: 'Редактировать пациента',
     full_name: 'ФИО', phone: 'Телефон', email: 'Email', age: 'Возраст',
-    dob: 'Дата рождения', source: 'Откуда узнал', notes: 'Заметки', card: 'Карточка',
+    dob: 'Дата рождения', source: 'Откуда узнал', notes: 'Заметки',
+    card: 'Профиль',               // кнопка в таблице → Профиль пациента
+    patient_profile: 'Профиль пациента',  // заголовок попапа
     no_patients: 'Нет пациентов', added: 'Добавлен', updated: 'Обновлено', deleted: 'Удалено',
     add_appt_short: '+ Приём', add_order_short: '+ Заказ', add_patient_short: '+ Пациент',
     confirm_delete_patient: 'Удалить пациента со всеми данными?', enter_name: 'Введите имя',
     // APPOINTMENTS
     appointments: 'Приёмы', new_appt: 'Новый приём', edit_appt: 'Редактировать приём',
-    appt_type: 'Тип приёма', date_time: 'Дата / Время', date: 'Дата', time: 'Время',
+    appt_type: 'Вид приёма', date_time: 'Дата / Время', date: 'Дата', time: 'Время',
     cost: 'Стоимость', status: 'Статус', duration: 'Длительность', duration_min: 'мин.',
     appt_cost: 'Стоимость приёма (дин.)', notes_label: 'Примечание', notify_tg: 'Уведомить пациента в Telegram?',
     notify_yes: 'Да — отправить подтверждение', appt_saved: 'Приём записан', appt_updated: 'Приём обновлён',
@@ -44,6 +46,9 @@ const TRANSLATIONS = {
     order_status_new: 'оформлен', order_status_work: 'в работе', order_status_ready: 'готов',
     order_status_issued: 'выдан', order_status_cancelled: 'отменен', order_status_return: 'возврат', order_status_redo: 'переделка',
     no_orders: 'Нет заказов', confirm_delete_order: 'Удалить заказ?', issue_confirm: 'Остаток %s. Выдать?',
+    // Типы заказов
+    order_type_glasses: 'Очки', order_type_cl: 'Контактные линзы', order_type_repair: 'Ремонт',
+    order_number: '№ заказа',
     // CALENDAR
     schedule: 'Расписание', open_day: 'День', open_week: 'Неделя', my_slot: 'Моя запись',
     custom_slot: 'Свой слот', add_slot: 'Добавить слот', slot_open: 'Свободно', slot_remove: 'убрать',
@@ -71,13 +76,21 @@ const TRANSLATIONS = {
     tg_mychat: 'Мой Chat ID', tg_save: 'Сохранить', tg_test: 'Тест', tg_find_id: 'Найти Chat ID',
     tg_saved: 'Токен сохранён', tg_sent: '📨 Отправлено!', tg_error: 'Ошибка — проверь токен',
     // EXAM
-    exam_card: 'Карта обследования', visit: 'Визит №', exam_reason: 'Причина обращения',
+    exam_card: 'Карта обследования',   // карта оптометрического обследования
+    exam_card_short: 'Карта',
+    visit: 'Визит №', exam_reason: 'Причина обращения',
     complaints: 'Жалобы', anamnesis: 'Анамнез (со слов пациента)', current_correction: 'Используемая коррекция',
     autoref: 'Авторефрактометрия', exam_results: 'Результаты обследования',
     rx_far: 'Параметры для дали', rx_comp: 'Параметры для компьютера', rx_near: 'Параметры для близи', rx_cl: 'Параметры МКЛ',
     recommendations: 'Рекомендации и заключение', control_visit: 'Контрольный визит',
     save_card: 'Карта сохранена ✓', card_created: 'Карта создана ✓', save_error: 'Ошибка сохранения',
     autosave: 'Автосохранение ✓',
+    // Кнопки в карте обследования
+    btn_print: 'Печать',
+    btn_save: 'Сохранить',
+    btn_email_patient: 'Пациенту',
+    btn_email_clinic: 'В оптику',
+    btn_close: 'Закрыть',
     // DAYS & MONTHS
     dow: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
     months: ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
@@ -110,7 +123,9 @@ const TRANSLATIONS = {
     // PATIENTS
     patients: 'Pacijenti', patient: 'Pacijent', new_patient: 'Novi pacijent', edit_patient: 'Uredi pacijenta',
     full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Godine',
-    dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Beleške', card: 'Kartica',
+    dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Beleške',
+    card: 'Profil',                    // кнопка → Profil pacijenta
+    patient_profile: 'Profil pacijenta', // заголовок попапа
     no_patients: 'Nema pacijenata', added: 'Dodat', updated: 'Ažurirano', deleted: 'Obrisano',
     add_appt_short: '+ Pregled', add_order_short: '+ Porudžbina', add_patient_short: '+ Pacijent',
     confirm_delete_patient: 'Obrisati pacijenta sa svim podacima?', enter_name: 'Unesite ime',
@@ -131,6 +146,9 @@ const TRANSLATIONS = {
     order_status_new: 'kreirana', order_status_work: 'u izradi', order_status_ready: 'spreman',
     order_status_issued: 'izdata', order_status_cancelled: 'otkazana', order_status_return: 'povrat', order_status_redo: 'prepravka',
     no_orders: 'Nema porudžbina', confirm_delete_order: 'Obrisati porudžbinu?', issue_confirm: 'Ostatak %s. Preuzeti?',
+    // Типы заказов
+    order_type_glasses: 'Naočare', order_type_cl: 'Kontaktna sočiva', order_type_repair: 'Popravka',
+    order_number: 'Br. porudžbine',
     // CALENDAR
     schedule: 'Raspored', open_day: 'Dan', open_week: 'Nedelja', my_slot: 'Moj termin',
     custom_slot: 'Moj termin', add_slot: 'Dodaj termin', slot_open: 'Slobodan', slot_remove: 'ukloni',
@@ -158,13 +176,21 @@ const TRANSLATIONS = {
     tg_mychat: 'Moj Chat ID', tg_save: 'Sačuvaj', tg_test: 'Test', tg_find_id: 'Pronađi Chat ID',
     tg_saved: 'Token sačuvan', tg_sent: '📨 Poslato!', tg_error: 'Greška — proveri token',
     // EXAM
-    exam_card: 'Karta pregleda', visit: 'Poseta br.', exam_reason: 'Razlog dolaska',
+    exam_card: 'Optometrijska karta',   // карта обследования
+    exam_card_short: 'Karta',
+    visit: 'Pregled br.', exam_reason: 'Razlog dolaska',
     complaints: 'Tegobe', anamnesis: 'Anamneza (po rečima pacijenta)', current_correction: 'Trenutna korekcija',
     autoref: 'Autorefraktometrija', exam_results: 'Rezultati pregleda',
     rx_far: 'Parametri za daljinu', rx_comp: 'Parametri za računar', rx_near: 'Parametri za blizinu', rx_cl: 'Parametri KSL',
     recommendations: 'Preporuke i zaključak', control_visit: 'Kontrolni pregled',
     save_card: 'Karta sačuvana ✓', card_created: 'Karta kreirana ✓', save_error: 'Greška pri čuvanju',
     autosave: 'Automatski sačuvano ✓',
+    // Кнопки в карте обследования
+    btn_print: 'Štampaj',
+    btn_save: 'Sačuvaj',
+    btn_email_patient: 'Pacijentu',
+    btn_email_clinic: 'Optici',
+    btn_close: 'Zatvori',
     // DAYS & MONTHS
     dow: ['Ned','Pon','Uto','Sre','Čet','Pet','Sub'],
     months: ['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],

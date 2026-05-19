@@ -10,14 +10,14 @@ let _lastAddedPatientId = null;
 function renderPatientsTable(patients) {
   const c=document.querySelector('.content'); if(!c)return;
   c.innerHTML=`<div class="card"><div class="table-wrap"><table>
-    <thead><tr><th>${t('patient')}</th><th>${t('phone')}</th><th>Telegram</th><th>${t('age')}</th><th></th></tr></thead>
+    <thead><tr><th>${t('patient')}</th><th>${t('phone')}</th><th>Telegram</th><th>${t('dob')}</th><th></th></tr></thead>
     <tbody>${patients.map(p=>`<tr id="prow-${p.id}" style="${_lastAddedPatientId===p.id?'background:#d1fae5;transition:background 2s':''}">
       <td><div class="flex items-center gap-8"><div class="patient-avatar" style="width:36px;height:36px;font-size:14px">${initials(p.name)}</div>
         <div><div class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${p.id}')">${p.name}</div>
         ${p.email?`<div class="table-sub">${p.email}</div>`:''}</div></div></td>
       <td class="text-m">${p.phone||'—'}</td>
       <td>${p.telegram_chat_id?'<span class="badge badge-green">✓ TG</span>':p.telegram_username?`@${p.telegram_username}`:'—'}</td>
-      <td class="text-m">${p.dob?(calcAge(p.dob)+' '+(t('years')||'god.')):'—'}</td>
+      <td class="text-m">${p.dob?fmt(p.dob):'—'}</td>
       <td><div class="flex gap-8">
         <button class="btn btn-ghost btn-xs" onclick="openAddAppointmentFor('${p.id}')">${t('add_appt_short')}</button>
         ${isAdmin()?`<button class="btn btn-ghost btn-xs" onclick="openAddOrderFor('${p.id}')">${t('add_order_short')}</button>`:''}
@@ -34,7 +34,7 @@ function filterPatientsUI(q) {
   const f=q?_allPatients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.phone?.includes(q)):_allPatients;
   renderPatientsTable(f);
 }
-// ═══ PATIENT CARD ═══
+// ═══ PATIENT CARD (Профиль пациента) ═══
 async function openPatientCard(pid) {
   _cardTab='appts';
   openModal(`<div class="modal modal-full"><div class="modal-header"><span class="modal-title">Загрузка...</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner">Загрузка...</div></div></div>`);
@@ -62,8 +62,8 @@ async function _renderPatientCard(pid) {
           </div>
         </div>
         <div class="flex gap-8">
-          ${!isErvin()?`<button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ ${t('appt_type')?.split(' ')[0]||'Pregled'}</button>`:''}
-          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')||'Porudžbina'}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard('${pid}')" title="Obriši pacijenta">🗑</button>`:''}
+          ${!isErvin()?`<button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ ${t('appointments')}</button>`:''}
+          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard('${pid}')" title="Obriši pacijenta">🗑</button>`:''}
           ${!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="savePatientPDF('${pid}')">💾 PDF</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
         </div>
@@ -81,7 +81,7 @@ async function _renderPatientCard(pid) {
         <div class="divider"></div>
         <div class="tab-bar">
           <div class="tab${_cardTab==='appts'?' active':''}" onclick="_cardTab='appts';_renderPatientCard('${pid}')">${t('appointments')} (${(appts||[]).length})</div>
-          <div class="tab${_cardTab==='exams'?' active':''}" onclick="_cardTab='exams';_renderPatientCard('${pid}')">${t('exam_card').split(' ')[0]} (${(exams||[]).length})</div>
+          <div class="tab${_cardTab==='exams'?' active':''}" onclick="_cardTab='exams';_renderPatientCard('${pid}')">${t('exam_card_short')} (${(exams||[]).length})</div>
           <div class="tab${_cardTab==='orders'?' active':''}" onclick="_cardTab='orders';_renderPatientCard('${pid}')">${t('orders')} (${(orders||[]).length})</div>
         </div>
         ${_cardTab==='appts'?_apptTab(appts||[],pid):''}
@@ -96,11 +96,11 @@ function _apptTab(appts,pid){
     <div class="history-dot"></div>
     <div style="flex:1">
       <div class="history-date">${fmt(a.date)} в ${a.time?.substr(0,5)} · <span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}" style="font-size:11px">${a.status}</span></div>
-      <div class="history-title">${a.type||'Приём'}</div>
+      <div class="history-title">${a.appointment_number?'<span class="badge badge-accent" style="font-size:10px;margin-right:4px">'+a.appointment_number+'</span>':''}${a.type||t('appointments')}</div>
       ${a.consultation_price?`<div class="text-sm text-m">${t('cost')}: ${fmtMoney(a.consultation_price)}</div>`:''}
     </div>
     <div class="flex gap-8">
-      ${!isErvin()?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 Kartica</button>`:''}
+      ${!isErvin()?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 ${t('exam_card_short')}</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>
       ${a.status==='запланирован'&&!isErvin()?`<button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
       ${a.status==='отменён'?`<span class="badge badge-gray">${t('status_cancelled')}</span>`:''}
@@ -112,8 +112,8 @@ function _examTabHtml(exams,pid){
   return exams.map(e=>`<div class="history-item">
     <div class="history-dot" style="background:var(--primary-l);border-color:var(--primary)"></div>
     <div style="flex:1">
-      <div class="history-date">Визит №${e.visit_number||'—'} · ${fmt(e.created_at?.split('T')[0])}</div>
-      <div class="history-title">Карта обследования</div>
+      <div class="history-date">${t('visit')}${e.visit_number||'—'} · ${fmt(e.created_at?.split('T')[0])}</div>
+      <div class="history-title">${t('exam_card')}</div>
       <div class="text-sm text-m">${[e.rx_far_od_sph?'Даль':'',e.rx_comp_od_sph?'Компьютер':'',e.rx_near_od_sph?'Близь':'',e.rx_cl_od_sph?'МКЛ':''].filter(Boolean).join(' · ')||'Параметры не заполнены'}</div>
       ${e.control_date?`<div class="text-sm" style="color:var(--warn)">Контроль: ${fmt(e.control_date)}</div>`:''}
     </div>

@@ -44,12 +44,12 @@
 ```
 crm-v3.html     # Shell: login, sidebar, мобильная навигация, весь CSS, порядок <script>
 booking.html    # Публичная онлайн-запись
-mobile.css      # ПУСТОЙ — мобильные стили перенесены в crm-v3.html
-mobile.js       # ПУСТОЙ — мобильная логика перенесена в crm-v3.html
+mobile.css      # ПУСТОЙ — не использовать
+mobile.js       # ПУСТОЙ — не использовать
 js/
   config.js     # Supabase client, константы, глобальный state
   i18n.js       # RU/SR переводы, switchLang()
-  auth.js       # PIN login, showApp(), logout, инит мобильной навигации
+  auth.js       # PIN login, showApp(), logout
   router.js     # nav(section), render()
   utils.js      # fmt, fmtMoney, toast, modal, orderTotal, права
   dashboard.js  # Главная
@@ -85,41 +85,46 @@ js/
 
 ### Архитектура (всё в `crm-v3.html`)
 
-`mobile.css` и `mobile.js` — **пустые файлы**, не использовать.
+`mobile.css` и `mobile.js` — **пустые файлы**, не трогать.
 
-**CSS** (внутри `<style>` в crm-v3.html):
-- `@media(max-width:768px)` — скрывает сайдбар, адаптирует таблицы/формы/модалки
-- `#mobile-nav { display:none }` — по умолчанию скрыт
+### Нижняя навигация (`#mobile-nav`)
 
-**HTML** (в начале `<body>`, до `#login-screen`):
-- `<div id="mobile-nav" style="display:none">` — 5 кнопок: Главная, Расписание, Приёмы, Пациенты, Ещё
-- `<div id="mob-drawer">` — выдвижное меню: Заказы, Аналитика, Настройки, Корзина, язык, Выйти
+- Расположен в начале `<body>`, до `#login-screen`
+- Скрыт на десктопе через CSS: `#mobile-nav { display: none }`
+- На мобиле отображается через `@media(max-width:768px)` с `display:flex`
+- Содержит **8 кнопок**: Главная, Пациенты, Приёмы, Заказы, График, Аналитика, Настройки, Korpa
+- **Не управляется через JS** — только CSS media query
+- На экране логина не видна: `#login-screen` покрывает весь экран через `position:fixed; inset:0; z-index:999`
 
-**JS** (inline `<script>` в конце `<body>`):
-- `_mobActive()` — подсвечивает активную кнопку
-- `_mobDrawer()` / `_mobCloseDrawer()` — управление drawer
-- Патч `window.nav()` — обновляет активную кнопку при переходе
+### JS (`_mobActive`)
 
-**`js/auth.js` — `showApp()`:**
-- После логина: `mn.style.display = 'flex'` (только если `window.innerWidth <= 768`)
-- `window.onload`: убивает лишние `position:fixed; bottom:0` элементы (артефакты старого mobile.js)
+Inline `<script>` в конце `<body>`:
+- `_mobActive()` — подсвечивает активную кнопку по `window.curSection`
+- Вызывается вручную в каждой кнопке `onclick="nav('...'); _mobActive()"`
+- `curSection` устанавливается в `router.js`
 
-### ⚠️ Известная проблема (не решена)
+### Адаптация экранов (`@media(max-width:768px)`)
 
-На реальном телефоне (Chrome Android) внизу видна полоса «Заказы» вместо полноценного меню.
+- Модалки: `max-height: calc(100dvh - 58px)`, скролл внутри `modal-body`, футер всегда виден
+- Формы: `font-size:16px` (предотвращает zoom на Android), `min-height:44px`
+- Таблицы: `display:block` → карточки
+- History items: кнопки переносятся на новую строку (`flex-direction:column`)
+- rx-table (карта обследования): горизонтальный скролл (`overflow-x:auto`)
+- Toast: `bottom:68px` — выше нижней навигации
+- `#app`: `padding-bottom:58px` — контент не уходит под nav
 
-**Данные из DevTools:**
-- `document.getElementById('mobile-nav').style.display` → `'flex'` ✓
-- `document.getElementById('mobile-nav').children.length` → `5` ✓
-- Полоса «Заказы» видна поверх навигации
-- В Console нет JS ошибок
+### Печатная форма карты обследования
 
-**Гипотеза:** поверх `#mobile-nav` лежит другой `position:fixed; bottom:0` элемент — возможно Service Worker кэшировал старый `mobile.js` который динамически создавал nav с одной кнопкой «Заказы».
+**Проблема была:** мобильный CSS `table,thead,tbody,th,td,tr{display:block!important}` применялся при печати, ломая таблицы.
 
-**Что проверить следующему LLM:**
-1. `document.querySelector('[style*="fixed"][style*="bottom"]')?.id` — найти лишний элемент
-2. Проверить есть ли Service Worker: `navigator.serviceWorker.getRegistrations()`
-3. Убедиться что `#mobile-nav` не перекрыт по z-index
+**Решение в `@media print`:**
+```css
+#print-area table  { display:table!important }
+#print-area thead  { display:table-header-group!important }
+#print-area tr     { display:table-row!important }
+#print-area th, td { display:table-cell!important }
+#print-area input, select, textarea, button { all:unset!important }
+```
 
 ---
 
@@ -158,7 +163,7 @@ Key-value: `doctor_name`, `clinic_name`, часы работы, PINы, `bot_toke
 ## Соглашения
 
 1. Не ломать глобальные функции: `nav()`, `openPatientCard()`, `saveExam()`
-2. Мобильное — только в `crm-v3.html`, НЕ в `mobile.css`/`mobile.js`
+2. Мобильное — только в `crm-v3.html`, **НЕ** в `mobile.css`/`mobile.js`
 3. Мягкое удаление: `deleted_at`, фильтр `.is('deleted_at', null)`
 4. i18n: новые строки в `TRANSLATIONS.ru` и `TRANSLATIONS.sr` в `i18n.js`
 5. Деньги: `fmtMoney()`, расчёт через `orderTotal()` из `utils.js`

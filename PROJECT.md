@@ -152,6 +152,36 @@ Key-value: `doctor_name`, `clinic_name`, часы работы, PINы, `bot_toke
 
 ---
 
+## Логика слотов и записи
+
+### Два пути записи — оба бронируют слот
+
+**1. Через `booking.html` (пациент сам):**
+- Пациент выбирает слот → `available_slots.is_booked = true`, `appointment_id` заполняется
+- Создаётся запись в `appointments`
+
+**2. Через CRM — кнопка `+приём` на свободном слоте в расписании (admin):**
+- Клик по зелёному слоту → `openAddAppointmentAtSlot(date, time, slotId)`
+- `slotId` сохраняется в `window._pickedSlotId`
+- В форме слот подсвечен как выбранный
+- При сохранении (`saveAppt`): `available_slots.is_booked = true`, `appointment_id = apptId`
+
+**Fallback при ручном вводе даты/времени (без выбора слота):**
+- `bookSlotByDateTime(date, time, apptId)` — ищет слот по дате+времени, бронирует если найден
+- Если не найден — `blockSlotsByDuration(date, time, dur, apptId)` блокирует перекрывающиеся слоты
+
+### При отмене/удалении приёма:
+```js
+await db.from('available_slots')
+  .update({ is_booked: false, appointment_id: null })
+  .eq('appointment_id', id);
+```
+
+### Важно: известный баг (исправлен 2026-05-20)
+В `calendar.js` в функции `bookErvinAt` была синтаксическая ошибка — незакрытый шаблонный литерал (`'${slotId||'}') \"`), из-за чего весь `calendar.js` падал с SyntaxError, `renderSlots` не определялась, и страница расписания не загружалась вообще.
+
+---
+
 ## Расчёт зарплаты
 
 1. Сумма `consultation_price` по приёмам месяца
@@ -167,7 +197,7 @@ Key-value: `doctor_name`, `clinic_name`, часы работы, PINы, `bot_toke
 3. Мягкое удаление: `deleted_at`, фильтр `.is('deleted_at', null)`
 4. i18n: новые строки в `TRANSLATIONS.ru` и `TRANSLATIONS.sr` в `i18n.js`
 5. Деньги: `fmtMoney()`, расчёт через `orderTotal()` из `utils.js`
-6. Скрипты: `?v=9` (auth.js — `?v=11`)
+6. Скрипты: `?v=10` (auth.js — `?v=12`)
 7. Нет сборщика, TypeScript, тестов — правки напрямую в `.js`
 
 ---

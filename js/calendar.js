@@ -59,7 +59,7 @@ async function renderSlots() {
       </div>`;}
     if(slot&&!slot.is_booked){
       if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">Zauzimi</div></div>`;
-      // Admin: clicking free slot opens appointment form (instead of removing the slot)
+      // Admin: clicking free slot opens appointment form
       if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">+ ${t('appointments')||'Pregled'}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
@@ -233,9 +233,10 @@ async function saveCustomSlot(){
 async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);closeModal();renderSlots();}
 
 async function bookErvinAt(date,time,slotId){
+  const sid = slotId || '';
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('ervin_booking')} — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Пациент (необязательно)</label><input id="erv-note" placeholder="Имя пациента" autofocus></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||'}') " style="text-transform:none">Zauzimi</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${sid}')" style="text-transform:none">Zauzimi</button></div>
   </div>`);
 }
 

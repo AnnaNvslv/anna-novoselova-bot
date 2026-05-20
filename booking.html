@@ -15,7 +15,6 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .hdr p{font-size:13px;opacity:.8;line-height:1.5}
 .pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
 .pg.on{display:block}
-/* STEPS */
 .steps{display:flex;align-items:center;padding:14px 4px;gap:0}
 .st{display:flex;align-items:center;flex:1}
 .st-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
@@ -24,10 +23,8 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .st-dot.idle{background:var(--b);color:var(--tm)}
 .st-line{flex:1;height:2px;background:var(--b)}
 .st-line.done{background:var(--g)}
-/* CARDS */
 .card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:12px}
 .card-title{font-size:15px;font-weight:700;color:var(--p);margin-bottom:14px}
-/* TYPE CARDS */
 .type-card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:10px;cursor:pointer;border:2px solid transparent;transition:all .15s;display:flex;align-items:flex-start;gap:14px}
 .type-card:hover{border-color:var(--a)}
 .type-card.sel{border-color:var(--a);background:#f0f9ff}
@@ -38,7 +35,6 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .type-dur,.type-price{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:20px}
 .type-dur{background:#e0f2fe;color:#0369a1}
 .type-price{background:var(--gl);color:var(--g)}
-/* CALENDAR */
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .cal-nav h3{font-size:16px;font-weight:700}
 .cal-nav-btn{background:none;border:1.5px solid var(--b);border-radius:8px;width:34px;height:34px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit;color:var(--t)}
@@ -58,34 +54,28 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .time-btn{padding:9px 16px;border:2px solid var(--b);border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;background:#fff;font-family:inherit;transition:all .15s}
 .time-btn:hover{border-color:var(--a);color:var(--a)}
 .time-btn.sel{background:var(--a);color:#fff;border-color:var(--a)}
-/* SELECTED SUMMARY */
 .sel-sum{border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
 .sel-sum.type-sum{background:#f0f9ff;border:1.5px solid #bae6fd}
 .sel-sum.slot-sum{background:var(--a);color:#fff}
 .sel-sum .label{font-size:11px;opacity:.7;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px}
 .sel-sum .value{font-size:16px;font-weight:700}
-/* FORM */
 .fg{margin-bottom:14px}
 label{display:block;font-size:13.5px;font-weight:600;color:var(--tm);margin-bottom:5px}
 .req{color:var(--a)}
 input,select,textarea{width:100%;padding:12px 14px;border:1.5px solid var(--b);border-radius:9px;font-family:inherit;font-size:15px;color:var(--t);outline:none;transition:border .15s;-webkit-appearance:none;background:#fff}
 input:focus,select:focus,textarea:focus{border-color:var(--a)}
 textarea{resize:none;min-height:80px}
-/* CHIPS */
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
 .chip{padding:7px 13px;border:1.5px solid var(--b);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit;line-height:1.3}
 .chip:hover{border-color:var(--a)}
 .chip.on{background:var(--a);color:#fff;border-color:var(--a)}
-/* CONSENT */
 .con{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--b);margin-bottom:9px;cursor:pointer;text-decoration:none}
 .con input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--a)}
 .con span{font-size:13.5px;color:var(--tm);line-height:1.5}
-/* BUTTONS */
 .btn-next{width:100%;padding:15px;background:var(--a);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
 .btn-next:hover{background:var(--p)}
 .btn-next:disabled{background:#94a3b8;cursor:not-allowed}
 .btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
-/* CONFIRM */
 .conf-icon{font-size:72px;text-align:center;margin:20px 0 14px}
 .conf-title{font-size:24px;font-weight:800;color:var(--p);text-align:center;margin-bottom:8px}
 .conf-sub{font-size:15px;color:var(--tm);text-align:center;line-height:1.6;margin-bottom:20px}
@@ -380,9 +370,7 @@ function applyLang(){
   const ac=document.getElementById('ad17-check');if(ac)ac.textContent=T('ad17check');
   document.querySelectorAll('.conf-title').forEach(e=>e.textContent=T('confirmed'));
   document.querySelectorAll('.conf-sub').forEach(e=>e.textContent=T('confSub'));
-  // Chips reason
   document.querySelectorAll('#ch-reason .chip').forEach(c=>{c.textContent=c.dataset[_lang]||c.dataset.ru||c.textContent;});
-  // Source dropdown
   const sel=document.getElementById('f-source');
   if(sel){const cur=sel.value;sel.innerHTML=`<option value="">- ${T('srcPlaceholder')} -</option>`+T('srcOpts').map(o=>`<option value="${o}">${o}</option>`).join('');sel.value=cur;}
 }
@@ -407,7 +395,6 @@ function checkAge(dob){
 function updateSubmitBtn(){
   const age=calcAge(v('f-dob'));
   const btn=document.getElementById('submit-btn');if(!btn)return;
-  // Блокируем только до 10 лет — полный запрет
   if(age!==null&&age<10){btn.disabled=true;return;}
   btn.disabled=false;
 }
@@ -616,7 +603,8 @@ async function submitBooking(){
     if(ae)throw ae;
     await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,selectedType.name);
-    showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg);
+    // Передаём appointment ID для бота
+    showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg,a.id);
   }catch(e){
     console.error(e);
     alert('Ошибка записи. Напишите нам: @AnnaNvslv');
@@ -641,7 +629,7 @@ async function notifyAnna(name,date,time,num,typeName){
   }catch(e){}
 }
 
-function showConfirm(name,date,time,num,tg){
+function showConfirm(name,date,time,num,tg,apptId){
   const dt=new Date(date+'T12:00:00');
   document.getElementById('conf-details').innerHTML=`
     <div class="conf-row"><span class="l">Пациент</span><span class="v">${name}</span></div>
@@ -651,8 +639,9 @@ function showConfirm(name,date,time,num,tg){
     <div class="conf-row"><span class="l">Стоимость</span><span class="v">${selectedType.price}</span></div>
     <div class="conf-row"><span class="l">Номер записи</span><span class="v">${num}</span></div>`;
   const bot=botUsername?botUsername.replace('@',''):'';
+  // Ссылка с start=appt_ID — бот получит ID записи и сохранит chat_id пациента
   document.getElementById('tg-hint').innerHTML=bot
-    ?`<p>Напишите боту — получите подтверждение и напоминание о приёме:</p><a class="tg-link" href="https://t.me/${bot}" target="_blank">&#9992;&#65039; Написать боту</a>`
+    ?`<p>Напишите боту — получите подтверждение записи и напоминания о приёме:</p><a class="tg-link" href="https://t.me/${bot}?start=appt_${apptId}" target="_blank">&#9992;&#65039; Написать боту</a>`
     :`<p>По вопросам пишите: <b>@AnnaNvslv</b></p>`;
   goPage('confirm');
 }

@@ -25,26 +25,35 @@ async function renderAppointments() {
 // ═══ APPOINTMENT FORM ═══
 function openAddAppointment(){_apptForm(null,null);}
 function openAddAppointmentFor(pid){_apptForm(null,pid);}
-async function openAddAppointmentAtSlot(date,time,slotId){_apptForm(null,null,date,time);}
+// Called from calendar when clicking a free slot — passes slotId so it gets pre-selected
+async function openAddAppointmentAtSlot(date,time,slotId){_apptForm(null,null,date,time,slotId);}
 async function openEditAppt(id){const{data:a}=await db.from('appointments').select('*').eq('id',id).single();_apptForm(a,null);}
-async function _apptForm(a,prePatient,preDate,preTime){
+async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
   const{data:patients}=await db.from('patients').select('id,name').is('deleted_at',null).order('name');
   // Free slots next 21 days
   const toD=new Date();toD.setDate(toD.getDate()+21);
   const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
   const slotsByDate={};(freeSlots||[]).forEach(s=>{if(!slotsByDate[s.date])slotsByDate[s.date]=[];slotsByDate[s.date].push(s);});
   const slotDates=Object.keys(slotsByDate).sort();
+
+  // Pre-select slot: from calendar click (preSlotId) or from editing existing appt
+  window._pickedSlotId = preSlotId || null;
+  if(a && !window._pickedSlotId){
+    const curSlot=(freeSlots||[]).find(s=>s.date===a.date&&s.start_time?.substr(0,5)===a.time?.substr(0,5));
+    if(curSlot) window._pickedSlotId=curSlot.id;
+  }
+
+  const activeSlotId = window._pickedSlotId;
+
   const slotPickerHtml=slotDates.length?`<div class="form-group full"><label>${t('available_slots')||'Slobodni termini'}</label>
     <div style="max-height:160px;overflow-y:auto;padding:4px 0">
       ${slotDates.map(d=>`<div style="margin-bottom:8px">
         <div style="font-size:11px;font-weight:700;color:var(--text-m);margin-bottom:4px">${fmtDateLong(d)}</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">
-          ${slotsByDate[d].map(s=>`<button type="button" class="slot-pick-btn" data-sid="${s.id}" onclick="pickSlot('${s.date}','${s.start_time?.substr(0,5)}','${s.id}')" style="padding:3px 10px;border:1.5px solid ${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'var(--accent)':'var(--border)'};border-radius:6px;background:${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'var(--accent)':'white'};color:${a&&a.date===s.date&&a.time?.substr(0,5)===s.start_time?.substr(0,5)?'white':'inherit'};cursor:pointer;font-size:13px;font-weight:600">${s.start_time?.substr(0,5)}</button>`).join('')}
+          ${slotsByDate[d].map(s=>{const isActive=activeSlotId===s.id;return`<button type="button" class="slot-pick-btn" data-sid="${s.id}" onclick="pickSlot('${s.date}','${s.start_time?.substr(0,5)}','${s.id}')" style="padding:3px 10px;border:1.5px solid ${isActive?'var(--accent)':'var(--border)'};border-radius:6px;background:${isActive?'var(--accent)':'white'};color:${isActive?'white':'inherit'};cursor:pointer;font-size:13px;font-weight:600">${s.start_time?.substr(0,5)}</button>`;}).join('')}
         </div></div>`).join('')}
     </div></div>`:'<div class="form-group full" style="color:var(--text-m);font-size:13px">Nema slobodnih termina. Izaberite datum i vreme ručno.</div>';
   const timeOpts=[...Array(45)].map((_,i)=>{const m=8*60+i*15;const ts=minToTime(m);return`<option ${((a?.time||preTime||'10:00').substr(0,5)===ts)?'selected':''}>${ts}</option>`;}).join('');
-  window._pickedSlotId=null;
-  if(a){const curSlot=(freeSlots||[]).find(s=>s.date===a.date&&s.start_time?.substr(0,5)===a.time?.substr(0,5));if(curSlot)window._pickedSlotId=curSlot.id;}
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
@@ -92,7 +101,7 @@ async function saveAppt(id){
     const inv = !patient_id?'a-pid':!date?'a-date':'a-time';
     const el=document.getElementById(inv);
     if(el){el.style.border='2px solid #ef4444';el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.style.border='',2000);}
-    alert(t('fill_required'));return;
+    alert(t('fill_required'));if(btn)btn.disabled=false;return;
   }
   const typeName=v('a-type');
   const dur=+(v('a-dur'))||60;
@@ -101,48 +110,58 @@ async function saveAppt(id){
   if(id){
     // Check duplicate on new time (exclude current appt)
     const{data:dupCheck}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('id',id);
-    if(dupCheck?.length){toast('Pregled već postoji u to vreme!','error');const b=document.querySelector('.modal-footer .btn-accent');if(b)b.disabled=false;return;}
+    if(dupCheck?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
     // Free old slot, book new slot
     await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
     await db.from('appointments').update(data).eq('id',id);
     if(window._pickedSlotId){
-      await db.from('available_slots').update({is_booked:true,appointment_id:id}).eq('id',window._pickedSlotId);
+      await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:id}).eq('id',window._pickedSlotId);
     } else {
-      await blockSlotsByDuration(date,time,dur,id);
+      await bookSlotByDateTime(date,time,id);
     }
     toast(t('appt_updated'));
   }
   else{
     // Check for duplicate
     const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null);
-    if(existing?.length){toast('Pregled već postoji u to vreme!','error');const btn=document.querySelector('.modal-footer .btn-accent');if(btn)btn.disabled=false;return;}
+    if(existing?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
+    // Check slot still free (before inserting)
+    if(window._pickedSlotId){
+      const{data:slotChk}=await db.from('available_slots').select('is_booked,booked_by').eq('id',window._pickedSlotId).single();
+      if(slotChk?.is_booked){
+        toast('Ovaj termin je već zauzet! Izaberite drugo vreme.','error');
+        if(btn)btn.disabled=false;
+        return;
+      }
+    } else {
+      // Check by date+time — slot must exist and be free
+      const{data:timeSlot}=await db.from('available_slots').select('id,is_booked').eq('date',date).eq('start_time',time).maybeSingle();
+      if(timeSlot?.is_booked){
+        toast('Na ovo vreme već postoji rezervacija!','error');
+        if(btn)btn.disabled=false;
+        return;
+      }
+    }
+    // Check no other appointment at this time
+    const{data:timeChk}=await db.from('appointments').select('id').eq('date',date).eq('time',time).is('deleted_at',null).neq('status','отменён');
+    if(timeChk?.length){toast('Na ovo vreme već postoji pregled!','error');if(btn)btn.disabled=false;return;}
+
     const apptNum=await generateApptNumber(date);
     const{data:a}=await db.from('appointments').insert({...data,status:'запланирован',appointment_number:apptNum}).select().single();
     apptId=a?.id;
+
+    // Book the slot
+    if(apptId){
+      if(window._pickedSlotId){
+        await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:apptId}).eq('id',window._pickedSlotId);
+      } else {
+        // Try to book by exact date+time match, then fall back to duration-based blocking
+        const booked = await bookSlotByDateTime(date,time,apptId);
+        if(!booked) await blockSlotsByDuration(date,time,dur,apptId);
+      }
+    }
     toast(`${t('appt_saved')} · ${apptNum}`);
   }
-  // Check slot still free before blocking
-  if(!id&&apptId&&window._pickedSlotId){
-    const{data:slotChk}=await db.from('available_slots').select('is_booked,booked_by').eq('id',window._pickedSlotId).single();
-    if(slotChk?.is_booked){
-      toast('Ovaj termin je već zauzet! Izaberite drugo vreme.','error');
-      await db.from('appointments').delete().eq('id',apptId);
-      const btn=document.querySelector('.modal-footer .btn-accent');if(btn)btn.disabled=false;
-      return;
-    }
-  }
-  // Check by date+time as fallback
-  if(!id&&apptId){
-    const{data:timeChk}=await db.from('appointments').select('id').eq('date',date).eq('time',time).is('deleted_at',null).neq('status','отменён').neq('id',apptId);
-    if(timeChk?.length){
-      toast('Na ovo vreme već postoji pregled!','error');
-      await db.from('appointments').delete().eq('id',apptId);
-      const btn=document.querySelector('.modal-footer .btn-accent');if(btn)btn.disabled=false;
-      return;
-    }
-  }
-  // Block slots by duration
-  if(!id&&apptId){await blockSlotsByDuration(date,time,dur,apptId);}
   // Notify
   if(v('a-notify')==='yes'&&!id){
     const{data:p}=await db.from('patients').select('name,telegram_chat_id').eq('id',patient_id).single();
@@ -152,19 +171,27 @@ async function saveAppt(id){
     }
   }
   closeModal();
-  // If new appointment for a patient - reopen patient card
   if(!id && patient_id) {
     openPatientCard(patient_id);
   } else {
     render();
   }
 }
+
+// Book a single slot by exact date+time — returns true if found and booked
+async function bookSlotByDateTime(date,time,appointmentId){
+  const{data:slot}=await db.from('available_slots').select('id').eq('date',date).eq('start_time',time).eq('is_booked',false).maybeSingle();
+  if(!slot) return false;
+  await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:appointmentId}).eq('id',slot.id);
+  return true;
+}
+
 async function blockSlotsByDuration(date,startTime,durationMin,appointmentId){
   const{data:slots}=await db.from('available_slots').select('*').eq('date',date).order('start_time');
   if(!slots)return;
   const startMin=timeToMin(startTime);const endMin=startMin+durationMin;
   const toBlock=slots.filter(s=>{ const sm=timeToMin(s.start_time?.substr(0,5));return sm>=startMin&&sm<endMin; });
-  for(const sl of toBlock) await db.from('available_slots').update({is_booked:true,appointment_id:appointmentId}).eq('id',sl.id);
+  for(const sl of toBlock) await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:appointmentId}).eq('id',sl.id);
 }
 async function confirmCompleteAppt(id){if(!confirm(t('confirm_complete')))return;await db.from('appointments').update({status:'завершён'}).eq('id',id);toast(t('appt_done'));render();}
 async function cancelAppt(id){

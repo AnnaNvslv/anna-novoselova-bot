@@ -59,7 +59,8 @@ async function renderSlots() {
       </div>`;}
     if(slot&&!slot.is_booked){
       if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">Zauzimi</div></div>`;
-      if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="removeSlot('${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${t('slot_remove')}</div></div>`;
+      // Admin: clicking free slot opens appointment form (instead of removing the slot)
+      if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">+ ${t('appointments')||'Pregled'}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
     if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${tm}')">+</div>`;
@@ -100,6 +101,7 @@ async function renderSlots() {
     </div>
     <div class="flex gap-8 items-center">
       ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">${t('custom_slot')}</button>
+        <button class="btn btn-ghost btn-sm" onclick="openRemoveSlotDialog()" title="Удалить слот">🗑 ${t('slot_remove')||'Ukloni slot'}</button>
         <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">${`📅 ${t('open_day')}`}</button>
         <button class="btn btn-accent btn-sm" onclick="openWeekSlots('${weekDays[0]}','${weekDays[4]}')">${`📅 ${t('open_week')}`}</button>`:''}
       ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">${`+ ${t('my_slot')}`}</button>`:''}
@@ -120,9 +122,10 @@ async function renderSlots() {
     `).join('')}
   </div>
   <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap">
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>${t("slot_open")}</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>${t("slot_open")} (клик → записать)</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#dbeafe;display:inline-block"></span>${t("patient")}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fde68a;display:inline-block"></span>${t("slot_ervin")}</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:var(--surface2);border:1px dashed var(--border);display:inline-block"></span>+ пустая ячейка → добавить слот</span>
     ${isAdmin()?`· <a href="#" onclick="nav('settings')" style="color:var(--accent);font-size:12px">${t('schedule_settings')}</a>`:''}
   </div>`;
 }
@@ -130,6 +133,18 @@ async function renderSlots() {
 async function addSlotAt(date,time){
   await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null},{onConflict:'date,start_time'});
   renderSlots();
+}
+
+// Dialog to remove a specific free slot (admin only, via separate UI — not by clicking a booked slot)
+async function openRemoveSlotDialog(){
+  const toD=new Date();toD.setDate(toD.getDate()+21);
+  const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
+  if(!freeSlots?.length){toast('Нет свободных слотов','error');return;}
+  const opts=(freeSlots||[]).map(s=>`<option value="${s.id}">${fmt(s.date)} ${s.start_time?.substr(0,5)}</option>`).join('');
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Удалить слот</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-group"><label>Выберите слот для удаления</label><select id="del-slot-id">${opts}</select></div></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-danger" onclick="removeSlot(document.getElementById('del-slot-id').value)">Удалить</button></div>
+  </div>`);
 }
 
 async function openDaySlots(date){
@@ -215,12 +230,12 @@ async function saveCustomSlot(){
   toast(t('slot_added'));closeModal();renderSlots();
 }
 
-async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);renderSlots();}
+async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);closeModal();renderSlots();}
 
 async function bookErvinAt(date,time,slotId){
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('ervin_booking')} — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Пациент (необязательно)</label><input id="erv-note" placeholder="Имя пациента" autofocus></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||''}') " style="text-transform:none">Zauzimi</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${slotId||'}') " style="text-transform:none">Zauzimi</button></div>
   </div>`);
 }
 

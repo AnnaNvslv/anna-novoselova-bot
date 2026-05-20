@@ -100,7 +100,6 @@ textarea{resize:none;min-height:80px}
 .spin{text-align:center;padding:40px;color:var(--tm)}
 .sep{height:1px;background:var(--b);margin:14px 0}
 .hint{font-size:12.5px;color:var(--tm);margin-top:4px}
-
 .lang-sw{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
 .lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit}
 .lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
@@ -207,10 +206,7 @@ textarea{resize:none;min-height:80px}
     <div id="age-disc-17" class="disc disc-warn" style="display:none">
       <h3 id="ad17-title">⚠️ Важно для пациентов от 10 до 17 лет</h3>
       <p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам настоятельно рекомендуется обследование у офтальмолога с циклоплегией. По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p>
-      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px;cursor:pointer">
-        <input type="checkbox" id="age-17-ok" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--a)" onchange="updateSubmitBtn()">
-        <span id="ad17-check" style="font-size:13.5px;color:#374151">Я ознакомлен(а) с условиями и соглашаюсь</span>
-      </label>
+      <p id="ad17-check" style="font-size:13.5px;color:#92400e;font-weight:600;margin-top:8px">Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.</p>
     </div>
     <div class="fg">
       <label>Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label>
@@ -346,7 +342,7 @@ const BK={
     ad10:'Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии. Оптометрист может помочь с выбором оправы по готовому рецепту.',
     ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',
     ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам рекомендуется обследование с циклоплегией. По вопросам: @AnnaNvslv',
-    ad17check:'Я ознакомлен(а) с условиями и соглашаюсь',
+    ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',
     srcPlaceholder:'— выберите —',
     srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],
   },
@@ -357,7 +353,7 @@ const BK={
     ad10:'Optometrista ne pregleda decu mlađu od 10 godina. Za proveru vida i recept potreban je pregled dečijeg oftalmologa s cikloplegijom. Optometrista može pomoći sa izborom okvira prema gotovom receptu.',
     ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',
     ad17:'Prijem je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Adolescentima se preporučuje pregled s cikloplegijom. Za pitanja: @AnnaNvslv',
-    ad17check:'Upoznat/a sam s uslovima i slažem se',
+    ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',
     srcPlaceholder:'— izaberite —',
     srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],
   }
@@ -411,8 +407,8 @@ function checkAge(dob){
 function updateSubmitBtn(){
   const age=calcAge(v('f-dob'));
   const btn=document.getElementById('submit-btn');if(!btn)return;
+  // Блокируем только до 10 лет — полный запрет
   if(age!==null&&age<10){btn.disabled=true;return;}
-  if(age!==null&&age<18&&!document.getElementById('age-17-ok')?.checked){btn.disabled=true;return;}
   btn.disabled=false;
 }
 
@@ -454,7 +450,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
     const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');
     if(r&&r[0])botUsername=r[0].value;
   }catch(e){}
-  // Load all slots for next 60 days
   const today=now.toISOString().split('T')[0];
   const future=new Date(now);future.setDate(future.getDate()+60);
   const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
@@ -507,23 +502,19 @@ function renderCalendar(){
   document.getElementById('cal-label').textContent=MONTHS_R[calMonth]+' '+calYear;
   const firstDay=new Date(calYear,calMonth,1);
   let startDow=firstDay.getDay();
-  if(startDow===0)startDow=7; // Mon=1
+  if(startDow===0)startDow=7;
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
-  // Build set of available dates this month
   const availDates=new Set();
   allSlots.forEach(s=>{
     const d=new Date(s.date+'T12:00:00');
     if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);
   });
   let html='';
-  // Empty cells before first day
   for(let i=1;i<startDow;i++)html+=`<div class="cal-cell empty"></div>`;
-  // Days
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const dt=new Date(calYear,calMonth,d);
     const isPast=dt<today;
-    const isToday=dt.toDateString()===today.toDateString();
     const isAvail=availDates.has(dateStr)&&!isPast;
     const isSel=dateStr===selectedDateStr;
     let cls='cal-cell';
@@ -575,7 +566,6 @@ async function submitBooking(){
   const tg=v('f-tg'),name=v('f-name'),dob=v('f-dob');
   const age=calcAge(v('f-dob'));
   if(age!==null&&age<10){alert('Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv');return;}
-  if(age!==null&&age<18&&!document.getElementById('age-17-ok')?.checked){alert('Подтвердите ознакомление с условиями для подростков.');return;}
   if(!chips('ch-reason').length){alert('Пожалуйста, укажите причину обращения');return;}
   if(!tg){alert('Пожалуйста, укажите Telegram username');return;}
   if(!name){alert('Пожалуйста, введите ваше имя');return;}
@@ -589,7 +579,6 @@ async function submitBooking(){
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent=_lang==='sr'?'Zakazujemo...':'Оформляем...';
   try{
-    // Check slot still free
     const{data:slotCheck}=await db.from('available_slots').select('is_booked,booked_by').eq('id',selectedSlot.id).single();
     if(slotCheck?.is_booked){
       alert(_lang==='sr'?'Ovaj termin je već zauzet. Izaberite drugo vreme.':'Этот слот уже занят. Пожалуйста, выберите другое время.');

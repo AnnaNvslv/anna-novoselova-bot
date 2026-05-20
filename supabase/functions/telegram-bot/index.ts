@@ -6,8 +6,17 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
 const TG = `https://api.telegram.org/bot${BOT_TOKEN}`
+
+const MONTHS_G = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+const DAYS_FULL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота']
+
+const CRM_URL = 'https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html'
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  return `${d.getDate()} ${MONTHS_G[d.getMonth()]}, ${DAYS_FULL[d.getDay()]}`
+}
 
 async function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}) {
   await fetch(`${TG}/sendMessage`, {
@@ -17,16 +26,7 @@ async function sendMessage(chat_id: number, text: string, extra: Record<string, 
   })
 }
 
-const MONTHS_G = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
-const DAYS_FULL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота']
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00')
-  return `${d.getDate()} ${MONTHS_G[d.getMonth()]}, ${DAYS_FULL[d.getDay()]}`
-}
-
 async function handleStart(chat_id: number, username: string | undefined, payload: string) {
-  // payload = appt_APPOINTMENT_ID
   if (!payload.startsWith('appt_')) {
     await sendMessage(chat_id, 'Привет! Я бот оптики Ginter. Запишитесь через форму на сайте.')
     return
@@ -34,7 +34,6 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
 
   const apptId = payload.replace('appt_', '')
 
-  // Загружаем запись
   const { data: appt, error } = await db
     .from('appointments')
     .select('*, patients(*)')
@@ -52,7 +51,6 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
     telegram_username: username ? `@${username}` : appt.patients.telegram_username,
   }).eq('id', appt.patient_id)
 
-  // Также сохраняем в appointments для быстрого доступа
   await db.from('appointments').update({ patient_chat_id: chat_id }).eq('id', apptId)
 
   const patient = appt.patients
@@ -89,6 +87,33 @@ https://maps.app.goo.gl/LJerB2rskqhnhES48
 Анна ✨`
 
   await sendMessage(chat_id, text)
+
+  // Уведомить Анну — теперь со ссылками
+  await notifyAnnaNewBooking(appt, patient, username)
+}
+
+async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Record<string, unknown>, tgUsername: string | undefined) {
+  const { data: r } = await db.from('settings').select('key,value').eq('key', 'my_chat_id')
+  const myChatId = r?.[0]?.value
+  if (!myChatId) return
+
+  const dateLabel = formatDate(appt.date as string)
+  const time = ((appt.time as string) || '').substr(0, 5)
+  const patientName = (patient.name as string) || ''
+  const patientTg = tgUsername ? `@${tgUsername}` : ((patient.telegram_username as string) || '—')
+  const patientId = patient.id as string
+
+  const tgLink = tgUsername ? `\n👤 Telegram пациента: @${tgUsername}` : ''
+  const crmLink = `\n🗂 Профиль в CRM: ${CRM_URL}#patient=${patientId}`
+
+  const msg = `📋 Пациент подтвердил запись через бота!
+
+Пациент: ${patientName}${tgLink}
+📅 ${dateLabel} в ${time}
+Вид: ${appt.type}
+Номер: ${appt.appointment_number}${crmLink}`
+
+  await sendMessage(Number(myChatId), msg)
 }
 
 async function handleCallback(callback_query: Record<string, unknown>) {
@@ -102,24 +127,25 @@ async function handleCallback(callback_query: Record<string, unknown>) {
     body: JSON.stringify({ callback_query_id: callback_query.id }),
   })
 
-  // data format: confirm_APPTID | reschedule_APPTID | cancel_APPTID
-  const [action, apptId] = data.split('_').slice(0, 2).concat([data.split('_').slice(1).join('_')])
-    // actually parse properly:
   const parts = data.split('_')
   const act = parts[0]
   const id = parts.slice(1).join('_')
 
+  const { data: appt } = await db
+    .from('appointments')
+    .select('*, patients(*)')
+    .eq('id', id)
+    .single()
+
   if (act === 'confirm') {
     await db.from('appointments').update({ confirmation_status: 'confirmed' }).eq('id', id)
-    // Убираем кнопки, добавляем статус
     await fetch(`${TG}/editMessageReplyMarkup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id, message_id, reply_markup: { inline_keyboard: [] } }),
     })
     await sendMessage(chat_id, '✅ Отлично! Ждём вас на приёме. До встречи! ✨')
-    // Уведомить Анну
-    await notifyAnna(`✅ Пациент подтвердил запись\nID: ${id}`)
+    await notifyAnnaCallback(appt, '✅ Пациент подтвердил запись')
 
   } else if (act === 'reschedule') {
     await db.from('appointments').update({ confirmation_status: 'reschedule_requested' }).eq('id', id)
@@ -129,7 +155,7 @@ async function handleCallback(callback_query: Record<string, unknown>) {
       body: JSON.stringify({ chat_id, message_id, reply_markup: { inline_keyboard: [] } }),
     })
     await sendMessage(chat_id, '🔄 Хорошо! Напишите, пожалуйста, @AnnaNvslv — она подберёт удобное время.')
-    await notifyAnna(`🔄 Пациент хочет перезаписаться\nID: ${id}\nChat: ${chat_id}`)
+    await notifyAnnaCallback(appt, '🔄 Пациент хочет перезаписаться')
 
   } else if (act === 'cancel') {
     await db.from('appointments').update({ confirmation_status: 'cancelled', status: 'отменён' }).eq('id', id)
@@ -142,16 +168,28 @@ async function handleCallback(callback_query: Record<string, unknown>) {
       chat_id,
       '❌ Запись отменена.\n\nЕсли хотите перенести или оставить сообщение Анне — напишите @AnnaNvslv.'
     )
-    await notifyAnna(`❌ Пациент отменил запись\nID: ${id}\nChat: ${chat_id}`)
+    await notifyAnnaCallback(appt, '❌ Пациент отменил запись')
   }
 }
 
-async function notifyAnna(text: string) {
-  const { data: r } = await db.from('settings').select('key,value').in('key', ['bot_token', 'my_chat_id'])
-  const s: Record<string, string> = {}
-  ;(r || []).forEach((x: Record<string, string>) => (s[x.key] = x.value))
-  if (!s.my_chat_id) return
-  await sendMessage(Number(s.my_chat_id), text)
+async function notifyAnnaCallback(appt: Record<string, unknown> | null, statusLine: string) {
+  const { data: r } = await db.from('settings').select('key,value').eq('key', 'my_chat_id')
+  const myChatId = r?.[0]?.value
+  if (!myChatId || !appt) return
+
+  const patient = appt.patients as Record<string, unknown>
+  const patientName = (patient?.name as string) || ''
+  const patientTg = (patient?.telegram_username as string) || ''
+  const patientId = (patient?.id as string) || ''
+  const dateLabel = formatDate(appt.date as string)
+  const time = ((appt.time as string) || '').substr(0, 5)
+
+  const tgLine = patientTg ? `\n👤 Telegram: ${patientTg}` : ''
+  const crmLine = `\n🗂 Профиль: ${CRM_URL}#patient=${patientId}`
+
+  const msg = `${statusLine}\n\nПациент: ${patientName}${tgLine}\n📅 ${dateLabel} в ${time}\nНомер: ${appt.appointment_number}${crmLine}`
+
+  await sendMessage(Number(myChatId), msg)
 }
 
 serve(async (req) => {

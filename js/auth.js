@@ -24,7 +24,6 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  // Показать мобильную навигацию только на мобиле
   var mn = document.getElementById('mobile-nav');
   if (mn) mn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
   const saved=localStorage.getItem('crm_section');
@@ -43,6 +42,19 @@ function showApp() {
     b.style.color=b.dataset.lang===_lang?'white':'rgba(255,255,255,.5)';
   });
   if(typeof _mobActive==='function') _mobActive();
+
+  // ═══ DEEPLINK: открыть профиль пациента по хэшу #patient=ID ═══
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#patient=')) {
+    const pid = hash.replace('#patient=', '');
+    if (pid) {
+      history.replaceState(null, '', window.location.pathname); // убрать хэш из URL
+      render();
+      setTimeout(() => openPatientCard(pid), 300);
+      return;
+    }
+  }
+
   render();
 }
 function logout() { role=null; localStorage.removeItem('crm_role'); location.reload(); }

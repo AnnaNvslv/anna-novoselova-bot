@@ -8,9 +8,10 @@ async function renderAppointments() {
       <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${{'все':t('all'),'запланирован':t('status_planned'),'завершён':t('status_done'),'отменён':t('status_cancelled')}[f]||f}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>${t('patient')}</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>
+      <thead><tr><th>${t('patient')}</th><th>№ приёма</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>
       <tbody>${filtered.map(a=>`<tr>
         <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span></td>
+        <td><span class="badge badge-accent" style="font-size:11px">${a.appointment_number||'—'}</span></td>
         <td><b>${fmt(a.date)}</b> в ${a.time?.substr(0,5)}</td>
         <td style="font-size:13.5px">${a.type||'—'}</td>
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
@@ -19,30 +20,26 @@ async function renderAppointments() {
           ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
           ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
         </div></td>
-      </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
+      </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
 }
 // ═══ APPOINTMENT FORM ═══
 function openAddAppointment(){_apptForm(null,null);}
 function openAddAppointmentFor(pid){_apptForm(null,pid);}
-// Called from calendar when clicking a free slot — passes slotId so it gets pre-selected
 async function openAddAppointmentAtSlot(date,time,slotId){_apptForm(null,null,date,time,slotId);}
 async function openEditAppt(id){const{data:a}=await db.from('appointments').select('*').eq('id',id).single();_apptForm(a,null);}
 async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
   const{data:patients}=await db.from('patients').select('id,name').is('deleted_at',null).order('name');
-  // Free slots next 21 days
   const toD=new Date();toD.setDate(toD.getDate()+21);
   const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
   const slotsByDate={};(freeSlots||[]).forEach(s=>{if(!slotsByDate[s.date])slotsByDate[s.date]=[];slotsByDate[s.date].push(s);});
   const slotDates=Object.keys(slotsByDate).sort();
 
-  // Pre-select slot: from calendar click (preSlotId) or from editing existing appt
   window._pickedSlotId = preSlotId || null;
   if(a && !window._pickedSlotId){
     const curSlot=(freeSlots||[]).find(s=>s.date===a.date&&s.start_time?.substr(0,5)===a.time?.substr(0,5));
     if(curSlot) window._pickedSlotId=curSlot.id;
   }
-
   const activeSlotId = window._pickedSlotId;
 
   const slotPickerHtml=slotDates.length?`<div class="form-group full"><label>${t('available_slots')||'Slobodni termini'}</label>
@@ -107,11 +104,10 @@ async function saveAppt(id){
   const dur=+(v('a-dur'))||60;
   const data={patient_id,date,time,type:typeName,notes:v('a-notes'),consultation_price:+(v('a-price'))||0};
   let apptId=id;
+  let apptNum='';
   if(id){
-    // Check duplicate on new time (exclude current appt)
     const{data:dupCheck}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('id',id);
     if(dupCheck?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
-    // Free old slot, book new slot
     await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
     await db.from('appointments').update(data).eq('id',id);
     if(window._pickedSlotId){
@@ -122,10 +118,8 @@ async function saveAppt(id){
     toast(t('appt_updated'));
   }
   else{
-    // Check for duplicate
     const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null);
     if(existing?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
-    // Check slot still free (before inserting)
     if(window._pickedSlotId){
       const{data:slotChk}=await db.from('available_slots').select('is_booked,booked_by').eq('id',window._pickedSlotId).single();
       if(slotChk?.is_booked){
@@ -134,7 +128,6 @@ async function saveAppt(id){
         return;
       }
     } else {
-      // Check by date+time — slot must exist and be free
       const{data:timeSlot}=await db.from('available_slots').select('id,is_booked').eq('date',date).eq('start_time',time).maybeSingle();
       if(timeSlot?.is_booked){
         toast('Na ovo vreme već postoji rezervacija!','error');
@@ -142,31 +135,28 @@ async function saveAppt(id){
         return;
       }
     }
-    // Check no other appointment at this time
     const{data:timeChk}=await db.from('appointments').select('id').eq('date',date).eq('time',time).is('deleted_at',null).neq('status','отменён');
     if(timeChk?.length){toast('Na ovo vreme već postoji pregled!','error');if(btn)btn.disabled=false;return;}
 
-    const apptNum=await generateApptNumber(date);
-    const{data:a}=await db.from('appointments').insert({...data,status:'запланирован',appointment_number:apptNum}).select().single();
+    // appointment_number генерирует триггер БД автоматически
+    const{data:a}=await db.from('appointments').insert({...data,status:'запланирован'}).select().single();
     apptId=a?.id;
+    apptNum=a?.appointment_number||'';
 
-    // Book the slot
     if(apptId){
       if(window._pickedSlotId){
         await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:apptId}).eq('id',window._pickedSlotId);
       } else {
-        // Try to book by exact date+time match, then fall back to duration-based blocking
         const booked = await bookSlotByDateTime(date,time,apptId);
         if(!booked) await blockSlotsByDuration(date,time,dur,apptId);
       }
     }
-    toast(`${t('appt_saved')} · ${apptNum}`);
+    toast(`${t('appt_saved')}${apptNum?' · '+apptNum:''}`);
   }
-  // Notify
   if(v('a-notify')==='yes'&&!id){
     const{data:p}=await db.from('patients').select('name,telegram_chat_id').eq('id',patient_id).single();
     if(p?.telegram_chat_id){
-      const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n📅 ${fmtDateLong(date)}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n💰 Стоимость приёма: ${(+(v('a-price')||v('sb-price')||3000)).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули. Вы можете взять с собой контейнер и жидкость, снять КЛ в оптике, а после приёма надеть. (В таком случае, вам надо прийти в оптику за 20 минут до назначенного времени).\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли у вас есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
+      const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n📅 ${fmtDateLong(date)}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибльа пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n💰 Стоимость приёма: ${(+(v('a-price')||v('sb-price')||3000)).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули. Вы можете взять с собой контейнер и жидкость, снять КЛ в оптике, а после приёма надеть. (В таком случае, вам надо прийти в оптику за 20 минут до назначенного времени).\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли у вас есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
       await tgSend(p.telegram_chat_id,msg);
     }
   }
@@ -178,7 +168,6 @@ async function saveAppt(id){
   }
 }
 
-// Book a single slot by exact date+time — returns true if found and booked
 async function bookSlotByDateTime(date,time,appointmentId){
   const{data:slot}=await db.from('available_slots').select('id').eq('date',date).eq('start_time',time).eq('is_booked',false).maybeSingle();
   if(!slot) return false;
@@ -211,14 +200,6 @@ async function deleteAppt(id){
   await db.from('appointments').update({deleted_at:new Date().toISOString()}).eq('id',id);
   toast(t('moved_to_trash')||'Premješteno u korpu');
   if(_openPatientId){_renderPatientCard(_openPatientId);}else{renderAppointments();}
-}
-// ═══ APPOINTMENT NUMBER ═══
-async function generateApptNumber(date){
-  const[year,,month]=[date.substr(0,4),'-',date.substr(5,2)];
-  const mon=date.substr(5,2); const yr=date.substr(2,2);
-  const prefix=`OG-${mon}${yr}`;
-  const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',`${prefix}-%`);
-  return`${prefix}-${String((count||0)+1).padStart(2,'0')}`;
 }
 
 async function revertApptToPlanned(id){

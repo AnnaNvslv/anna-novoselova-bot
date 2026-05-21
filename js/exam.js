@@ -115,6 +115,7 @@ const DEFAULT_RECS = `Контроль остроты зрения через 1 
 function _drawExam(p,e,visitNum,apptId){
   const ge=f=>e?.[f]||'';
   const apptNum = e?.appointment_number || '';
+  const pid = p?.id||'';
   document.getElementById('modal-container').innerHTML=`
   <div class="modal modal-xl">
     <div class="modal-header">
@@ -122,7 +123,7 @@ function _drawExam(p,e,visitNum,apptId){
         <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
         ${apptNum?`<span class="badge badge-accent" style="margin-left:6px">${apptNum}</span>`:`<span class="badge badge-accent" style="margin-left:6px">${t('visit')}${visitNum}</span>`}
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="if(_modalDirty&&!confirm('${t('close_unsaved')}'))return;closeModal()">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="_examClose()">✕</button>
     </div>
     <div class="modal-body">
       <div class="tab-bar">
@@ -266,16 +267,18 @@ function _drawExam(p,e,visitNum,apptId){
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="if(_modalDirty&&!confirm(t('close_unsaved')))return;closeModal()">${t('btn_close')}</button>
-      ${e?.id?`
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','clinic')">📧 ${t('btn_email_clinic')}</button>
-        <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${p?.id}','${visitNum}','patient')">📧 ${t('btn_email_patient')}</button>
-      `:''}
-      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">💾 ${t('btn_save')}</button>
-      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${p?.id}','${visitNum}')">🖨️ ${t('btn_print')}</button>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost" onclick="_examClose()" style="margin-right:auto">${t('btn_close')}</button>
+      <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${pid}','${visitNum}','patient')">📧 Пациенту</button>
+      <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${pid}','${visitNum}','clinic')">📧 В оптику</button>
+      <button class="btn btn-ghost" onclick="saveExam('${e?.id||''}','${apptId}','${pid}','${visitNum}')">💾 ${t('btn_save')}</button>
+      <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${pid}','${visitNum}')">🖨️ ${t('btn_print')}</button>
     </div>
   </div>`;
+}
+function _examClose(){
+  if(_modalDirty && !confirm(t('close_unsaved'))) return;
+  closeModal();
 }
 function _switchExamTab(){
   document.querySelectorAll('[id^=exam-tab-]').forEach(t=>t.classList.remove('active'));
@@ -331,7 +334,6 @@ function addCorrection(){_examData.corrections.push({type:'Очки для да�
 
 async function saveExam(id,apptId,patientId,visitNum){
   const effectiveId = _currentExamId || id || '';
-  // Только колонки которые точно есть в таблице examinations БД
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
     visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),

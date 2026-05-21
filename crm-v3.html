@@ -88,6 +88,13 @@ tr:hover td{background:var(--surface2)}
 .badge-blue{background:var(--blue-l);color:var(--blue)}
 .badge-gray{background:var(--surface2);color:var(--text-m)}
 .badge-accent{background:var(--accent-l);color:var(--accent-h)}
+/* ═══ PATIENT STATUS BADGES ═══ */
+.pt-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px}
+.pt-green{background:var(--green-l);color:var(--green)}
+.pt-red{background:var(--red-l);color:var(--red)}
+.pt-blue{background:var(--blue-l);color:var(--blue)}
+.pt-yellow{background:var(--warn-l);color:var(--warn)}
+.pt-gray{background:var(--surface2);color:var(--text-m)}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
@@ -231,7 +238,6 @@ input[type=number]{-moz-appearance:textfield}
 
 /* ═══ MOBILE ═══ */
 @media(max-width:768px){
-  /* Bottom nav */
   #mobile-nav{
     display:flex!important;
     position:fixed;bottom:0;left:0;right:0;
@@ -250,126 +256,66 @@ input[type=number]{-moz-appearance:textfield}
   }
   .mob-nav-item.active{color:#fff}
   .mob-nav-item svg{width:19px;height:19px;flex-shrink:0}
-
-  /* Layout */
   .sidebar{display:none!important}
   #app{flex-direction:column!important;padding-bottom:58px}
   .main{width:100%}
-
-  /* Topbar */
   .topbar{padding:12px 14px 0;flex-wrap:wrap;gap:8px;align-items:flex-start}
   .topbar h1{font-size:17px;flex:1}
   .topbar-actions{flex-wrap:wrap;gap:6px;width:100%}
   .topbar-actions .btn{flex:1 1 auto;justify-content:center;min-height:40px}
-
-  /* Content */
   .content{padding:12px 12px 20px}
-
-  /* Search */
   .search-wrap{width:100%}
   .search-wrap input{width:100%!important}
-
-  /* Grids */
   .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
   .two-col,.three-col,.info-grid{grid-template-columns:1fr!important}
   .form-grid,.form-grid-3,.form-grid-4{grid-template-columns:1fr!important;gap:10px!important}
   .form-group.full{grid-column:1!important}
   .discount-row{grid-template-columns:1fr 70px!important}
-
-  /* Forms */
   input,select,textarea{font-size:16px!important;min-height:44px!important;padding:10px 12px!important}
   input[type=checkbox],input[type=radio]{min-height:unset!important;width:18px!important;height:18px!important}
   textarea{min-height:80px!important}
   label{font-size:13px!important}
-
-  /* Overlay & modals */
-  .overlay{
-    padding:0!important;
-    align-items:flex-end!important;
-    z-index:200;
-  }
+  .overlay{padding:0!important;align-items:flex-end!important;z-index:200;}
   .modal,.modal-lg,.modal-xl,.modal-full{
     max-width:100%!important;width:100%!important;
     border-radius:18px 18px 0 0!important;
     max-height:calc(100dvh - 58px)!important;
-    height:auto;
-    display:flex;flex-direction:column;
-    margin:0!important;
+    height:auto;display:flex;flex-direction:column;margin:0!important;
   }
-  .modal-header{
-    padding:14px 16px 12px!important;
-    flex-wrap:wrap;gap:8px;flex-shrink:0;
-  }
+  .modal-header{padding:14px 16px 12px!important;flex-wrap:wrap;gap:8px;flex-shrink:0;}
   .modal-title{font-size:16px!important}
   .modal-header .flex{flex-wrap:wrap;gap:6px}
   .modal-header .btn{min-height:36px}
-  .modal-body{
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch;
-    flex:1;min-height:0!important;
-    padding:14px 14px!important;
-  }
-  .modal-footer{
-    flex-wrap:wrap;gap:8px;
-    padding:10px 14px!important;
-    flex-shrink:0;
-  }
+  .modal-body{overflow-y:auto!important;-webkit-overflow-scrolling:touch;flex:1;min-height:0!important;padding:14px 14px!important;}
+  .modal-footer{flex-wrap:wrap;gap:8px;padding:10px 14px!important;flex-shrink:0;}
   .modal-footer .btn{flex:1 1 auto;justify-content:center;min-height:44px}
-
-  /* rx-table inside modal — horizontal scroll */
   .rx-section{padding:10px!important}
   .rx-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .rx-table table,.rx-table thead,.rx-table tbody,.rx-table tr,.rx-table th,.rx-table td{display:revert!important}
   .rx-shared-row{flex-wrap:wrap;gap:8px}
   .rx-shared-row .form-group{min-width:120px}
-
-  /* Exam tabs */
   .tab-bar{-webkit-overflow-scrolling:touch}
   .tab{padding:8px 12px!important;font-size:13px!important}
-
-  /* Tables → cards */
   .table-wrap{overflow-x:visible!important}
   table,thead,tbody,th,td,tr{display:block!important}
   thead{display:none!important}
-  tbody tr{
-    background:var(--surface);border-radius:10px;
-    margin-bottom:10px;padding:12px 14px;
-    box-shadow:var(--shadow);border:1px solid var(--border);
-  }
+  tbody tr{background:var(--surface);border-radius:10px;margin-bottom:10px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border);}
   tbody tr:hover td{background:transparent!important}
   td{padding:3px 0!important;border:none!important;font-size:14px;line-height:1.4}
   td .flex{flex-wrap:wrap!important;gap:6px!important;margin-top:8px}
   td .btn{min-height:38px}
-
-  /* History items — buttons on new line */
   .history-item{flex-direction:column;gap:8px}
   .history-item .flex{flex-wrap:wrap;gap:6px}
   .history-item .flex .btn{flex:1 1 auto;justify-content:center;min-height:40px}
-
-  /* Patient card header */
   .modal-header .patient-avatar{width:38px!important;height:38px!important;font-size:14px!important}
-
-  /* Filter bar */
   .filter-bar{overflow-x:auto;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
   .filter-btn{white-space:nowrap;min-height:36px}
-
-  /* Section header */
   .section-header{flex-direction:column;align-items:flex-start;gap:8px}
-
-  /* Calendar */
   .cal-week{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .cal-nav{gap:8px}
-
-  /* Toast above nav */
   #toast{bottom:68px!important;right:12px!important;left:12px!important}
-
-  /* Login */
   .login-box{width:92vw!important;padding:28px 20px!important}
-
-  /* Corr item grid */
-  .corr-item > div[style*="grid-template-columns:50px"]{
-    grid-template-columns:40px 1fr 1fr!important;
-  }
+  .corr-item > div[style*="grid-template-columns:50px"]{grid-template-columns:40px 1fr 1fr!important;}
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -477,9 +423,9 @@ input[type=number]{-moz-appearance:textfield}
 <script src="js/telegram.js?v=10"></script>
 <script src="js/router.js?v=10"></script>
 <script src="js/dashboard.js?v=10"></script>
-<script src="js/patients.js?v=10"></script>
-<script src="js/appointments.js?v=10"></script>
-<script src="js/orders.js?v=10"></script>
+<script src="js/patients.js?v=11"></script>
+<script src="js/appointments.js?v=11"></script>
+<script src="js/orders.js?v=11"></script>
 <script src="js/analytics.js?v=10"></script>
 <script src="js/calendar.js?v=10"></script>
 <script src="js/exam.js?v=10"></script>

@@ -31,7 +31,7 @@ async function renderOrders() {
           ${o.status==='готов'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Оповестить о готовности" onclick="notifyOrderReady('${o.id}')">&#128232;</button>`:''}
           ${o.status==='готов'?`<button class="btn btn-accent btn-sm" title="Выдать заказ" onclick="issueOrder('${o.id}')">Vydati</button>`:''}
           ${o.status==='выдан'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Отправить опрос (2 нед.)" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
-          ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
+          ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">&#9999;&#65039;</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
@@ -83,6 +83,7 @@ async function openOrderCard(id){
   </div>`);
 }
 
+// ═══ helpers ═══
 function orderTotal_lenses(o){
   const qty = o.lens_qty ?? 2;
   return (+o.lens_price||0) * qty;
@@ -108,9 +109,18 @@ async function openEditOrder(id){
   _drawOrderForm(o,o?.patient_id,patients||[],examResult?.data||[]);
 }
 
+// Текст для option рецепта (без HTML-тегов)
+function _rxOptLabel(e, type, d) {
+  const labels = {far:'Даль', comp:'Компьютер', near:'Близь', cl:'KS'};
+  const base = 'Визит №'+(e.visit_number||'?')+' ('+d+') — '+labels[type];
+  const diopt = _rxDioptStr(e, type).replace(/<[^>]+>/g,'').replace(/^ — /,'').trim();
+  return diopt ? base+' | '+diopt : base;
+}
+
+// Строка диоптрий для превью
 function _rxDioptStr(e, type) {
   if(!e) return '';
-  const parts=[];
+  let parts=[];
   if(type==='far') {
     if(e.rx_far_od_sph) parts.push('OD '+e.rx_far_od_sph+(e.rx_far_od_cyl?' /'+e.rx_far_od_cyl:'')+(e.rx_far_od_ax?' ax'+e.rx_far_od_ax:''));
     if(e.rx_far_os_sph) parts.push('OS '+e.rx_far_os_sph);
@@ -132,25 +142,20 @@ function _rxDioptStr(e, type) {
     if(e.rx_cl_od_bc) parts.push('BC '+e.rx_cl_od_bc);
     if(e.rx_cl_od_dia) parts.push('DIA '+e.rx_cl_od_dia);
   }
-  return parts.length ? ' | '+parts.join(' | ') : '';
+  return parts.length ? ' — <span style="color:var(--text-m);font-size:11px">'+parts.join(' | ')+'</span>' : '';
 }
 
 window._examCache = {};
-
-function _rxOptLabel(e, type) {
-  const typeLabels = {far:'Даль', comp:'Компьютер', near:'Близь', cl:'KS'};
-  const d = fmt(e.created_at?.split('T')[0]);
-  return 'Визит №'+(e.visit_number||'?')+' ('+d+') — '+typeLabels[type]+_rxDioptStr(e, type);
-}
 
 function _rxOpts(exams, selVal){
   const opts=['<option value="">— без рецепта —</option>'];
   (exams||[]).forEach(e=>{
     window._examCache[e.id] = e;
-    if(e.rx_far_od_sph) opts.push('<option value="'+e.id+'|far"'+(selVal===e.id+'|far'?' selected':'')+'>'+_rxOptLabel(e,'far')+'</option>');
-    if(e.rx_comp_od_sph) opts.push('<option value="'+e.id+'|comp"'+(selVal===e.id+'|comp'?' selected':'')+'>'+_rxOptLabel(e,'comp')+'</option>');
-    if(e.rx_near_od_sph) opts.push('<option value="'+e.id+'|near"'+(selVal===e.id+'|near'?' selected':'')+'>'+_rxOptLabel(e,'near')+'</option>');
-    if(e.rx_cl_od_sph) opts.push('<option value="'+e.id+'|cl"'+(selVal===e.id+'|cl'?' selected':'')+'>'+_rxOptLabel(e,'cl')+'</option>');
+    const d=fmt(e.created_at?.split('T')[0]);
+    if(e.rx_far_od_sph) opts.push('<option value="'+e.id+'|far" '+(selVal===e.id+'|far'?'selected':'')+'>'+_rxOptLabel(e,'far',d)+'</option>');
+    if(e.rx_comp_od_sph) opts.push('<option value="'+e.id+'|comp" '+(selVal===e.id+'|comp'?'selected':'')+'>'+_rxOptLabel(e,'comp',d)+'</option>');
+    if(e.rx_near_od_sph) opts.push('<option value="'+e.id+'|near" '+(selVal===e.id+'|near'?'selected':'')+'>'+_rxOptLabel(e,'near',d)+'</option>');
+    if(e.rx_cl_od_sph) opts.push('<option value="'+e.id+'|cl" '+(selVal===e.id+'|cl'?'selected':'')+'>'+_rxOptLabel(e,'cl',d)+'</option>');
   });
   return opts.join('');
 }
@@ -160,129 +165,138 @@ function _drawOrderForm(o, prePatient, patients, exams){
   const orderDate = o?.order_date || o?.created_at?.split('T')[0] || today();
   const lensQty = o?.lens_qty ?? 2;
   const isCL = o?.type === 'МКЛ';
-  const selRxVal = o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'';
 
-  openModal('<div class="modal modal-xl">'+
-    '<div class="modal-header"><span class="modal-title">'+(isEdit?t('edit_order')||'Uredi porud\u017ebinu':t('new_order')||'Nova porud\u017ebina')+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
-    '<div class="modal-body"><div class="form-grid">'+
+  openModal(`<div class="modal modal-xl">
+    <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porudžbinu'):(t('new_order')||'Nova porudžbina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
 
-    '<div class="form-group full">'+
-      '<div class="flex items-center justify-between mb-4"><label>'+(t('patient')||'Pacijent')+' *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ '+(t('new_patient')||'Novi pacijent')+'</button></div>'+
-      '<select id="o-pid" onchange="onOrderPatientChange(this.value)">'+
-        '<option value="">— izaberite —</option>'+
-        patients.map(p=>'<option value="'+p.id+'"'+(((o?.patient_id||prePatient)===p.id)?' selected':'')+'>'+p.name+'</option>').join('')+
-      '</select>'+
-      '<div id="quick-patient-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
-        '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Быстрое добавление пациента</div>'+
-        '<div class="form-grid">'+
-          '<div class="form-group full"><label>ФИО *</label><input id="qp-name" placeholder="Иванова Мария Петровна"></div>'+
-          '<div class="form-group"><label>Телефон</label><input id="qp-phone"></div>'+
-          '<div class="form-group"><label>Email</label><input id="qp-email"></div>'+
-          '<div class="form-group"><label>Telegram @username</label><input id="qp-tg" placeholder="@username"></div>'+
-        '</div>'+
-        '<div class="flex gap-8 mt-8">'+
-          '<button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">Сохранить и выбрать</button>'+
-          '<button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">'+(t('cancel')||'Otkaži')+'</button>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+        <div class="form-group full">
+          <div class="flex items-center justify-between mb-4"><label>${t("patient")||"Pacijent"} *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ ${t("new_patient")||"Novi pacijent"}</button></div>
+          <select id="o-pid" onchange="onOrderPatientChange(this.value)">
+            <option value="">— izaberite —</option>
+            ${patients.map(p=>`<option value="${p.id}" ${(o?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}
+          </select>
+          <div id="quick-patient-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
+            <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Быстрое добавление пациента</div>
+            <div class="form-grid">
+              <div class="form-group full"><label>ФИО *</label><input id="qp-name" placeholder="Иванова Мария Петровна"></div>
+              <div class="form-group"><label>Телефон</label><input id="qp-phone"></div>
+              <div class="form-group"><label>Email</label><input id="qp-email"></div>
+              <div class="form-group"><label>Telegram @username</label><input id="qp-tg" placeholder="@username"></div>
+            </div>
+            <div class="flex gap-8 mt-8">
+              <button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">Сохранить и выбрать</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">${t("cancel")||"Otkaži"}</button>
+            </div>
+          </div>
+        </div>
 
-    '<div class="form-group full">'+
-      '<div class="flex items-center justify-between mb-4"><label>'+(t('prescription')||'Recept')+'</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Recept</button></div>'+
-      '<select id="o-rx" onchange="showRxPreview(this.value)">'+_rxOpts(exams, selRxVal)+'</select>'+
-      '<div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>'+
-      '<div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
-        '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Brzi unos recepta</div>'+
-        '<div class="form-grid">'+
-          '<div class="form-group"><label>Vrsta</label>'+
-            '<select id="qrx-type" onchange="updateQuickRxFields()">'+
-              '<option value="far">Naočare za daljinu</option>'+
-              '<option value="comp">Naočare za računar</option>'+
-              '<option value="near">Naočare za blizinu</option>'+
-              '<option value="cl">KS</option>'+
-            '</select>'+
-          '</div>'+
-          '<div class="form-group" style="align-self:flex-end">'+
-            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">'+
-              '<input type="checkbox" id="qrx-own" style="width:auto"> Vlastiti recept'+
-            '</label>'+
-          '</div>'+
-        '</div>'+
-        '<div id="qrx-fields" style="margin-top:10px">'+
-          '<table class="rx-table" style="margin-bottom:8px">'+
-            '<tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>'+
-            '<tr><td>OD</td><td><input id="qrx-od-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-ax" style="min-width:52px;text-align:center"></td></tr>'+
-            '<tr><td>OS</td><td><input id="qrx-os-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-ax" style="min-width:52px;text-align:center"></td></tr>'+
-          '</table>'+
-          '<div class="flex gap-8" id="qrx-shared-fields">'+
-            '<div class="form-group" style="max-width:80px"><label id="qrx-pd-label">PD</label><input id="qrx-pd" style="text-align:center"></div>'+
-            '<div class="form-group" style="max-width:80px" id="qrx-add-wrap"><label id="qrx-add-label">ADD</label><input id="qrx-add" style="text-align:center"></div>'+
-            '<div class="form-group" style="max-width:80px;display:none" id="qrx-dia-wrap"><label>DIA</label><input id="qrx-dia" style="text-align:center"></div>'+
-          '</div>'+
-          '<div class="form-group mt-8" id="qrx-cl-type-wrap" style="display:none"><label>Вид МКЛ</label><input id="qrx-cl-type" placeholder="однодневные, ежемесячные..."></div>'+
-          '<div class="form-group mt-8"><label>Napomena</label><input id="qrx-note"></div>'+
-        '</div>'+
-        '<div class="flex gap-8 mt-10">'+
-          '<button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Sačuvaj recept</button>'+
-          '<button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">'+(t('cancel')||'Otkaži')+'</button>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+        <div class="form-group full">
+          <div class="flex items-center justify-between mb-4"><label>${t("prescription")||"Recept"}</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Recept</button></div>
+          <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams, o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
+          <div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>
+          <div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
+            <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Brzi unos recepta</div>
+            <div class="form-grid">
+              <div class="form-group"><label>Vrsta</label>
+                <select id="qrx-type" onchange="updateQuickRxFields()">
+                  <option value="far">Naočare za daljinu</option>
+                  <option value="comp">Naočare za računar</option>
+                  <option value="near">Naočare za blizinu</option>
+                  <option value="cl">KS</option>
+                </select>
+              </div>
+              <div class="form-group" style="align-self:flex-end">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">
+                  <input type="checkbox" id="qrx-own" style="width:auto"> Vlastiti recept
+                </label>
+              </div>
+            </div>
+            <div id="qrx-fields" style="margin-top:10px">
+              <table class="rx-table" style="margin-bottom:8px">
+                <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
+                <tr><td>OD</td><td><input id="qrx-od-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-ax" style="min-width:52px;text-align:center"></td></tr>
+                <tr><td>OS</td><td><input id="qrx-os-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-ax" style="min-width:52px;text-align:center"></td></tr>
+              </table>
+              <div class="flex gap-8" id="qrx-shared-fields">
+                <div class="form-group" style="max-width:80px"><label id="qrx-pd-label">PD</label><input id="qrx-pd" style="text-align:center"></div>
+                <div class="form-group" style="max-width:80px" id="qrx-add-wrap"><label id="qrx-add-label">ADD</label><input id="qrx-add" style="text-align:center"></div>
+                <div class="form-group" style="max-width:80px;display:none" id="qrx-dia-wrap"><label>DIA</label><input id="qrx-dia" style="text-align:center"></div>
+              </div>
+              <div class="form-group mt-8" id="qrx-cl-type-wrap" style="display:none"><label>Вид МКЛ</label><input id="qrx-cl-type" placeholder="однодневные, ежемесячные..."></div>
+              <div class="form-group mt-8"><label>Napomena</label><input id="qrx-note"></div>
+            </div>
+            <div class="flex gap-8 mt-10">
+              <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Sačuvaj recept</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">${t("cancel")||"Otkaži"}</button>
+            </div>
+          </div>
+        </div>
 
-    '<div class="form-group"><label>№ заказа (с пакета)</label><input id="o-ordernum" value="'+(o?.order_number||'')+'" placeholder="напр. 12345"></div>'+
-    '<div class="form-group"><label>Дата оформления</label><input type="date" id="o-orderdate" value="'+orderDate+'"></div>'+
+        <div class="form-group"><label>№ заказа (с пакета)</label><input id="o-ordernum" value="${o?.order_number||''}" placeholder="напр. 12345"></div>
+        <div class="form-group"><label>Дата оформления</label><input type="date" id="o-orderdate" value="${orderDate}"></div>
 
-    '<div class="form-group"><label>Vrsta porudžbine *</label>'+
-      '<select id="o-type" onchange="onOrderTypeChange(this.value)">'+
-        '<option value="Очки"'+(!o||o?.type==='Очки'?' selected':'')+'>Naočare</option>'+
-        '<option value="МКЛ"'+(o?.type==='МКЛ'?' selected':'')+'>KS (kontaktna sočiva)</option>'+
-        '<option value="Ремонт"'+(o?.type==='Ремонт'?' selected':'')+'>Popravka</option>'+
-        '<option value="Другое"'+(o?.type==='Другое'?' selected':'')+'>Ostalo</option>'+
-      '</select>'+
-    '</div>'+
-    (isEdit?'<div class="form-group"><label>Статус</label><select id="o-status">'+ORDER_STATUSES_ALL.map(s=>'<option'+(o?.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>':'<div></div>')+
+        <div class="form-group"><label>Vrsta porudžbine *</label>
+          <select id="o-type" onchange="onOrderTypeChange(this.value)">
+            <option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Naočare</option>
+            <option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna sočiva)</option>
+            <option value="Ремонт" ${o?.type==='Ремонт'?'selected':''}>Popravka</option>
+            <option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option>
+          </select>
+        </div>
+        ${isEdit?`<div class="form-group"><label>Статус</label>
+          <select id="o-status">${ORDER_STATUSES_ALL.map(s=>`<option ${o?.status===s?'selected':''}>${s}</option>`).join('')}</select>
+        </div>`:'<div></div>'}
 
-    '<div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">'+
-      '<div class="form-group"><label>'+(t('frame_code')||'Šifra okvira')+'</label><input id="o-fcode" value="'+(o?.frame_code||'')+'"></div>'+
-      '<div class="form-group"><label>'+(t('frame')||'Okvir')+' (din.)</label>'+
-        '<div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">'+
-          '<div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-fprice" value="'+(o?.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>'+
-          '<div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>'+
-          '<div><label style="font-size:10.5px;color:var(--green);font-weight:700">Nakon popusta</label><input type="number" id="o-fprice-final" value="'+(o?.frame_price||0)+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+        <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
+          <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input id="o-fcode" value="${o?.frame_code||''}"></div>
+          <div class="form-group">
+            <label>${t("frame")||"Okvir"} (din.)</label>
+            <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
+              <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-fprice" value="${o?.frame_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">Nakon popusta</label><input type="number" id="o-fprice-final" value="${o?.frame_price||0}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
+            </div>
+          </div>
+        </div>
 
-    '<div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">'+
-      '<div class="form-group"><label>'+(t('lens_name')||'Naziv sočiva')+'</label><input id="o-lname" value="'+(o?.lens_name||'')+'"></div>'+
-      '<div class="form-group">'+
-        '<label id="o-lens-label">'+(isCL?'Стоимость МКЛ (1 уп.)':(t('lenses')||'Sočiva')+' / kom (din.)')+'</label>'+
-        '<div style="display:grid;grid-template-columns:1fr 60px '+(isCL?'':'80px ')+'1fr;gap:6px;align-items:flex-end">'+
-          '<div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-lprice" value="'+(o?.lens_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>'+
-          '<div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>'+
-          (isCL?'':'<div id="o-lqty-wrap"><label style="font-size:10.5px;color:var(--text-l)">Кол-во шт.</label><select id="o-lqty" onchange="recalcOrder()" style="padding:8px 4px"><option value="2"'+(lensQty!==1?' selected':'')+'>2 шт.</option><option value="1"'+(lensQty===1?' selected':'')+'>1 шт.</option></select></div>')+
-          '<div><label style="font-size:10.5px;color:var(--green);font-weight:700" id="o-lens-result-label">'+(isCL?'Стоимость':'× кол-во')+'</label><input type="number" id="o-lprice-final" value="'+(isCL?o?.lens_price||0:(o?.lens_price||0)*lensQty)+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
-        '</div>'+
-      '</div>'+
-    '</div>'+
+        <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
+          <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input id="o-lname" value="${o?.lens_name||''}"></div>
+          <div class="form-group">
+            <label id="o-lens-label">${isCL?'Стоимость МКЛ (1 уп.)':t("lenses")||"Sočiva / kom"} (din.)</label>
+            <div style="display:grid;grid-template-columns:1fr 60px ${isCL?'':'80px '}1fr;gap:6px;align-items:flex-end">
+              <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-lprice" value="${o?.lens_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+              ${isCL?'':`<div id="o-lqty-wrap"><label style="font-size:10.5px;color:var(--text-l)">Кол-во шт.</label>
+                <select id="o-lqty" onchange="recalcOrder()" style="padding:8px 4px">
+                  <option value="2" ${lensQty!==1?'selected':''}>2 шт.</option>
+                  <option value="1" ${lensQty===1?'selected':''}>1 шт.</option>
+                </select>
+              </div>`}
+              <div><label style="font-size:10.5px;color:var(--green);font-weight:700" id="o-lens-result-label">${isCL?'Стоимость':'× кол-во'}</label><input type="number" id="o-lprice-final" value="${isCL?o?.lens_price||0:(o?.lens_price||0)*lensQty}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
+            </div>
+          </div>
+        </div>
 
-    '<div class="form-group"><label>'+(t('work')||'Obrada')+' (din.)</label><input type="number" id="o-wprice" value="'+(o?.work_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=''" oninput="recalcOrder()"></div>'+
-    '<div class="form-group"><label>'+(t('prepayment')||'Avans')+' (din.)</label><input type="number" id="o-prepay" value="'+(o?.prepayment||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>'+
-    '<div class="form-group"><label>'+(t('promised_date')||'Rok izrade')+'</label><input type="date" id="o-pdate" value="'+(o?.promised_date||'')+'"></div>'+
-    '<div class="form-group" style="align-self:flex-end">'+
-      '<div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">'+
-        '<div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">'+(t('total')||'UKUPNO')+'</div>'+
-        '<div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">'+fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0))+'</div>'+
-        '<div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">'+(t('balance')||'Ostatak')+': '+fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0)-(o?.prepayment||0),0))+'</div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="form-group full"><label>Napomena</label><textarea id="o-notes">'+(o?.notes||'')+'</textarea></div>'+
-    '</div></div>'+
-    '<div class="modal-footer">'+
-      '<button class="btn btn-ghost" onclick="closeModal()">'+(t('cancel')||'Otkaži')+'</button>'+
-      '<button class="btn btn-accent" onclick="saveOrder(\''+( o?.id||'')+'\')">'+( t('save')||'Sačuvaj')+'</button>'+
-    '</div>'+
-  '</div>');
+        <div class="form-group"><label>${t("work")||"Obrada"} (din.)</label><input type="number" id="o-wprice" value="${o?.work_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=''" oninput="recalcOrder()"></div>
+        <div class="form-group"><label>${t("prepayment")||"Avans"} (din.)</label><input type="number" id="o-prepay" value="${o?.prepayment||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
+        <div class="form-group"><label>${t("promised_date")||"Rok izrade"}</label><input type="date" id="o-pdate" value="${o?.promised_date||''}"></div>
+        <div class="form-group" style="align-self:flex-end">
+          <div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">
+            <div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">${t("total")||"UKUPNO"}</div>
+            <div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">${fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0))}</div>
+            <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">${t('balance')||'Ostatak'}: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
+          </div>
+        </div>
+        <div class="form-group full"><label>Napomena</label><textarea id="o-notes">${o?.notes||''}</textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")||"Otkaži"}</button>
+      <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">${t("save")||"Sačuvaj"}</button>
+    </div>
+  </div>`);
 }
 
 function onOrderTypeChange(type){
@@ -290,7 +304,7 @@ function onOrderTypeChange(type){
   const lensLabel = document.getElementById('o-lens-label');
   const lensResultLabel = document.getElementById('o-lens-result-label');
   const qtyWrap = document.getElementById('o-lqty-wrap');
-  if(lensLabel) lensLabel.textContent = isCL ? 'Стоимость МКЛ (1 уп.)' : (t('lenses')||'Sočiva')+' / kom (din.)';
+  if(lensLabel) lensLabel.textContent = isCL ? 'Стоимость МКЛ (1 уп.) (din.)' : ((t('lenses')||'Sočiva / kom')+' (din.)');
   if(lensResultLabel) lensResultLabel.textContent = isCL ? 'Стоимость' : '× кол-во';
   if(qtyWrap) qtyWrap.style.display = isCL ? 'none' : '';
   recalcOrder();
@@ -363,20 +377,22 @@ async function saveQuickRx(){
   const{data:ne}=await db.from('examinations').insert(rxData).select().single();
   if(!ne){toast('Ошибка сохранения рецепта','error');return;}
   window._examCache[ne.id]=ne;
+  const typeLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const sel=document.getElementById('o-rx');
   const opt=document.createElement('option');
   const val=ne.id+'|'+type;
-  opt.value=val; opt.textContent=_rxOptLabel(ne,type); opt.selected=true;
-  sel.appendChild(opt); sel.value=val;
+  opt.value=val;
+  opt.textContent=_rxOptLabel(ne,type,fmt(today()))+(isOwn?' [свой рецепт]':'');
+  opt.selected=true;
+  sel.appendChild(opt);sel.value=val;
   toggleQuickRx();
   toast('Рецепт сохранён ✓');
   await showRxPreview(val);
 }
-
 async function onOrderPatientChange(pid){
   if(!pid)return;
   const{data:exams}=await db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',pid).order('created_at',{ascending:false});
-  (exams||[]).forEach(e=>{ window._examCache[e.id]=e; });
+  (exams||[]).forEach(e=>{window._examCache[e.id]=e;});
   document.getElementById('o-rx').innerHTML=_rxOpts(exams||[]);
 }
 async function showRxPreview(val){
@@ -387,7 +403,10 @@ async function showRxPreview(val){
   if(!e){const{data:ed}=await db.from('examinations').select('*').eq('id',examId).single();e=ed;}
   if(!e){prev.style.display='none';return;}
   const fieldMap={far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']};
-  if(type==='cl'){prev.innerHTML='<b>KS:</b> OD: '+(e.rx_cl_od_sph||'—')+' / '+(e.rx_cl_od_cyl||'')+' ax'+(e.rx_cl_od_ax||'')+' BC'+(e.rx_cl_od_bc||'')+' DIA'+(e.rx_cl_od_dia||'')+'<br>OS: '+(e.rx_cl_os_sph||'—')+' / '+(e.rx_cl_os_cyl||'')+' ax'+(e.rx_cl_os_ax||'')+' · '+(e.rx_cl_od_type||'');prev.style.display='block';return;}
+  if(type==='cl'){
+    prev.innerHTML='<b>KS:</b> OD: '+(e.rx_cl_od_sph||'—')+' / '+(e.rx_cl_od_cyl||'')+' ax'+(e.rx_cl_od_ax||'')+' BC'+(e.rx_cl_od_bc||'')+' DIA'+(e.rx_cl_od_dia||'')+'<br>OS: '+(e.rx_cl_os_sph||'—')+' / '+(e.rx_cl_os_cyl||'')+' ax'+(e.rx_cl_os_ax||'')+' · '+(e.rx_cl_od_type||'');
+    prev.style.display='block';return;
+  }
   const f=fieldMap[type];if(!f){prev.style.display='none';return;}
   prev.innerHTML='OD: <b>'+(e[f[0]]||'—')+'</b> / '+(e[f[1]]||'')+' ax'+(e[f[2]]||'')+' PD'+(e[f[3]]||'')+'<br>OS: <b>'+(e[f[4]]||'—')+'</b> / '+(e[f[5]]||'')+' ax'+(e[f[6]]||'');
   prev.style.display='block';
@@ -400,7 +419,8 @@ function recalcOrder(){
   const lBase=+document.getElementById('o-lprice')?.value||0;
   const lDisc=Math.min(Math.max(+document.getElementById('o-ldisc')?.value||0,0),100);
   const lPer=Math.round(lBase*(1-lDisc/100));
-  const isCL=(document.getElementById('o-type')?.value||'Очки')==='МКЛ';
+  const orderType=document.getElementById('o-type')?.value||'Очки';
+  const isCL=orderType==='МКЛ';
   const qty=isCL?1:+(document.getElementById('o-lqty')?.value||2);
   const lFinal=lPer*qty;
   if(document.getElementById('o-lprice-final')) document.getElementById('o-lprice-final').value=lFinal;
@@ -425,9 +445,21 @@ async function saveOrder(id){
   const qty=isCL?1:+(document.getElementById('o-lqty')?.value||2);
   const lPerPiece=qty>0?Math.round(lPriceFinal/qty):lPriceFinal;
   const orderDate=v('o-orderdate')||today();
-  const data={patient_id,type:orderType,prescription_label:rxType?rxLabels[rxType]:null,examination_id:examId||null,order_number:v('o-ordernum')||null,order_date:orderDate,frame_code:v('o-fcode'),frame_price:fFinal,lens_name:v('o-lname'),lens_price:lPerPiece,lens_qty:qty,work_price:v('o-wprice')?Math.max(+v('o-wprice'),0):null,prepayment:Math.max(+v('o-prepay')||0,0),promised_date:v('o-pdate')||null,notes:v('o-notes')};
-  if(id){const st=v('o-status');await db.from('orders').update({...data,status:st}).eq('id',id);toast('Заказ обновлён');}
-  else{await db.from('orders').insert({...data,status:'оформлен'});toast('Заказ оформлен');}
+  const data={patient_id,type:orderType,prescription_label:rxType?rxLabels[rxType]:null,examination_id:examId||null,
+    order_number:v('o-ordernum')||null,order_date:orderDate,
+    frame_code:v('o-fcode'),frame_price:fFinal,
+    lens_name:v('o-lname'),lens_price:lPerPiece,lens_qty:qty,
+    work_price:v('o-wprice')?Math.max(+v('o-wprice'),0):null,
+    prepayment:Math.max(+v('o-prepay')||0,0),
+    promised_date:v('o-pdate')||null,notes:v('o-notes')};
+  if(id){
+    const st=v('o-status');
+    await db.from('orders').update({...data,status:st}).eq('id',id);
+    toast('Заказ обновлён');
+  } else {
+    await db.from('orders').insert({...data,status:'оформлен'});
+    toast('Заказ оформлен');
+  }
   await recalcSalary(patient_id);
   closeModal();render();
 }
@@ -439,13 +471,19 @@ async function updateOrderStatus(id,status){
   toast('Статус: '+status);
   render();
 }
-async function issueOrder(id){const{data:o}=await db.from('orders').select('*').eq('id',id).single();const bal=orderBalance(o);if(bal>0&&!confirm('Остаток '+fmtMoney(bal)+'. Выдать?'))return;await db.from('orders').update({status:'выдан',issued_date:today()}).eq('id',id);toast('Выдан ✓');render();}
+async function issueOrder(id){
+  const{data:o}=await db.from('orders').select('*').eq('id',id).single();
+  const bal=orderBalance(o);
+  if(bal>0&&!confirm('Остаток '+fmtMoney(bal)+'. Выдать?'))return;
+  await db.from('orders').update({status:'выдан',issued_date:today()}).eq('id',id);
+  toast('Выдан ✓');render();
+}
 async function notifyOrderReady(id){
   const{data:o}=await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',id).single();
   if(!o?.patients?.telegram_chat_id){toast('Нет Telegram у пациента','error');return;}
   const bal=orderBalance(o);
   const paymentText=bal>0?'Ostatak po vašoj porudžbini: '+fmtMoney(bal)+'.\nPlačanje karticom ili gotovinom.':'Заказ полностью оплачен.';
-  const msg='Здравствуйте!\n\nОчки для '+o.patients.name+' готовы!\n\n'+paymentText+'\n\nВы можете забрать их в любое удобное для вас время.\n\nРежим работы оптики Ginter:\nпо будням — с 09:00 до 19:00\nсуббота — с 09:00 до 13:00\nвоскресенье — выходной.\n\nПри получении очков не забудьте проверить, комфортна ли посадка. Если очки сидят не плотно — сообщите сотрудникам оптики, они поправят.\n\nЕсли возникнут вопросы или дискомфорт при ношении — обращайтесь к Анне @AnnaNvslv. Всё можно решить 😊\n\nДоброго дня!';
+  const msg='Здравствуйте!\n\nОчки для '+o.patients.name+' готовы!\n\n'+paymentText+'\n\nВы можете забрать их в любое удобное для вас время.\n\nРежим работы оптики Ginter:\nпо будням — с 09:00 до 19:00\nсуббота — с 09:00 до 13:00\nвоскресенье — выходной.\n\nЕсли возникнут вопросы или дискомфорт при ношении — обращайтесь к Анне @AnnaNvslv. Всё можно решить 😊\n\nДоброго дня!';
   const ok=await tgSend(o.patients.telegram_chat_id,msg);
   toast(ok?'📨 Отправлено':'Ошибка отправки',ok?'success':'error');
 }
@@ -453,8 +491,12 @@ async function sendFollowUpSurvey(orderId){
   const{data:o}=await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',orderId).single();
   if(!o?.patients?.telegram_chat_id){toast('Нет Telegram у пациента','error');return;}
   const firstName=o.patients.name.split(' ')[0];
-  const msg='Здравствуйте, '+firstName+'! 👋\n\nПрошло две недели с тех пор, как вы получили очки. Хочу узнать, как вам носится 🙂\n\nПожалуйста, ответьте на несколько вопросов — это займёт меньше минуты:\n\n1️⃣ <b>Как вам в новых очках?</b>\n😊 Отлично, всё комфортно\n🤔 Привыкаю, небольшой дискомфорт\n😕 Есть вопросы или трудности\n\n2️⃣ <b>Комфортна ли посадка оправы?</b>\n👍 Да, сидит хорошо\n👎 Нет, давит или соскальзывает\n\n3️⃣ <b>Как качество зрения?</b>\n👁 Отлично вижу\n❓ Что-то смущает\n\nЕсли хотите задать вопрос Анне или сотрудникам оптики — напишите прямо в ответ на это сообщение, Анна @AnnaNvslv свяжется с вами лично.\n\nСпасибо за доверие! 🙏';
+  const msg='Здравствуйте, '+firstName+'! 👋\n\nПрошло две недели с тех пор, как вы получили очки. Хочу узнать, как вам носится 🙂\n\nПожалуйста, ответьте на несколько вопросов — это займёт меньше минуты.\n\n1️⃣ <b>Как вам в новых очках?</b>\n😊 Отлично\n🤔 Привыкаю\n😕 Есть вопросы\n\n2️⃣ <b>Комфортна ли посадка?</b>\n👍 Да\n👎 Нет\n\n3️⃣ <b>Как качество зрения?</b>\n👁 Отлично\n❓ Что-то смущает\n\nНапишите прямо в ответ, Анна @AnnaNvslv свяжется лично.\n\nСпасибо! 🙏';
   const ok=await tgSend(o.patients.telegram_chat_id,msg);
   toast(ok?'📨 Опрос отправлен':'Ошибка',ok?'success':'error');
 }
-async function delOrder(id){if(!confirm(t('confirm_delete_order')))return;await db.from('orders').update({deleted_at:new Date().toISOString()}).eq('id',id);toast(t('moved_to_trash')||'U korpu');render();}
+async function delOrder(id){
+  if(!confirm(t('confirm_delete_order')))return;
+  await db.from('orders').update({deleted_at:new Date().toISOString()}).eq('id',id);
+  toast(t('moved_to_trash')||'U korpu');render();
+}

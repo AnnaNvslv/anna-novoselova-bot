@@ -8,10 +8,11 @@ async function renderOrders() {
       <div class="filter-bar">${['все',...ORDER_STATUSES_ALL].map(f=>`<button class="filter-btn${orderFilter===f?' active':''}" onclick="orderFilter='${f}';renderOrders()">${f==='все'?t('all'):statusLabel(f)}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
-      <thead><tr><th>${t('date')||'Datum'}</th><th>${t('patient')||'Pacijent'}</th><th>${t('frame')||'Okvir'} / ${t('lenses')||'Sočiva'}</th><th style="color:var(--text-l)">${t('prescription')||'Recept'}</th><th>${t('total')||'Ukupno'}</th><th>${t('promised_date')||'Rok'}</th><th>${t('status')||'Status'}</th><th>💰</th><th></th></tr></thead>
+      <thead><tr><th>${t('date')||'Datum'}</th><th>${t('patient')||'Pacijent'}</th><th>№ заказа</th><th>${t('frame')||'Okvir'} / ${t('lenses')||'Sočiva'}</th><th style="color:var(--text-l)">${t('prescription')||'Recept'}</th><th>${t('total')||'Ukupno'}</th><th>${t('promised_date')||'Rok'}</th><th>${t('status')||'Status'}</th><th>💰</th><th></th></tr></thead>
       <tbody>${filtered.map(o=>`<tr style="cursor:pointer" onclick="openOrderCard('${o.id}')" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
         <td class="text-m" onclick="event.stopPropagation()">${fmt(o.created_at?.split('T')[0])}</td>
         <td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span></td>
+        <td><span class="badge badge-gray" style="font-size:11px">${o.order_number||'—'}</span></td>
         <td>
           <div class="fw-6" style="font-size:13.5px">${o.frame_code||'—'}</div>
           <div class="text-sm text-m">${o.lens_name||'—'}</div>
@@ -32,7 +33,7 @@ async function renderOrders() {
           ${o.status==='выдан'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Отправить опрос (2 нед.)" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
           ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
         </div></td>
-      </tr>`).join('')||`<tr><td colspan="9"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
+      </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
 }
 // ═══ ORDER CARD VIEW ═══
@@ -56,6 +57,7 @@ async function openOrderCard(id){
     </div>
     <div class="modal-body">
       <div class="info-grid mb-12">
+        <div class="info-item"><label>№ заказа (пакет)</label><p style="font-weight:700;font-size:15px">${o.order_number||'—'}</p></div>
         <div class="info-item"><label>Тип заказа</label><p>${o.type}</p></div>
         <div class="info-item"><label>${t("prescription")||"Recept"}</label><p style="color:var(--text-m)">${o.prescription_label||'—'}</p></div>
         <div class="info-item"><label>${t("promised_date")||"Rok izrade"}</label><p>${o.promised_date?fmt(o.promised_date):'—'}</p></div>
@@ -177,8 +179,9 @@ function _drawOrderForm(o,prePatient,patients,exams){
           </div>
         </div>
 
+        <div class="form-group"><label>№ заказа (с пакета) *</label><input id="o-ordernum" value="${o?.order_number||''}" placeholder="напр. 12345"></div>
         <div class="form-group"><label>Vrsta porudžbine *</label>
-          <select id="o-type"><option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Naočare</option><option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna sočiva)</option><option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option></select>
+          <select id="o-type"><option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Naočare</option><option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna sočiva)</option><option value="Ремонт" ${o?.type==='Ремонт'?'selected':''}>Popravka</option><option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option></select>
         </div>
         ${isEdit?`<div class="form-group"><label>Статус</label>
           <select id="o-status">${ORDER_STATUSES_ALL.map(s=>`<option ${o?.status===s?'selected':''}>${s}</option>`).join('')}</select>
@@ -257,7 +260,6 @@ async function saveQuickPatient(){
   const name=v('qp-name'); if(!name){alert('Введите ФИО');return;}
   const{data:np}=await db.from('patients').insert({name,phone:v('qp-phone'),email:v('qp-email'),telegram_username:v('qp-tg')}).select().single();
   if(!np){toast('Ошибка сохранения','error');return;}
-  // Add to dropdown and select
   const sel=document.getElementById('o-pid');
   const opt=document.createElement('option');
   opt.value=np.id; opt.textContent=np.name; opt.selected=true;
@@ -287,7 +289,6 @@ async function saveQuickRx(){
     rxData[pre+'_od_sph']=v('qrx-od-sph'); rxData[pre+'_od_cyl']=v('qrx-od-cyl'); rxData[pre+'_od_ax']=v('qrx-od-ax');
     rxData[pre+'_os_sph']=v('qrx-os-sph'); rxData[pre+'_os_cyl']=v('qrx-os-cyl'); rxData[pre+'_os_ax']=v('qrx-os-ax');
     rxData[pre+'_od_pd']=v('qrx-pd');
-    // ADD: far uses rx_far_os_pd (schema naming), comp uses rx_comp_od_add
     if(type==='far') rxData.rx_far_os_pd=v('qrx-add');
     else rxData.rx_comp_od_add=v('qrx-add');
   } else if(type==='near'){
@@ -301,7 +302,6 @@ async function saveQuickRx(){
   }
   const{data:ne}=await db.from('examinations').insert(rxData).select().single();
   if(!ne){toast('Ошибка сохранения рецепта','error');return;}
-  // Add to prescription dropdown and select
   const typeLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const sel=document.getElementById('o-rx');
   const opt=document.createElement('option');
@@ -335,13 +335,11 @@ function recalcOrder(){
   const fDisc=Math.min(Math.max(+document.getElementById('o-fdisc')?.value||0,0),100);
   const fFinal=Math.round(fBase*(1-fDisc/100));
   if(document.getElementById('o-fprice-final')) document.getElementById('o-fprice-final').value=fFinal;
-
   const lBase=+document.getElementById('o-lprice')?.value||0;
   const lDisc=Math.min(Math.max(+document.getElementById('o-ldisc')?.value||0,0),100);
   const lPer=Math.round(lBase*(1-lDisc/100));
-  const lFinal=lPer*2; // × 2 линзы
+  const lFinal=lPer*2;
   if(document.getElementById('o-lprice-final')) document.getElementById('o-lprice-final').value=lFinal;
-
   const work=+document.getElementById('o-wprice')?.value||0;
   const prepay=+document.getElementById('o-prepay')?.value||0;
   const total=fFinal+lFinal+work;
@@ -349,7 +347,7 @@ function recalcOrder(){
   if(document.getElementById('o-total-display')) document.getElementById('o-total-display').textContent=total.toLocaleString('ru-RU')+' дин.';
   if(document.getElementById('o-balance-display')) document.getElementById('o-balance-display').textContent=(t('balance')||'Ostatak')+': '+balance.toLocaleString('ru-RU')+' din.';
 }
-function applyDiscount(){} // legacy stub
+function applyDiscount(){}
 function calcTotal(){}
 async function saveOrder(id){
   const patient_id=v('o-pid'); if(!patient_id){alert('Выберите пациента');return;}
@@ -357,10 +355,10 @@ async function saveOrder(id){
   const[examId,rxType]=rxSel.split('|');
   const rxLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const fFinal=Math.max(+(document.getElementById('o-fprice-final')?.value||v('o-fprice'))||0,0);
-  // lens_price saved as per-piece (÷2 from the "за пару" display)
   const lPairFinal=Math.max(+(document.getElementById('o-lprice-final')?.value)||0,0);
   const lPerPiece=Math.round(lPairFinal/2);
   const data={patient_id,type:v('o-type'),prescription_label:rxType?rxLabels[rxType]:null,examination_id:examId||null,
+    order_number:v('o-ordernum')||null,
     frame_code:v('o-fcode'), frame_price:fFinal,
     lens_name:v('o-lname'), lens_price:lPerPiece,
     work_price:v('o-wprice')?Math.max(+v('o-wprice'),0):null,
@@ -392,7 +390,6 @@ async function notifyOrderReady(id){
   const ok=await tgSend(o.patients.telegram_chat_id,msg);
   toast(ok?'📨 Отправлено':'Ошибка отправки',ok?'success':'error');
 }
-
 async function sendFollowUpSurvey(orderId){
   const{data:o}=await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',orderId).single();
   if(!o?.patients?.telegram_chat_id){toast('Нет Telegram у пациента','error');return;}

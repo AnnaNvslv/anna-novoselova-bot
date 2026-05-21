@@ -10,7 +10,7 @@
 
 - Общее расписание с коллегой (роль `ervin`)
 - Онлайн-запись пациентов — `booking.html`
-- Уведомления в Telegram
+- Уведомления в Telegram через бота `@optometrist_novoselova_bot`
 - Двуязычный UI: сербский (default) и русский
 
 Валюта: **сербский динар (дин.)**. Даты в UI: `ДД.ММ.ГГГГ`, в БД: ISO `YYYY-MM-DD`.
@@ -34,6 +34,8 @@
 | Стили | Встроенный CSS в `crm-v3.html` |
 | Backend / БД | Supabase (PostgreSQL + REST, JS client v2) |
 | Supabase project | `ncfqiznpilikwmpqhapb` (anon key в `js/config.js`) |
+| Edge Functions | Supabase Edge Functions (Deno) |
+| Telegram Bot | `@optometrist_novoselova_bot` через Bot API webhook |
 | PDF | html2pdf.js |
 | Деплой | GitHub Pages |
 
@@ -46,10 +48,17 @@ crm-v3.html     # Shell: login, sidebar, мобильная навигация, 
 booking.html    # Публичная онлайн-запись
 mobile.css      # ПУСТОЙ — не использовать
 mobile.js       # ПУСТОЙ — не использовать
+BOT_SETUP.md    # Инструкция по деплою бота
+supabase/
+  functions/
+    telegram-bot/index.ts   # Webhook: /start, callback-кнопки
+    send-reminders/index.ts # Cron: напоминания за 24ч и 1ч
+  migrations/
+    004_bot_columns.sql     # Колонки для бота
 js/
   config.js     # Supabase client, константы, глобальный state
   i18n.js       # RU/SR переводы, switchLang()
-  auth.js       # PIN login, showApp(), logout
+  auth.js       # PIN login, showApp(), logout, deeplink #patient=ID
   router.js     # nav(section), render()
   utils.js      # fmt, fmtMoney, toast, modal, orderTotal, права
   dashboard.js  # Главная
@@ -72,12 +81,79 @@ js/
 Вход по PIN (`js/auth.js`). PINы в таблице `settings`, fallback: admin=`1234`, staff=`0000`, ervin=`2222`.
 
 | Роль | Права |
-|------|-------|
+|------|Д|
 | `admin` | Всё |
 | `staff` | Ограниченное редактирование |
 | `ervin` | Только расписание |
 
 Сессия: `localStorage.crm_role`. Последний раздел: `localStorage.crm_section`. Язык: `localStorage.crm_lang`.
+
+---
+
+## Telegram-бот
+
+### Бот
+- Username: `@optometrist_novoselova_bot`
+- Токен хранится в Supabase Edge Function Secret: `BOT_TOKEN`
+- Webhook: `https://ncfqiznpilikwmpqhapb.supabase.co/functions/v1/telegram-bot`
+
+### Архитектура
+
+```
+booking.html
+  └─ после записи → кнопка «Написать боту»
+       └─ ссылка: t.me/optometrist_novoselova_bot?start=appt_<APPOINTMENT_ID>
+
+telegram-bot (Edge Function, webhook)
+  ├─ /start appt_<ID>
+  │    ├─ находит запись в appointments
+  │    ├─ сохраняет telegram_chat_id + username в patients
+  │    ├─ отправляет пациенту полное подтверждение записи
+  │    └─ отправляет Анне уведомление:
+  │         • имя пациента
+  │         • @username пациента (ссылка в TG)
+  │         • ссылка на профиль в CRM: crm-v3.html#patient=<UUID>
+  └─ callback_query (кнопки напоминания)
+       ├─ confirm_<ID>    → статус 'confirmed' + уведомление Анне
+       ├─ reschedule_<ID> → статус 'reschedule_requested' + уведомление
+       └─ cancel_<ID>     → статус 'cancelled', приём отменён + уведомление
+
+send-reminders (Edge Function, cron каждые 30 мин)
+  ├─ За 24ч до приёма → сообщение с 3 кнопками:
+  │    ✅ Да, подтверждаю
+  │    🔄 Не смогу, хочу перезаписаться
+  │    ❌ Нет, отменить запись
+  └─ За 1ч до приёма → короткое напоминание (текст)
+```
+
+### Deeplink в CRM
+
+`auth.js` → `showApp()` проверяет `window.location.hash`:
+- Если `#patient=<UUID>` → после рендера вызывает `openPatientCard(UUID)`
+- Хэш убирается из URL через `history.replaceState`
+
+### БД — дополнительные колонки
+
+**`patients`:**
+- `telegram_chat_id` BIGINT — сохраняется при первом /start
+
+**`appointments`:**
+- `patient_chat_id` BIGINT — дублируется для быстрого доступа
+- `reminder_24h_sent` BOOLEAN DEFAULT FALSE
+- `reminder_1h_sent` BOOLEAN DEFAULT FALSE
+- `confirmation_status` TEXT — `NULL` | `confirmed` | `reschedule_requested` | `cancelled`
+
+### Settings в БД (таблица `settings`)
+
+| key | описание |
+|-----|----------|
+| `bot_token` | токен от @BotFather |
+| `bot_username` | `optometrist_novoselova_bot` |
+| `my_chat_id` | Telegram chat_id Анны (для уведомлений) |
+
+### Cron
+
+Supabase Database → Cron Jobs → задача `send-reminders`, расписание `*/30 * * * *`.
 
 ---
 
@@ -94,28 +170,23 @@ js/
 - На мобиле отображается через `@media(max-width:768px)` с `display:flex`
 - Содержит **8 кнопок**: Главная, Пациенты, Приёмы, Заказы, График, Аналитика, Настройки, Korpa
 - **Не управляется через JS** — только CSS media query
-- На экране логина не видна: `#login-screen` покрывает весь экран через `position:fixed; inset:0; z-index:999`
 
 ### JS (`_mobActive`)
 
 Inline `<script>` в конце `<body>`:
 - `_mobActive()` — подсвечивает активную кнопку по `window.curSection`
 - Вызывается вручную в каждой кнопке `onclick="nav('...'); _mobActive()"`
-- `curSection` устанавливается в `router.js`
 
 ### Адаптация экранов (`@media(max-width:768px)`)
 
-- Модалки: `max-height: calc(100dvh - 58px)`, скролл внутри `modal-body`, футер всегда виден
+- Модалки: `max-height: calc(100dvh - 58px)`, скролл внутри `modal-body`
 - Формы: `font-size:16px` (предотвращает zoom на Android), `min-height:44px`
 - Таблицы: `display:block` → карточки
 - History items: кнопки переносятся на новую строку (`flex-direction:column`)
-- rx-table (карта обследования): горизонтальный скролл (`overflow-x:auto`)
+- rx-table: горизонтальный скролл (`overflow-x:auto`)
 - Toast: `bottom:68px` — выше нижней навигации
-- `#app`: `padding-bottom:58px` — контент не уходит под nav
 
 ### Печатная форма карты обследования
-
-**Проблема была:** мобильный CSS `table,thead,tbody,th,td,tr{display:block!important}` применялся при печати, ломая таблицы.
 
 **Решение в `@media print`:**
 ```css
@@ -131,13 +202,15 @@ Inline `<script>` в конце `<body>`:
 ## Модель данных (Supabase)
 
 ### `patients`
-ФИО, телефон, email, дата рождения, источник, Telegram, заметки. Мягкое удаление: `deleted_at`.
+ФИО, телефон, email, дата рождения, источник, `telegram_username`, `telegram_chat_id`, заметки. Мягкое удаление: `deleted_at`.
 
 ### `appointments`
-`patient_id`, `date`, `time`, `type`, `status` (`запланирован`|`завершён`|`отменён`), `consultation_price` (3000 дин.), `appointment_number`.
+`patient_id`, `date`, `time`, `type`, `status` (`запланирован`|`завершён`|`отменён`), `consultation_price` (3000 дин.), `appointment_number`, `patient_chat_id`, `reminder_24h_sent`, `reminder_1h_sent`, `confirmation_status`.
 
 ### `available_slots`
 `date`, `start_time`, `is_booked`, `appointment_id`, `booked_by` (`null`|`'ervin'`), `ervin_note`.
+
+Слоты (времена): 09:15, 10:30, 11:45, 13:00, 14:15, 15:30, 16:45.
 
 ### `examinations`
 Анамнез, RX (даль/компьютер/близь/МКЛ), `visit_number`, `appointment_id`, `patient_id`. Автосохранение каждые 2 мин.
@@ -160,15 +233,13 @@ Key-value: `doctor_name`, `clinic_name`, часы работы, PINы, `bot_toke
 - Пациент выбирает слот → `available_slots.is_booked = true`, `appointment_id` заполняется
 - Создаётся запись в `appointments`
 
-**2. Через CRM — кнопка `+приём` на свободном слоте в расписании (admin):**
+**2. Через CRM — кнопка `+приём` на свободном слоте (admin):**
 - Клик по зелёному слоту → `openAddAppointmentAtSlot(date, time, slotId)`
 - `slotId` сохраняется в `window._pickedSlotId`
-- В форме слот подсвечен как выбранный
 - При сохранении (`saveAppt`): `available_slots.is_booked = true`, `appointment_id = apptId`
 
-**Fallback при ручном вводе даты/времени (без выбора слота):**
+**Fallback при ручном вводе даты/времени:**
 - `bookSlotByDateTime(date, time, apptId)` — ищет слот по дате+времени, бронирует если найден
-- Если не найден — `blockSlotsByDuration(date, time, dur, apptId)` блокирует перекрывающиеся слоты
 
 ### При отмене/удалении приёма:
 ```js
@@ -177,8 +248,8 @@ await db.from('available_slots')
   .eq('appointment_id', id);
 ```
 
-### Важно: известный баг (исправлен 2026-05-20)
-В `calendar.js` в функции `bookErvinAt` была синтаксическая ошибка — незакрытый шаблонный литерал (`'${slotId||'}') \"`), из-за чего весь `calendar.js` падал с SyntaxError, `renderSlots` не определялась, и страница расписания не загружалась вообще.
+### Известный баг (исправлен 2026-05-20)
+В `calendar.js` в функции `bookErvinAt` была синтаксическая ошибка — незакрытый шаблонный литерал, из-за чего `calendar.js` падал с SyntaxError и страница расписания не загружалась.
 
 ---
 

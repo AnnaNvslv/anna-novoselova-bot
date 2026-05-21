@@ -1,7 +1,7 @@
 // ═══ ORDERS ═══
 async function renderOrders() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ ${t('orders')||'Porudžbina'}</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
-  const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('created_at',{ascending:false});
+  const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('order_date',{ascending:false}).order('created_at',{ascending:false});
   const filtered=orderFilter==='все'?orders||[]:(orders||[]).filter(o=>o.status===orderFilter);
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
@@ -10,7 +10,7 @@ async function renderOrders() {
     <div class="card"><div class="table-wrap"><table>
       <thead><tr><th>${t('date')||'Datum'}</th><th>${t('patient')||'Pacijent'}</th><th>№ заказа</th><th>${t('frame')||'Okvir'} / ${t('lenses')||'Sočiva'}</th><th style="color:var(--text-l)">${t('prescription')||'Recept'}</th><th>${t('total')||'Ukupno'}</th><th>${t('promised_date')||'Rok'}</th><th>${t('status')||'Status'}</th><th>💰</th><th></th></tr></thead>
       <tbody>${filtered.map(o=>`<tr style="cursor:pointer" onclick="openOrderCard('${o.id}')" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
-        <td class="text-m" onclick="event.stopPropagation()">${fmt(o.created_at?.split('T')[0])}</td>
+        <td class="text-m" onclick="event.stopPropagation()">${fmt(o.order_date||o.created_at?.split('T')[0])}</td>
         <td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span></td>
         <td><span class="badge badge-gray" style="font-size:11px">${o.order_number||'—'}</span></td>
         <td>
@@ -28,10 +28,10 @@ async function renderOrders() {
         </td>
         <td>${o.counts_for_salary?'<span class="salary-badge">💰</span>':''}</td>
         <td onclick="event.stopPropagation()"><div class="flex gap-8">
-          ${o.status==='готов'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Оповестить о готовности" onclick="notifyOrderReady('${o.id}')">📨</button>`:''}
-          ${o.status==='готов'?`<button class="btn btn-accent btn-sm" title="Выдать заказ" onclick="issueOrder('${o.id}')">Выдать</button>`:''}
+          ${o.status==='готов'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Оповестить о готовности" onclick="notifyOrderReady('${o.id}')">&#128232;</button>`:''}
+          ${o.status==='готов'?`<button class="btn btn-accent btn-sm" title="Выдать заказ" onclick="issueOrder('${o.id}')">Vydati</button>`:''}
           ${o.status==='выдан'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm btn-icon" title="Отправить опрос (2 нед.)" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
-          ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">✏️</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
+          ${isAdmin()?`<button class="btn btn-ghost btn-sm btn-icon" title="Редактировать" onclick="openEditOrder('${o.id}')">&#9999;&#65039;</button><button class="btn btn-danger btn-sm btn-icon" title="Удалить" onclick="delOrder('${o.id}')">🗑</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
@@ -41,11 +41,12 @@ async function openOrderCard(id){
   const{data:o}=await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',id).single();
   if(!o)return;
   const bal=orderBalance(o);
+  const displayDate=fmt(o.order_date||o.created_at?.split('T')[0]);
   openModal(`<div class="modal modal-lg">
     <div class="modal-header">
       <div>
         <span class="modal-title">Заказ · ${o.patients?.name||'—'}</span>
-        <div class="text-sm text-m mt-4">${fmt(o.created_at?.split('T')[0])} · <span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}">${o.status}</span>${o.counts_for_salary?' · <span class="salary-badge">💰 10%</span>':''}</div>
+        <div class="text-sm text-m mt-4">${displayDate} · <span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}">${o.status}</span>${o.counts_for_salary?' · <span class="salary-badge">💰 10%</span>':''}</div>
       </div>
       <div class="flex gap-8">
         ${o.status==='готов'&&o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm" title="Оповестить о готовности" onclick="notifyOrderReady('${o.id}')">📨 Оповестить</button>`:''}
@@ -61,13 +62,14 @@ async function openOrderCard(id){
         <div class="info-item"><label>Тип заказа</label><p>${o.type}</p></div>
         <div class="info-item"><label>${t("prescription")||"Recept"}</label><p style="color:var(--text-m)">${o.prescription_label||'—'}</p></div>
         <div class="info-item"><label>${t("promised_date")||"Rok izrade"}</label><p>${o.promised_date?fmt(o.promised_date):'—'}</p></div>
+        <div class="info-item"><label>Дата оформления</label><p>${displayDate}</p></div>
       </div>
       <div class="divider"></div>
       <div class="form-grid mb-12">
-        <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input value="${o.frame_code||'—'}" readonly></div>
+        <div class="form-group"><label>${t("frame_code")||"\u0160ifra okvira"}</label><input value="${o.frame_code||'—'}" readonly></div>
         <div class="form-group"><label>Цена оправы</label><input value="${fmtMoney(o.frame_price)}" readonly></div>
-        <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input value="${o.lens_name||'—'}" readonly></div>
-        <div class="form-group"><label>Цена линз (1 шт. × 2)</label><input value="${fmtMoney(o.lens_price)} × 2 = ${fmtMoney(o.lens_price*2)}" readonly></div>
+        <div class="form-group"><label>${t("lens_name")||"Naziv so\u010diva"}</label><input value="${o.lens_name||'—'}" readonly></div>
+        <div class="form-group"><label>Цена линз (${o.lens_qty||2} шт. × ${fmtMoney(o.lens_price)})</label><input value="${fmtMoney(orderTotal_lenses(o))}" readonly></div>
         <div class="form-group"><label>Стоимость работы</label><input value="${o.work_price?fmtMoney(o.work_price):'—'}" readonly></div>
         <div class="form-group"><label>Предоплата</label><input value="${fmtMoney(o.prepayment)}" readonly></div>
       </div>
@@ -81,12 +83,22 @@ async function openOrderCard(id){
   </div>`);
 }
 
+// ═══ helper: сумма линз с учётом кол-ва
+// lens_qty=1 → *1, lens_qty=2 (default) → *2
+function orderTotal_lenses(o){
+  const qty = o.lens_qty ?? 2;
+  return (+o.lens_price||0) * qty;
+}
+// Переопределяем orderTotal чтобы учитывать qty
+const _origOrderTotal = orderTotal;
+orderTotal = o => (+o.frame_price||0) + orderTotal_lenses(o) + (+o.work_price||0);
+
 // ═══ ORDER FORM ═══
 function openAddOrder(){openAddOrderFor(null);}
 async function openAddOrderFor(patientId){
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
-    patientId?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_comp_od_sph,rx_near_od_sph,rx_cl_od_sph').eq('patient_id',patientId).order('created_at',{ascending:false}):Promise.resolve({data:[]})
+    patientId?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',patientId).order('created_at',{ascending:false}):Promise.resolve({data:[]})
   ]);
   _drawOrderForm(null,patientId,patients||[],examResult?.data||[]);
 }
@@ -94,25 +106,63 @@ async function openEditOrder(id){
   const{data:o}=await db.from('orders').select('*').eq('id',id).single();
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
-    o?.patient_id?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_comp_od_sph,rx_near_od_sph,rx_cl_od_sph').eq('patient_id',o.patient_id).order('created_at',{ascending:false}):Promise.resolve({data:[]})
+    o?.patient_id?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',o.patient_id).order('created_at',{ascending:false}):Promise.resolve({data:[]})
   ]);
   _drawOrderForm(o,o?.patient_id,patients||[],examResult?.data||[]);
 }
-function _rxOpts(exams,selVal){
+
+// Строка диоптрий в строке списка рецептов
+function _rxDioptStr(e, type) {
+  if(!e) return '';
+  let parts=[];
+  if(type==='far') {
+    if(e.rx_far_od_sph) parts.push(`OD ${e.rx_far_od_sph}${e.rx_far_od_cyl?' /'+e.rx_far_od_cyl:''}${e.rx_far_od_ax?' ax'+e.rx_far_od_ax:''}`);
+    if(e.rx_far_os_sph) parts.push(`OS ${e.rx_far_os_sph}`);
+    if(e.rx_far_od_pd) parts.push(`PD ${e.rx_far_od_pd}`);
+    if(e.rx_far_os_pd) parts.push(`ADD ${e.rx_far_os_pd}`);
+  } else if(type==='comp') {
+    if(e.rx_comp_od_sph) parts.push(`OD ${e.rx_comp_od_sph}${e.rx_comp_od_cyl?' /'+e.rx_comp_od_cyl:''}`);
+    if(e.rx_comp_os_sph) parts.push(`OS ${e.rx_comp_os_sph}`);
+    if(e.rx_comp_od_pd) parts.push(`PD ${e.rx_comp_od_pd}`);
+    if(e.rx_comp_od_add) parts.push(`ADD ${e.rx_comp_od_add}`);
+  } else if(type==='near') {
+    if(e.rx_near_od_sph) parts.push(`OD ${e.rx_near_od_sph}${e.rx_near_od_cyl?' /'+e.rx_near_od_cyl:''}`);
+    if(e.rx_near_os_sph) parts.push(`OS ${e.rx_near_os_sph}`);
+    if(e.rx_near_od_pd) parts.push(`PD ${e.rx_near_od_pd}`);
+    if(e.rx_near_od_add) parts.push(`Degr ${e.rx_near_od_add}`);
+  } else if(type==='cl') {
+    if(e.rx_cl_od_sph) parts.push(`OD ${e.rx_cl_od_sph}${e.rx_cl_od_cyl?' /'+e.rx_cl_od_cyl:''}`);
+    if(e.rx_cl_os_sph) parts.push(`OS ${e.rx_cl_os_sph}`);
+    if(e.rx_cl_od_bc) parts.push(`BC ${e.rx_cl_od_bc}`);
+    if(e.rx_cl_od_dia) parts.push(`DIA ${e.rx_cl_od_dia}`);
+  }
+  return parts.length ? ' — <span style="color:var(--text-m);font-size:11px">'+parts.join(' | ')+'</span>' : '';
+}
+
+// Храним данные обследований для _rxDioptStr
+window._examCache = {};
+
+function _rxOpts(exams, selVal){
   const opts=['<option value="">— без рецепта —</option>'];
   (exams||[]).forEach(e=>{
+    window._examCache[e.id] = e;
     const d=fmt(e.created_at?.split('T')[0]);
-    if(e.rx_far_od_sph)opts.push(`<option value="${e.id}|far" ${selVal===e.id+'|far'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Даль</option>`);
-    if(e.rx_comp_od_sph)opts.push(`<option value="${e.id}|comp" ${selVal===e.id+'|comp'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Компьютер</option>`);
-    if(e.rx_near_od_sph)opts.push(`<option value="${e.id}|near" ${selVal===e.id+'|near'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — Близь</option>`);
-    if(e.rx_cl_od_sph)opts.push(`<option value="${e.id}|cl" ${selVal===e.id+'|cl'?'selected':''}>Визит №${e.visit_number||'?'} (${d}) — KS</option>`);
+    if(e.rx_far_od_sph) opts.push(`<option value="${e.id}|far" ${selVal===e.id+'|far'?'selected':''}>\u0412\u0438\u0437\u0438\u0442 \u2116${e.visit_number||'?'} (${d}) \u2014 \u0414\u0430\u043b\u044c${_rxDioptStr(e,'far')}</option>`);
+    if(e.rx_comp_od_sph) opts.push(`<option value="${e.id}|comp" ${selVal===e.id+'|comp'?'selected':''}>\u0412\u0438\u0437\u0438\u0442 \u2116${e.visit_number||'?'} (${d}) \u2014 \u041a\u043e\u043c\u043f\u044c\u044e\u0442\u0435\u0440${_rxDioptStr(e,'comp')}</option>`);
+    if(e.rx_near_od_sph) opts.push(`<option value="${e.id}|near" ${selVal===e.id+'|near'?'selected':''}>\u0412\u0438\u0437\u0438\u0442 \u2116${e.visit_number||'?'} (${d}) \u2014 \u0411\u043b\u0438\u0437\u044c${_rxDioptStr(e,'near')}</option>`);
+    if(e.rx_cl_od_sph) opts.push(`<option value="${e.id}|cl" ${selVal===e.id+'|cl'?'selected':''}>\u0412\u0438\u0437\u0438\u0442 \u2116${e.visit_number||'?'} (${d}) \u2014 KS${_rxDioptStr(e,'cl')}</option>`);
   });
   return opts.join('');
 }
-function _drawOrderForm(o,prePatient,patients,exams){
+
+function _drawOrderForm(o, prePatient, patients, exams){
   const isEdit=!!o;
+  const orderDate = o?.order_date || o?.created_at?.split('T')[0] || today();
+  const lensQty = o?.lens_qty ?? 2;
+  const isCL = o?.type === 'МКЛ';
+
   openModal(`<div class="modal modal-xl">
-    <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porudžbinu'):(t('new_order')||'Nova porudžbina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porud\u017ebinu'):(t('new_order')||'Nova porud\u017ebina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
 
@@ -132,23 +182,23 @@ function _drawOrderForm(o,prePatient,patients,exams){
             </div>
             <div class="flex gap-8 mt-8">
               <button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">Сохранить и выбрать</button>
-              <button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">${t("cancel")||"Otkaži"}</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">${t("cancel")||"Otka\u017ei"}</button>
             </div>
           </div>
         </div>
 
         <div class="form-group full">
           <div class="flex items-center justify-between mb-4"><label>${t("prescription")||"Recept"}</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Recept</button></div>
-          <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams,o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
+          <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams, o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
           <div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>
           <div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
             <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Brzi unos recepta</div>
             <div class="form-grid">
               <div class="form-group"><label>Vrsta</label>
                 <select id="qrx-type" onchange="updateQuickRxFields()">
-                  <option value="far">Naočare za daljinu</option>
-                  <option value="comp">Naočare za računar</option>
-                  <option value="near">Naočare za blizinu</option>
+                  <option value="far">Nao\u010dare za daljinu</option>
+                  <option value="comp">Nao\u010dare za ra\u010dunar</option>
+                  <option value="near">Nao\u010dare za blizinu</option>
                   <option value="cl">KS</option>
                 </select>
               </div>
@@ -173,21 +223,29 @@ function _drawOrderForm(o,prePatient,patients,exams){
               <div class="form-group mt-8"><label>Napomena</label><input id="qrx-note"></div>
             </div>
             <div class="flex gap-8 mt-10">
-              <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Sačuvaj recept</button>
-              <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">${t("cancel")||"Otkaži"}</button>
+              <button class="btn btn-accent btn-sm" onclick="saveQuickRx()">Sa\u010duvaj recept</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">${t("cancel")||"Otka\u017ei"}</button>
             </div>
           </div>
         </div>
 
         <div class="form-group"><label>№ заказа (с пакета) *</label><input id="o-ordernum" value="${o?.order_number||''}" placeholder="напр. 12345"></div>
-        <div class="form-group"><label>Vrsta porudžbine *</label>
-          <select id="o-type"><option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Naočare</option><option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna sočiva)</option><option value="Ремонт" ${o?.type==='Ремонт'?'selected':''}>Popravka</option><option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option></select>
+        <div class="form-group"><label>Дата оформления</label><input type="date" id="o-orderdate" value="${orderDate}"></div>
+
+        <div class="form-group"><label>Vrsta porud\u017ebine *</label>
+          <select id="o-type" onchange="onOrderTypeChange(this.value)">
+            <option value="Очки" ${!o||o?.type==='Очки'?'selected':''}>Nao\u010dare</option>
+            <option value="МКЛ" ${o?.type==='МКЛ'?'selected':''}>KS (kontaktna so\u010diva)</option>
+            <option value="Ремонт" ${o?.type==='Ремонт'?'selected':''}>Popravka</option>
+            <option value="Другое" ${o?.type==='Другое'?'selected':''}>Ostalo</option>
+          </select>
         </div>
-        ${isEdit?`<div class="form-group"><label>Статус</label>
+        ${isEdit?`<div class="form-group"><label>Стат႑с</label>
           <select id="o-status">${ORDER_STATUSES_ALL.map(s=>`<option ${o?.status===s?'selected':''}>${s}</option>`).join('')}</select>
         </div>`:'<div></div>'}
+
         <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
-          <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input id="o-fcode" value="${o?.frame_code||''}"></div>
+          <div class="form-group"><label>${t("frame_code")||"\u0160ifra okvira"}</label><input id="o-fcode" value="${o?.frame_code||''}"></div>
           <div class="form-group">
             <label>${t("frame")||"Okvir"} (din.)</label>
             <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
@@ -197,36 +255,56 @@ function _drawOrderForm(o,prePatient,patients,exams){
             </div>
           </div>
         </div>
+
         <div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">
-          <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input id="o-lname" value="${o?.lens_name||''}"></div>
+          <div class="form-group"><label>${t("lens_name")||"Naziv so\u010diva"}</label><input id="o-lname" value="${o?.lens_name||''}"></div>
           <div class="form-group">
-            <label>${t("lenses")||"Sočiva"} / kom (din.)</label>
-            <div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">
+            <label id="o-lens-label">${isCL?'Стоимость МКЛ (1 уп.)':t("lenses")||"So\u010diva"} / kom (din.)</label>
+            <div style="display:grid;grid-template-columns:1fr 60px ${isCL?'':'80px '}1fr;gap:6px;align-items:flex-end">
               <div><label style="font-size:10.5px;color:var(--text-l)">Osnovna</label><input type="number" id="o-lprice" value="${o?.lens_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
               <div><label style="font-size:10.5px;color:var(--text-l)">Popust %</label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
-              <div><label style="font-size:10.5px;color:var(--green);font-weight:700">× 2 kom</label><input type="number" id="o-lprice-final" value="${(o?.lens_price||0)*2}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
+              ${isCL?'':`<div id="o-lqty-wrap"><label style="font-size:10.5px;color:var(--text-l)">Кол-во шт.</label>
+                <select id="o-lqty" onchange="recalcOrder()" style="padding:8px 4px">
+                  <option value="2" ${lensQty!==1?'selected':''}>2 шт.</option>
+                  <option value="1" ${lensQty===1?'selected':''}>1 шт.</option>
+                </select>
+              </div>`}
+              <div><label style="font-size:10.5px;color:var(--green);font-weight:700" id="o-lens-result-label">${isCL?'Стоимость':'× кол-во'}</label><input type="number" id="o-lprice-final" value="${isCL?o?.lens_price||0:(o?.lens_price||0)*lensQty}" min="0" readonly style="background:var(--green-l);font-weight:700"></div>
             </div>
           </div>
         </div>
+
         <div class="form-group"><label>${t("work")||"Obrada"} (din.)</label><input type="number" id="o-wprice" value="${o?.work_price||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=''" oninput="recalcOrder()"></div>
         <div class="form-group"><label>${t("prepayment")||"Avans"} (din.)</label><input type="number" id="o-prepay" value="${o?.prepayment||''}" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=''" onblur="if(this.value==='')this.value=0" oninput="recalcOrder()"></div>
         <div class="form-group"><label>${t("promised_date")||"Rok izrade"}</label><input type="date" id="o-pdate" value="${o?.promised_date||''}"></div>
         <div class="form-group" style="align-self:flex-end">
           <div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">
             <div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">${t("total")||"UKUPNO"}</div>
-            <div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">${fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0))}</div>
-            <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">${t('balance')||'Ostatak'}: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*2+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
+            <div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">${fmtMoney((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0))}</div>
+            <div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">${t('balance')||'Ostatak'}: ${fmtMoney(Math.max((o?.frame_price||0)+(o?.lens_price||0)*lensQty+(o?.work_price||0)-(o?.prepayment||0),0))}</div>
           </div>
         </div>
         <div class="form-group full"><label>Napomena</label><textarea id="o-notes">${o?.notes||''}</textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")||"Otkaži"}</button>
-      <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">${t("save")||"Sačuvaj"}</button>
+      <button class="btn btn-ghost" onclick="closeModal()">${t("cancel")||"Otka\u017ei"}</button>
+      <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">${t("save")||"Sa\u010duvaj"}</button>
     </div>
   </div>`);
 }
+
+function onOrderTypeChange(type){
+  const isCL = type === 'МКЛ';
+  const lensLabel = document.getElementById('o-lens-label');
+  const lensResultLabel = document.getElementById('o-lens-result-label');
+  const qtyWrap = document.getElementById('o-lqty-wrap');
+  if(lensLabel) lensLabel.textContent = isCL ? 'Стоимость МКЛ (1 уп.)' : ((t('lenses')||'So\u010diva') + ' / kom (din.)');
+  if(lensResultLabel) lensResultLabel.textContent = isCL ? 'Стоимость' : '\u00d7 кол-во';
+  if(qtyWrap) qtyWrap.style.display = isCL ? 'none' : '';
+  recalcOrder();
+}
+
 // ═══ QUICK ADD in ORDER ═══
 function toggleQuickPatient(){
   const f=document.getElementById('quick-patient-form');
@@ -302,11 +380,14 @@ async function saveQuickRx(){
   }
   const{data:ne}=await db.from('examinations').insert(rxData).select().single();
   if(!ne){toast('Ошибка сохранения рецепта','error');return;}
-  const typeLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
+  window._examCache[ne.id] = ne;
+  const typeLabels={far:'Daljina',comp:'Ra\u010dunar',near:'Blizina',cl:'KS'};
   const sel=document.getElementById('o-rx');
   const opt=document.createElement('option');
   const val=`${ne.id}|${type}`;
-  opt.value=val; opt.textContent=`Визит №${visitNum} (${fmt(today())}) — ${typeLabels[type]}${isOwn?' [свой рецепт]':''}`; opt.selected=true;
+  opt.value=val;
+  opt.textContent=`Визит \u2116${visitNum} (${fmt(today())}) \u2014 ${typeLabels[type]}${isOwn?' [свой рецепт]':''}${_rxDioptStr(ne,type)}`;
+  opt.selected=true;
   sel.appendChild(opt); sel.value=val;
   toggleQuickRx();
   toast('Рецепт сохранён ✓');
@@ -315,17 +396,29 @@ async function saveQuickRx(){
 
 async function onOrderPatientChange(pid){
   if(!pid)return;
-  const{data:exams}=await db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_comp_od_sph,rx_near_od_sph,rx_cl_od_sph').eq('patient_id',pid).order('created_at',{ascending:false});
+  const{data:exams}=await db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',pid).order('created_at',{ascending:false});
+  (exams||[]).forEach(e=>{ window._examCache[e.id]=e; });
   document.getElementById('o-rx').innerHTML=_rxOpts(exams||[]);
 }
 async function showRxPreview(val){
   const prev=document.getElementById('o-rx-preview');
   if(!val){prev.style.display='none';return;}
   const[examId,type]=val.split('|');
-  const{data:e}=await db.from('examinations').select('*').eq('id',examId).single();
+  let e = window._examCache?.[examId];
+  if(!e){
+    const{data:ed}=await db.from('examinations').select('*').eq('id',examId).single();
+    e=ed;
+  }
   if(!e){prev.style.display='none';return;}
-  const fieldMap={far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']};
-  if(type==='cl'){prev.innerHTML=`<b>KS:</b> OD: ${e.rx_cl_od_sph||'—'} / ${e.rx_cl_od_cyl||''} ax${e.rx_cl_od_ax||''} BC${e.rx_cl_od_bc||''} DIA${e.rx_cl_od_dia||''}<br>OS: ${e.rx_cl_os_sph||'—'} / ${e.rx_cl_os_cyl||''} ax${e.rx_cl_os_ax||''} · ${e.rx_cl_od_type||''}`;prev.style.display='block';return;}
+  const fieldMap={
+    far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],
+    comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],
+    near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']
+  };
+  if(type==='cl'){
+    prev.innerHTML=`<b>KS:</b> OD: ${e.rx_cl_od_sph||'—'} / ${e.rx_cl_od_cyl||''} ax${e.rx_cl_od_ax||''} BC${e.rx_cl_od_bc||''} DIA${e.rx_cl_od_dia||''}<br>OS: ${e.rx_cl_os_sph||'—'} / ${e.rx_cl_os_cyl||''} ax${e.rx_cl_os_ax||''} · ${e.rx_cl_od_type||''}`;
+    prev.style.display='block';return;
+  }
   const f=fieldMap[type];if(!f){prev.style.display='none';return;}
   prev.innerHTML=`OD: <b>${e[f[0]]||'—'}</b> / ${e[f[1]]||''} ax${e[f[2]]||''} PD${e[f[3]]||''}<br>OS: <b>${e[f[4]]||'—'}</b> / ${e[f[5]]||''} ax${e[f[6]]||''}`;
   prev.style.display='block';
@@ -335,11 +428,16 @@ function recalcOrder(){
   const fDisc=Math.min(Math.max(+document.getElementById('o-fdisc')?.value||0,0),100);
   const fFinal=Math.round(fBase*(1-fDisc/100));
   if(document.getElementById('o-fprice-final')) document.getElementById('o-fprice-final').value=fFinal;
+
   const lBase=+document.getElementById('o-lprice')?.value||0;
   const lDisc=Math.min(Math.max(+document.getElementById('o-ldisc')?.value||0,0),100);
   const lPer=Math.round(lBase*(1-lDisc/100));
-  const lFinal=lPer*2;
+  const orderType=document.getElementById('o-type')?.value||'Очки';
+  const isCL = orderType==='МКЛ';
+  const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
+  const lFinal = lPer * qty;
   if(document.getElementById('o-lprice-final')) document.getElementById('o-lprice-final').value=lFinal;
+
   const work=+document.getElementById('o-wprice')?.value||0;
   const prepay=+document.getElementById('o-prepay')?.value||0;
   const total=fFinal+lFinal+work;
@@ -353,20 +451,36 @@ async function saveOrder(id){
   const patient_id=v('o-pid'); if(!patient_id){alert('Выберите пациента');return;}
   const rxSel=document.getElementById('o-rx')?.value||'';
   const[examId,rxType]=rxSel.split('|');
-  const rxLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
+  const rxLabels={far:'Daljina',comp:'Ra\u010dunar',near:'Blizina',cl:'KS'};
   const fFinal=Math.max(+(document.getElementById('o-fprice-final')?.value||v('o-fprice'))||0,0);
-  const lPairFinal=Math.max(+(document.getElementById('o-lprice-final')?.value)||0,0);
-  const lPerPiece=Math.round(lPairFinal/2);
-  const data={patient_id,type:v('o-type'),prescription_label:rxType?rxLabels[rxType]:null,examination_id:examId||null,
+  const lPriceFinal=Math.max(+(document.getElementById('o-lprice-final')?.value)||0,0);
+  const orderType=v('o-type');
+  const isCL = orderType==='МКЛ';
+  const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
+  // Храним lens_price как цену за 1 шт., qty отдельно
+  const lPerPiece = qty > 0 ? Math.round(lPriceFinal / qty) : lPriceFinal;
+  const orderDate = v('o-orderdate') || today();
+  const data={
+    patient_id, type:orderType,
+    prescription_label:rxType?rxLabels[rxType]:null,
+    examination_id:examId||null,
     order_number:v('o-ordernum')||null,
+    order_date:orderDate,
     frame_code:v('o-fcode'), frame_price:fFinal,
-    lens_name:v('o-lname'), lens_price:lPerPiece,
+    lens_name:v('o-lname'), lens_price:lPerPiece, lens_qty:qty,
     work_price:v('o-wprice')?Math.max(+v('o-wprice'),0):null,
     prepayment:Math.max(+v('o-prepay')||0,0),
     promised_date:v('o-pdate')||null,
-    notes:v('o-notes')};
-  if(id){const st=v('o-status');await db.from('orders').update({...data,status:st}).eq('id',id);toast('Заказ обновлён');}
-  else{await db.from('orders').insert({...data,status:'оформлен'});toast('Заказ оформлен');}
+    notes:v('o-notes')
+  };
+  if(id){
+    const st=v('o-status');
+    await db.from('orders').update({...data,status:st}).eq('id',id);
+    toast('Заказ обновлён');
+  } else {
+    await db.from('orders').insert({...data,status:'оформлен'});
+    toast('Заказ оформлен');
+  }
   await recalcSalary(patient_id);
   closeModal();render();
 }
@@ -375,7 +489,7 @@ async function updateOrderStatus(id,status){
   if(status==='готов') updates.ready_date=today();
   if(status==='выдан') updates.issued_date=today();
   await db.from('orders').update(updates).eq('id',id);
-  toast('Статус: '+status);
+  toast('Стат႑с: '+status);
   render();
 }
 async function issueOrder(id){const{data:o}=await db.from('orders').select('*').eq('id',id).single();const bal=orderBalance(o);if(bal>0&&!confirm(`Остаток ${fmtMoney(bal)}. Выдать?`))return;await db.from('orders').update({status:'выдан',issued_date:today()}).eq('id',id);toast('Выдан ✓');render();}
@@ -384,7 +498,7 @@ async function notifyOrderReady(id){
   if(!o?.patients?.telegram_chat_id){toast('Нет Telegram у пациента','error');return;}
   const bal=orderBalance(o);
   const paymentText=bal>0
-    ?`Ostatak po vašoj porudžbini: ${fmtMoney(bal)}.\nPlačanje karticom ili gotovinom.`
+    ?`Ostatak po va\u0161oj porud\u017ebini: ${fmtMoney(bal)}.\nPla\u010danje karticom ili gotovinom.`
     :`Заказ полностью оплачен.`;
   const msg=`Здравствуйте!\n\nОчки для ${o.patients.name} готовы!\n\n${paymentText}\n\nВы можете забрать их в любое удобное для вас время.\n\nРежим работы оптики Ginter:\nпо будням — с 09:00 до 19:00\nсуббота — с 09:00 до 13:00\nвоскресенье — выходной.\n\nПри получении очков не забудьте проверить, комфортна ли посадка. Если очки сидят не плотно — сообщите сотрудникам оптики, они поправят.\n\nЕсли возникнут вопросы или дискомфорт при ношении — обращайтесь к Анне @AnnaNvslv. Всё можно решить 😊\n\nДоброго дня!`;
   const ok=await tgSend(o.patients.telegram_chat_id,msg);

@@ -1,12 +1,56 @@
 // ═══ PATIENTS ═══
 async function renderPatients() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('patients')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="${t('search')}" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">${t('add_patient_short')}</button></div></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
-  const{data:patients}=await db.from('patients').select('*').is('deleted_at',null).order('name');
-  _allPatients=patients||[];
+  const [{data:patients},{data:appts},{data:orders},{data:exams}] = await Promise.all([
+    db.from('patients').select('*').is('deleted_at',null).order('name'),
+    db.from('appointments').select('patient_id,date,status').is('deleted_at',null),
+    db.from('orders').select('patient_id,status').is('deleted_at',null),
+    db.from('examinations').select('patient_id,control_date')
+  ]);
+  _allPatients = patients||[];
+  _patientMeta = _buildPatientMeta(appts||[], orders||[], exams||[]);
   renderPatientsTable(_allPatients);
 }
 let _allPatients=[];
 let _lastAddedPatientId = null;
+let _patientMeta = {};
+
+function _buildPatientMeta(appts, orders, exams) {
+  const meta = {};
+  const td = today();
+  appts.forEach(a => {
+    if (!meta[a.patient_id]) meta[a.patient_id] = {};
+    if (a.status === 'запланирован') {
+      if (!meta[a.patient_id].planned || a.date < meta[a.patient_id].planned)
+        meta[a.patient_id].planned = a.date;
+    }
+  });
+  orders.forEach(o => {
+    if (!meta[o.patient_id]) meta[o.patient_id] = {};
+    const s = o.status;
+    if (s === 'готов') meta[o.patient_id].orderReady = true;
+    else if (s === 'в работе' && !meta[o.patient_id].orderReady) meta[o.patient_id].orderWorking = true;
+    else if (s === 'оформлен' && !meta[o.patient_id].orderReady && !meta[o.patient_id].orderWorking) meta[o.patient_id].orderNew = true;
+  });
+  exams.forEach(e => {
+    if (!e.control_date) return;
+    if (!meta[e.patient_id]) meta[e.patient_id] = {};
+    if (e.control_date <= td) meta[e.patient_id].controlDue = true;
+  });
+  return meta;
+}
+
+function _patientBadge(pid) {
+  const m = _patientMeta[pid];
+  if (!m) return '';
+  if (m.orderReady)   return `<span class="pt-badge pt-green">Готов</span>`;
+  if (m.controlDue)   return `<span class="pt-badge pt-red">Контроль</span>`;
+  if (m.planned)      return `<span class="pt-badge pt-blue">${fmt(m.planned)}</span>`;
+  if (m.orderWorking) return `<span class="pt-badge pt-yellow">В работе</span>`;
+  if (m.orderNew)     return `<span class="pt-badge pt-gray">Оформлен</span>`;
+  return '';
+}
+
 function renderPatientsTable(patients) {
   const c=document.querySelector('.content'); if(!c)return;
   c.innerHTML=`<div class="card"><div class="table-wrap"><table>
@@ -14,8 +58,13 @@ function renderPatientsTable(patients) {
     <tbody>${patients.map(p=>`<tr id="prow-${p.id}" style="${_lastAddedPatientId===p.id?'background:#d1fae5;transition:background 2s':''}">
       <td><span class="badge badge-gray" style="font-size:11px;letter-spacing:0.5px">${p.patient_code||'—'}</span></td>
       <td><div class="flex items-center gap-8"><div class="patient-avatar" style="width:36px;height:36px;font-size:14px">${initials(p.name)}</div>
-        <div><div class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${p.id}')">${p.name}</div>
-        ${p.email?`<div class="table-sub">${p.email}</div>`:''}</div></div></td>
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${p.id}')">${p.name}</span>
+            ${_patientBadge(p.id)}
+          </div>
+          ${p.email?`<div class="table-sub">${p.email}</div>`:''}
+        </div></div></td>
       <td class="text-m">${p.phone||'—'}</td>
       <td>${p.telegram_chat_id?'<span class="badge badge-green">✓ TG</span>':p.telegram_username?`@${p.telegram_username}`:'—'}</td>
       <td class="text-m">${p.dob?fmt(p.dob):'—'}</td>
@@ -62,7 +111,7 @@ async function _renderPatientCard(pid) {
         <div class="flex items-center gap-12">
           <div class="patient-avatar" style="width:52px;height:52px;font-size:20px">${initials(p.name)}</div>
           <div>
-            <div style="font-size:20px;font-weight:800">${p.name} ${p.patient_code?`<span class="badge badge-gray" style="font-size:13px;font-weight:600;vertical-align:middle">${p.patient_code}</span>`:''}</div>
+            <div style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${p.name} ${p.patient_code?`<span class="badge badge-gray" style="font-size:13px;font-weight:600">${p.patient_code}</span>`:''} ${_patientBadge(pid)}</div>
             <div style="font-size:13px;color:var(--text-m)">${age?(age+' '+(t('years')||'god.')+' · '):''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
           </div>
         </div>
@@ -135,7 +184,7 @@ function _orderTab(orders,pid){
     <div class="history-dot" style="background:var(--accent-l);border-color:var(--accent)"></div>
     <div style="flex:1">
       <div class="history-date">${fmt(o.created_at?.split('T')[0])} · <span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}" style="font-size:11px">${o.status}</span>${o.counts_for_salary?' <span class="salary-badge">💰</span>':''}</div>
-      <div class="history-title">${o.type}${o.prescription_label?' — '+o.prescription_label:''}</div>
+      <div class="history-title">${o.type}${o.prescription_label?' — '+o.prescription_label:''}${o.order_number?' <span class="badge badge-gray" style="font-size:10px">№'+o.order_number+'</span>':''}</div>
       <div class="text-sm text-m">${[o.frame_code,o.lens_name].filter(Boolean).join(' / ')||'—'}</div>
       <div class="text-sm mt-4">Итого: <b>${fmtMoney(orderTotal(o))}</b> · Предоплата: ${fmtMoney(o.prepayment)} · Остаток: <span class="${bal>0?'money-debt':'money-paid'}">${fmtMoney(bal)}</span></div>
     </div>

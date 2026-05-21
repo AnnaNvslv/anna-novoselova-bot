@@ -10,8 +10,9 @@ let _lastAddedPatientId = null;
 function renderPatientsTable(patients) {
   const c=document.querySelector('.content'); if(!c)return;
   c.innerHTML=`<div class="card"><div class="table-wrap"><table>
-    <thead><tr><th>${t('patient')}</th><th>${t('phone')}</th><th>Telegram</th><th>${t('dob')}</th><th></th></tr></thead>
+    <thead><tr><th style="width:54px">ID</th><th>${t('patient')}</th><th>${t('phone')}</th><th>Telegram</th><th>${t('dob')}</th><th></th></tr></thead>
     <tbody>${patients.map(p=>`<tr id="prow-${p.id}" style="${_lastAddedPatientId===p.id?'background:#d1fae5;transition:background 2s':''}">
+      <td><span class="badge badge-gray" style="font-size:11px;letter-spacing:0.5px">${p.patient_code||'—'}</span></td>
       <td><div class="flex items-center gap-8"><div class="patient-avatar" style="width:36px;height:36px;font-size:14px">${initials(p.name)}</div>
         <div><div class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${p.id}')">${p.name}</div>
         ${p.email?`<div class="table-sub">${p.email}</div>`:''}</div></div></td>
@@ -24,14 +25,18 @@ function renderPatientsTable(patients) {
         <button class="btn btn-accent btn-sm" onclick="openPatientCard('${p.id}')">${t('card')}</button>
         ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openEditPatient('${p.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatient('${p.id}')">🗑</button>`:''}
       </div></td>
-    </tr>`).join('')||`<tr><td colspan="5"><div class="empty"><p>${t('no_patients')}</p></div></td></tr>`}
+    </tr>`).join('')||`<tr><td colspan="6"><div class="empty"><p>${t('no_patients')}</p></div></td></tr>`}
     </tbody></table></div></div>`;
   if(_lastAddedPatientId) {
     setTimeout(()=>{ const r=document.getElementById('prow-'+_lastAddedPatientId); if(r) r.style.background=''; },3000);
   }
 }
 function filterPatientsUI(q) {
-  const f=q?_allPatients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.phone?.includes(q)):_allPatients;
+  const f=q?_allPatients.filter(p=>
+    p.name.toLowerCase().includes(q.toLowerCase())||
+    p.phone?.includes(q)||
+    p.patient_code?.includes(q)
+  ):_allPatients;
   renderPatientsTable(f);
 }
 // ═══ PATIENT CARD (Профиль пациента) ═══
@@ -57,7 +62,7 @@ async function _renderPatientCard(pid) {
         <div class="flex items-center gap-12">
           <div class="patient-avatar" style="width:52px;height:52px;font-size:20px">${initials(p.name)}</div>
           <div>
-            <div style="font-size:20px;font-weight:800">${p.name}</div>
+            <div style="font-size:20px;font-weight:800">${p.name} ${p.patient_code?`<span class="badge badge-gray" style="font-size:13px;font-weight:600;vertical-align:middle">${p.patient_code}</span>`:''}</div>
             <div style="font-size:13px;color:var(--text-m)">${age?(age+' '+(t('years')||'god.')+' · '):''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
           </div>
         </div>
@@ -70,6 +75,7 @@ async function _renderPatientCard(pid) {
       </div>
       <div class="modal-body">
         <div class="info-grid mb-12">
+          <div class="info-item"><label>ID пациента</label><p>${p.patient_code||'—'}</p></div>
           <div class="info-item"><label>${t('phone')}</label><p>${p.phone||'—'}</p></div>
           <div class="info-item"><label>Email</label><p>${p.email||'—'}</p></div>
           <div class="info-item"><label>Telegram</label><p>${p.telegram_chat_id?`ID: ${p.telegram_chat_id}`:p.telegram_username?`@${p.telegram_username}`:'—'}</p></div>
@@ -150,6 +156,7 @@ function _patientForm(p){
     <div class="modal-header"><span class="modal-title">${p?t('edit_patient'):t('new_patient')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-grid">
+        ${p?.patient_code?`<div class="form-group"><label>ID пациента</label><input value="${p.patient_code}" disabled style="background:var(--surface2);color:var(--text-m)"></div>`:''}
         <div class="form-group full"><label>${t('full_name')} *</label><input id="p-name" value="${p?.name||''}" placeholder="Иванова Мария Петровна"></div>
         <div class="form-group"><label>${t('phone')}</label><input id="p-phone" value="${p?.phone||''}"></div>
         <div class="form-group"><label>Email</label><input id="p-email" value="${p?.email||''}"></div>

@@ -96,7 +96,11 @@ function openAddOrder(){openAddOrderFor(null);}
 async function openAddOrderFor(patientId){
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
-    patientId?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',patientId).order('created_at',{ascending:false}):Promise.resolve({data:[]})
+    patientId
+      ? db.from('examinations')
+          .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+          .eq('patient_id',patientId).order('created_at',{ascending:false})
+      : Promise.resolve({data:[]})
   ]);
   _drawOrderForm(null,patientId,patients||[],examResult?.data||[]);
 }
@@ -104,12 +108,26 @@ async function openEditOrder(id){
   const{data:o}=await db.from('orders').select('*').eq('id',id).single();
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
-    o?.patient_id?db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',o.patient_id).order('created_at',{ascending:false}):Promise.resolve({data:[]})
+    o?.patient_id
+      ? db.from('examinations')
+          .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+          .eq('patient_id',o.patient_id).order('created_at',{ascending:false})
+      : Promise.resolve({data:[]})
   ]);
   _drawOrderForm(o,o?.patient_id,patients||[],examResult?.data||[]);
 }
 
-// Текст для option рецепта (без HTML-тегов)
+// Показывать рецепт если: enabled=true ИЛИ хоть одно поле заполнено
+// (защита от потери рецептов очки без Sph OD)
+function _hasRx(e, type) {
+  if(type==='far') return e.rx_far_enabled || e.rx_far_od_sph || e.rx_far_os_sph || e.rx_far_od_cyl || e.rx_far_od_ax;
+  if(type==='comp') return e.rx_comp_enabled || e.rx_comp_od_sph || e.rx_comp_os_sph || e.rx_comp_od_cyl;
+  if(type==='near') return e.rx_near_enabled || e.rx_near_od_sph || e.rx_near_os_sph || e.rx_near_od_cyl;
+  if(type==='cl') return e.rx_cl_enabled || e.rx_cl_od_sph || e.rx_cl_os_sph || e.rx_cl_od_bc;
+  return false;
+}
+
+// Текст для option (без HTML-тегов)
 function _rxOptLabel(e, type, d) {
   const labels = {far:'Даль', comp:'Компьютер', near:'Близь', cl:'KS'};
   const base = 'Визит №'+(e.visit_number||'?')+' ('+d+') — '+labels[type];
@@ -122,22 +140,26 @@ function _rxDioptStr(e, type) {
   if(!e) return '';
   let parts=[];
   if(type==='far') {
-    if(e.rx_far_od_sph) parts.push('OD '+e.rx_far_od_sph+(e.rx_far_od_cyl?' /'+e.rx_far_od_cyl:'')+(e.rx_far_od_ax?' ax'+e.rx_far_od_ax:''));
+    const od=[e.rx_far_od_sph,e.rx_far_od_cyl?'/'+e.rx_far_od_cyl:'',e.rx_far_od_ax?'ax'+e.rx_far_od_ax:''].filter(Boolean).join(' ');
+    if(od) parts.push('OD '+od);
     if(e.rx_far_os_sph) parts.push('OS '+e.rx_far_os_sph);
     if(e.rx_far_od_pd) parts.push('PD '+e.rx_far_od_pd);
     if(e.rx_far_os_pd) parts.push('ADD '+e.rx_far_os_pd);
   } else if(type==='comp') {
-    if(e.rx_comp_od_sph) parts.push('OD '+e.rx_comp_od_sph+(e.rx_comp_od_cyl?' /'+e.rx_comp_od_cyl:''));
+    const od=[e.rx_comp_od_sph,e.rx_comp_od_cyl?'/'+e.rx_comp_od_cyl:''].filter(Boolean).join(' ');
+    if(od) parts.push('OD '+od);
     if(e.rx_comp_os_sph) parts.push('OS '+e.rx_comp_os_sph);
     if(e.rx_comp_od_pd) parts.push('PD '+e.rx_comp_od_pd);
     if(e.rx_comp_od_add) parts.push('ADD '+e.rx_comp_od_add);
   } else if(type==='near') {
-    if(e.rx_near_od_sph) parts.push('OD '+e.rx_near_od_sph+(e.rx_near_od_cyl?' /'+e.rx_near_od_cyl:''));
+    const od=[e.rx_near_od_sph,e.rx_near_od_cyl?'/'+e.rx_near_od_cyl:''].filter(Boolean).join(' ');
+    if(od) parts.push('OD '+od);
     if(e.rx_near_os_sph) parts.push('OS '+e.rx_near_os_sph);
     if(e.rx_near_od_pd) parts.push('PD '+e.rx_near_od_pd);
     if(e.rx_near_od_add) parts.push('Degr '+e.rx_near_od_add);
   } else if(type==='cl') {
-    if(e.rx_cl_od_sph) parts.push('OD '+e.rx_cl_od_sph+(e.rx_cl_od_cyl?' /'+e.rx_cl_od_cyl:''));
+    const od=[e.rx_cl_od_sph,e.rx_cl_od_cyl?'/'+e.rx_cl_od_cyl:''].filter(Boolean).join(' ');
+    if(od) parts.push('OD '+od);
     if(e.rx_cl_os_sph) parts.push('OS '+e.rx_cl_os_sph);
     if(e.rx_cl_od_bc) parts.push('BC '+e.rx_cl_od_bc);
     if(e.rx_cl_od_dia) parts.push('DIA '+e.rx_cl_od_dia);
@@ -152,10 +174,11 @@ function _rxOpts(exams, selVal){
   (exams||[]).forEach(e=>{
     window._examCache[e.id] = e;
     const d=fmt(e.created_at?.split('T')[0]);
-    if(e.rx_far_od_sph) opts.push('<option value="'+e.id+'|far" '+(selVal===e.id+'|far'?'selected':'')+'>'+_rxOptLabel(e,'far',d)+'</option>');
-    if(e.rx_comp_od_sph) opts.push('<option value="'+e.id+'|comp" '+(selVal===e.id+'|comp'?'selected':'')+'>'+_rxOptLabel(e,'comp',d)+'</option>');
-    if(e.rx_near_od_sph) opts.push('<option value="'+e.id+'|near" '+(selVal===e.id+'|near'?'selected':'')+'>'+_rxOptLabel(e,'near',d)+'</option>');
-    if(e.rx_cl_od_sph) opts.push('<option value="'+e.id+'|cl" '+(selVal===e.id+'|cl'?'selected':'')+'>'+_rxOptLabel(e,'cl',d)+'</option>');
+    // Показываем рецепт если enabled=true ИЛИ хоть одно поле заполнено
+    if(_hasRx(e,'far'))  opts.push('<option value="'+e.id+'|far" '+(selVal===e.id+'|far'?'selected':'')+'>'+_rxOptLabel(e,'far',d)+'</option>');
+    if(_hasRx(e,'comp')) opts.push('<option value="'+e.id+'|comp" '+(selVal===e.id+'|comp'?'selected':'')+'>'+_rxOptLabel(e,'comp',d)+'</option>');
+    if(_hasRx(e,'near')) opts.push('<option value="'+e.id+'|near" '+(selVal===e.id+'|near'?'selected':'')+'>'+_rxOptLabel(e,'near',d)+'</option>');
+    if(_hasRx(e,'cl'))   opts.push('<option value="'+e.id+'|cl" '+(selVal===e.id+'|cl'?'selected':'')+'>'+_rxOptLabel(e,'cl',d)+'</option>');
   });
   return opts.join('');
 }
@@ -377,7 +400,6 @@ async function saveQuickRx(){
   const{data:ne}=await db.from('examinations').insert(rxData).select().single();
   if(!ne){toast('Ошибка сохранения рецепта','error');return;}
   window._examCache[ne.id]=ne;
-  const typeLabels={far:'Daljina',comp:'Računar',near:'Blizina',cl:'KS'};
   const sel=document.getElementById('o-rx');
   const opt=document.createElement('option');
   const val=ne.id+'|'+type;
@@ -391,7 +413,9 @@ async function saveQuickRx(){
 }
 async function onOrderPatientChange(pid){
   if(!pid)return;
-  const{data:exams}=await db.from('examinations').select('id,visit_number,created_at,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph').eq('patient_id',pid).order('created_at',{ascending:false});
+  const{data:exams}=await db.from('examinations')
+    .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+    .eq('patient_id',pid).order('created_at',{ascending:false});
   (exams||[]).forEach(e=>{window._examCache[e.id]=e;});
   document.getElementById('o-rx').innerHTML=_rxOpts(exams||[]);
 }
@@ -404,7 +428,7 @@ async function showRxPreview(val){
   if(!e){prev.style.display='none';return;}
   const fieldMap={far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']};
   if(type==='cl'){
-    prev.innerHTML='<b>KS:</b> OD: '+(e.rx_cl_od_sph||'—')+' / '+(e.rx_cl_od_cyl||'')+' ax'+(e.rx_cl_od_ax||'')+' BC'+(e.rx_cl_od_bc||'')+' DIA'+(e.rx_cl_od_dia||'')+'<br>OS: '+(e.rx_cl_os_sph||'—')+' / '+(e.rx_cl_os_cyl||'')+' ax'+(e.rx_cl_os_ax||'')+' · '+(e.rx_cl_od_type||'');
+    prev.innerHTML='<b>KS:</b> OD: '+(e.rx_cl_od_sph||'—')+' / '+(e.rx_cl_od_cyl||'')+' ax'+(e.rx_cl_od_ax||'')+' BC'+(e.rx_cl_od_bc||'')+' DIA'+(e.rx_cl_od_dia||'')+'<br>OS: '+(e.rx_cl_os_sph||'—')+' · '+(e.rx_cl_od_type||'');
     prev.style.display='block';return;
   }
   const f=fieldMap[type];if(!f){prev.style.display='none';return;}

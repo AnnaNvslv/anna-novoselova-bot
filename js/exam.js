@@ -116,12 +116,21 @@ function _drawExam(p,e,visitNum,apptId){
   const ge=f=>e?.[f]||'';
   const apptNum = e?.appointment_number || '';
   const pid = p?.id||'';
+  const pidShort = pid ? pid.slice(-8).toUpperCase() : '';
+  const age = p?.dob ? calcAge(p.dob) : '';
+  const dobStr = p?.dob ? fmt(p.dob) : '';
   document.getElementById('modal-container').innerHTML=`
   <div class="modal modal-xl">
     <div class="modal-header">
-      <div>
-        <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
-        ${apptNum?`<span class="badge badge-accent" style="margin-left:6px">${apptNum}</span>`:`<span class="badge badge-accent" style="margin-left:6px">${t('visit')}${visitNum}</span>`}
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
+          ${apptNum?`<span class="badge badge-accent">${apptNum}</span>`:`<span class="badge badge-accent">${t('visit')}${visitNum}</span>`}
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:2px">
+          ${age?`<span style="font-size:12px;color:var(--text-muted,#64748b)">👤 ${age} лет${dobStr?' ('+dobStr+')':''}</span>`:''}
+          ${pidShort?`<span style="font-size:12px;color:var(--text-muted,#64748b);font-family:monospace;background:var(--surface2,#f1f5f9);padding:1px 6px;border-radius:4px">ID: ${pidShort}</span>`:''}
+        </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_examClose()">✕</button>
     </div>

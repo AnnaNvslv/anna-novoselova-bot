@@ -1,4 +1,19 @@
 // ═══ ORDERS ═══
+
+// ── полный список полей рецепта — ОБЪЯВЛЕН ПЕРВЫМ, чтобы не было TDZ ──
+var RX_SELECT_FIELDS = [
+  'id','visit_number','created_at',
+  'rx_far_enabled','rx_comp_enabled','rx_near_enabled','rx_cl_enabled',
+  'rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd',
+  'rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax','rx_far_os_pd',
+  'rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_od_add',
+  'rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax',
+  'rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_od_add',
+  'rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax',
+  'rx_cl_od_sph','rx_cl_od_cyl','rx_cl_od_ax','rx_cl_od_bc','rx_cl_od_dia','rx_cl_od_type',
+  'rx_cl_os_sph','rx_cl_os_cyl','rx_cl_os_ax',
+].join(',');
+
 async function renderOrders() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('orders')}</h1>${isAdmin()?`<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()" title="Оформить новый заказ">+ ${t('orders')||'Porudžbina'}</button></div>`:''}</div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:orders}=await db.from('orders').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('order_date',{ascending:false}).order('created_at',{ascending:false});
@@ -36,6 +51,7 @@ async function renderOrders() {
       </tr>`).join('')||`<tr><td colspan="10"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
 }
+
 // ═══ ORDER CARD VIEW ═══
 async function openOrderCard(id){
   const{data:o}=await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',id).single();
@@ -91,28 +107,6 @@ function orderTotal_lenses(o){
 const _origOrderTotal = orderTotal;
 orderTotal = o => (+o.frame_price||0) + orderTotal_lenses(o) + (+o.work_price||0);
 
-// ═══ полный список полей рецепта для SELECT ═══
-const RX_SELECT_FIELDS = [
-  'id','visit_number','created_at',
-  'rx_far_enabled','rx_comp_enabled','rx_near_enabled','rx_cl_enabled',
-  // Даль OD
-  'rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd',
-  // Даль OS
-  'rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax','rx_far_os_pd',
-  // Компьютер OD
-  'rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_od_add',
-  // Компьютер OS
-  'rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax',
-  // Близь OD
-  'rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_od_add',
-  // Близь OS
-  'rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax',
-  // КЛ OD
-  'rx_cl_od_sph','rx_cl_od_cyl','rx_cl_od_ax','rx_cl_od_bc','rx_cl_od_dia','rx_cl_od_type',
-  // КЛ OS
-  'rx_cl_os_sph','rx_cl_os_cyl','rx_cl_os_ax',
-].join(',');
-
 // ═══ ORDER FORM ═══
 function openAddOrder(){openAddOrderFor(null);}
 async function openAddOrderFor(patientId){
@@ -149,7 +143,7 @@ function _hasRx(e, type) {
 // Строка диоптрий — полная, OD и OS с Cyl/Ax + PD/ADD/Degr
 function _rxDioptStr(e, type) {
   if(!e) return '';
-  const dash = (v) => v || '—';
+  const dash = (val) => val || '—';
   const seg = (sph, cyl, ax) => {
     let s = dash(sph);
     if(cyl) s += ' / ' + cyl;
@@ -175,8 +169,8 @@ function _rxDioptStr(e, type) {
   } else if(type==='cl') {
     parts.push('OD ' + seg(e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax));
     parts.push('OS ' + seg(e.rx_cl_os_sph, e.rx_cl_os_cyl, e.rx_cl_os_ax));
-    if(e.rx_cl_od_bc)  parts.push('BC ' + e.rx_cl_od_bc);
-    if(e.rx_cl_od_dia) parts.push('DIA ' + e.rx_cl_od_dia);
+    if(e.rx_cl_od_bc)   parts.push('BC ' + e.rx_cl_od_bc);
+    if(e.rx_cl_od_dia)  parts.push('DIA ' + e.rx_cl_od_dia);
     if(e.rx_cl_od_type) parts.push(e.rx_cl_od_type);
   }
   return parts.length ? ' — <span style="color:var(--text-m);font-size:11px">' + parts.join(' | ') + '</span>' : '';
@@ -351,7 +345,6 @@ function _drawOrderForm(o, prePatient, patients, exams){
     </div>
   </div>`);
 
-  // Если есть выбранный рецепт — сразу показываем превью
   if(selVal) setTimeout(()=>showRxPreview(selVal), 100);
 }
 
@@ -473,22 +466,22 @@ async function showRxPreview(val){
 
   let html = '';
   if(type==='far') {
-    html = row('OD', e.rx_far_od_sph, e.rx_far_od_cyl, e.rx_far_od_ax) + ' &nbsp; ' +
+    html = row('OD', e.rx_far_od_sph, e.rx_far_od_cyl, e.rx_far_od_ax) + ' &nbsp;&nbsp; ' +
            row('OS', e.rx_far_os_sph, e.rx_far_os_cyl, e.rx_far_os_ax);
     if(e.rx_far_od_pd)  html += ' &nbsp; <b>PD:</b> ' + e.rx_far_od_pd;
     if(e.rx_far_os_pd)  html += ' &nbsp; <b>ADD:</b> ' + e.rx_far_os_pd;
   } else if(type==='comp') {
-    html = row('OD', e.rx_comp_od_sph, e.rx_comp_od_cyl, e.rx_comp_od_ax) + ' &nbsp; ' +
+    html = row('OD', e.rx_comp_od_sph, e.rx_comp_od_cyl, e.rx_comp_od_ax) + ' &nbsp;&nbsp; ' +
            row('OS', e.rx_comp_os_sph, e.rx_comp_os_cyl, e.rx_comp_os_ax);
     if(e.rx_comp_od_pd)  html += ' &nbsp; <b>PD:</b> '  + e.rx_comp_od_pd;
     if(e.rx_comp_od_add) html += ' &nbsp; <b>ADD:</b> ' + e.rx_comp_od_add;
   } else if(type==='near') {
-    html = row('OD', e.rx_near_od_sph, e.rx_near_od_cyl, e.rx_near_od_ax) + ' &nbsp; ' +
-           row('OS', e.rx_near_os_sph, e.rx_near_os_cyl, e.rx_near_os_ax);
+    html = row('OD', e.rx_near_od_sph, e.rx_near_od_cyl, e.rx_near_od_ax) + ' &nbsp;&nbsp; ' +
+           row('OS', e.rx_near_os_ph, e.rx_near_os_cyl, e.rx_near_os_ax);
     if(e.rx_near_od_pd)  html += ' &nbsp; <b>PD:</b> '   + e.rx_near_od_pd;
     if(e.rx_near_od_add) html += ' &nbsp; <b>Degr:</b> ' + e.rx_near_od_add;
   } else if(type==='cl') {
-    html = row('OD', e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax) + ' &nbsp; ' +
+    html = row('OD', e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax) + ' &nbsp;&nbsp; ' +
            row('OS', e.rx_cl_os_sph, e.rx_cl_os_cyl, e.rx_cl_os_ax);
     if(e.rx_cl_od_bc)   html += ' &nbsp; <b>BC:</b> '  + e.rx_cl_od_bc;
     if(e.rx_cl_od_dia)  html += ' &nbsp; <b>DIA:</b> ' + e.rx_cl_od_dia;

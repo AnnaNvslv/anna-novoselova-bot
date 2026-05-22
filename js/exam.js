@@ -116,7 +116,7 @@ function _drawExam(p,e,visitNum,apptId){
   const ge=f=>e?.[f]||'';
   const apptNum = e?.appointment_number || '';
   const pid = p?.id||'';
-  const pidShort = pid ? pid.slice(-8).toUpperCase() : '';
+  const patientCode = p?.patient_code || '';
   const age = p?.dob ? calcAge(p.dob) : '';
   const dobStr = p?.dob ? fmt(p.dob) : '';
   document.getElementById('modal-container').innerHTML=`
@@ -129,7 +129,7 @@ function _drawExam(p,e,visitNum,apptId){
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:2px">
           ${age?`<span style="font-size:12px;color:var(--text-muted,#64748b)">👤 ${age} лет${dobStr?' ('+dobStr+')':''}</span>`:''}
-          ${pidShort?`<span style="font-size:12px;color:var(--text-muted,#64748b);font-family:monospace;background:var(--surface2,#f1f5f9);padding:1px 6px;border-radius:4px">ID: ${pidShort}</span>`:''}
+          ${patientCode?`<span style="font-size:12px;color:var(--text-muted,#64748b);font-family:monospace;background:var(--surface2,#f1f5f9);padding:1px 6px;border-radius:4px">ID: ${patientCode}</span>`:''}
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_examClose()">✕</button>
@@ -335,8 +335,8 @@ function _renderCorrs(){
           <div class="form-group full" style="grid-column:span 2"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value"></div>
         `}
       </div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}
-    </div>`;
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`  +
+    `</div>`;
   }).join('');
 }
 function addCorrection(){_examData.corrections.push({type:'Очки для дали'});document.getElementById('corr-list').innerHTML=_renderCorrs();}
@@ -441,7 +441,7 @@ async function _buildPrintCard(examId) {
     <div class="pc-title">Карта оптометрического обследования</div>
     <div class="pc-patient-block">
       <div style="font-size:14pt;font-weight:800;color:#1a1a2e">${p?.name||''}</div>
-      <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' лет':''}</div>
+      <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' лет':''}${p?.patient_code?' · ID: '+p.patient_code:''}</div>
     </div>
     ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Причина обращения</div><div class="pc-text">${rx('visit_reason')}</div></div>`:'' }
     ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Жалобы</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
@@ -458,8 +458,8 @@ async function _buildPrintCard(examId) {
         ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Вид МКЛ: ${c.cl_type}</div>`:''}
         ${c.note?`<div style="font-size:7.5pt;color:#555">Примечание: ${c.note}</div>`:''}
       </div>`).join('')}
-    </div>`:''}
-    <div class="pc-sec" style="page-break-inside:avoid">
+    </div>`:''}`+
+    `<div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Авторефрактометрия</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>R AVE</th></tr>
@@ -597,7 +597,7 @@ async function _buildPatientPrintCard(pid) {
     <div class="pc-title">${t('patient_profile')}</div>
     <div class="pc-patient-block">
       <div class="pc-patient-name">${p.name||''}</div>
-      <div class="pc-patient-sub">${age?age+' лет':''}${p.dob?' · Д.р.: '+fmt(p.dob):''}</div>
+      <div class="pc-patient-sub">${age?age+' лет':''}${p.dob?' · Д.р.: '+fmt(p.dob):''}${p.patient_code?' · ID: '+p.patient_code:''}</div>
     </div>
     <div class="pc-sec">
       <div class="pc-sec-label">Контактная информация</div>

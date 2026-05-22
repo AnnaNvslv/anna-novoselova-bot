@@ -13,12 +13,16 @@ var RX_SELECT_FIELDS =
   'rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_od_type,' +
   'rx_cl_os_sph,rx_cl_os_cyl,rx_cl_os_ax';
 
-// Строка диоптрий для option и превью
+// nz — считаем поле заполненным если не null, не пустая строка, не '0.00', не '0'
+function _nz(val) {
+  return (val != null && val !== '' && val !== '0.00' && val !== '0') ? String(val) : null;
+}
+
+// Строка диоптрий — возвращает '' если нет ни одного значимого поля
 function _rxDioptStr(e, type) {
   if(!e) return '';
-  const nz = (val) => (val && val !== '0.00' && val !== '0') ? val : null;
   const seg = (sph, cyl, ax) => {
-    const s = nz(sph); const c = nz(cyl); const a = nz(ax);
+    const s = _nz(sph); const c = _nz(cyl); const a = _nz(ax);
     if(!s && !c) return null;
     let r = s||'—'; if(c) r += ' / '+c; if(a) r += ' ax'+a;
     return r;
@@ -28,27 +32,27 @@ function _rxDioptStr(e, type) {
     const od = seg(e.rx_far_od_sph, e.rx_far_od_cyl, e.rx_far_od_ax);
     const os = seg(e.rx_far_os_sph, e.rx_far_os_cyl, e.rx_far_os_ax);
     if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(nz(e.rx_far_od_pd))  parts.push('PD '+e.rx_far_od_pd);
-    if(nz(e.rx_far_os_pd))  parts.push('ADD '+e.rx_far_os_pd);
+    if(_nz(e.rx_far_od_pd))  parts.push('PD '+e.rx_far_od_pd);
+    if(_nz(e.rx_far_os_pd))  parts.push('ADD '+e.rx_far_os_pd);
   } else if(type==='comp') {
     const od = seg(e.rx_comp_od_sph, e.rx_comp_od_cyl, e.rx_comp_od_ax);
     const os = seg(e.rx_comp_os_sph, e.rx_comp_os_cyl, e.rx_comp_os_ax);
     if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(nz(e.rx_comp_od_pd))  parts.push('PD '+e.rx_comp_od_pd);
-    if(nz(e.rx_comp_od_add)) parts.push('ADD '+e.rx_comp_od_add);
+    if(_nz(e.rx_comp_od_pd))  parts.push('PD '+e.rx_comp_od_pd);
+    if(_nz(e.rx_comp_od_add)) parts.push('ADD '+e.rx_comp_od_add);
   } else if(type==='near') {
     const od = seg(e.rx_near_od_sph, e.rx_near_od_cyl, e.rx_near_od_ax);
     const os = seg(e.rx_near_os_sph, e.rx_near_os_cyl, e.rx_near_os_ax);
     if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(nz(e.rx_near_od_pd))  parts.push('PD '+e.rx_near_od_pd);
-    if(nz(e.rx_near_od_add)) parts.push('Degr '+e.rx_near_od_add);
+    if(_nz(e.rx_near_od_pd))  parts.push('PD '+e.rx_near_od_pd);
+    if(_nz(e.rx_near_od_add)) parts.push('Degr '+e.rx_near_od_add);
   } else if(type==='cl') {
     const od = seg(e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax);
     const os = seg(e.rx_cl_os_sph, e.rx_cl_os_cyl, e.rx_cl_os_ax);
     if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(nz(e.rx_cl_od_bc))   parts.push('BC '+e.rx_cl_od_bc);
-    if(nz(e.rx_cl_od_dia))  parts.push('DIA '+e.rx_cl_od_dia);
-    if(e.rx_cl_od_type) parts.push(e.rx_cl_od_type);
+    if(_nz(e.rx_cl_od_bc))  parts.push('BC '+e.rx_cl_od_bc);
+    if(_nz(e.rx_cl_od_dia)) parts.push('DIA '+e.rx_cl_od_dia);
+    if(e.rx_cl_od_type)      parts.push(e.rx_cl_od_type);
   }
   return parts.join(' | ');
 }
@@ -71,10 +75,16 @@ function _rxOpts(exams, selVal){
     window._examCache[e.id] = e;
     const d = fmt(e.created_at?.split('T')[0]);
     ['far','comp','near','cl'].forEach(type => {
+      // Пропускаем тип если нет ни одного заполненного поля
+      if(!_rxDioptStr(e, type)) return;
       const val = e.id+'|'+type;
       opts.push('<option value="'+val+'"'+(selVal===val?' selected':'')+'>'+_rxOptLabel(e, type, d)+'</option>');
     });
   });
+  // Если у пациента есть обследования но все поля пустые
+  if(opts.length === 1) {
+    opts.push('<option value="" disabled>— обследования без данных рецепта —</option>');
+  }
   return opts.join('');
 }
 
@@ -181,7 +191,7 @@ async function openAddOrderFor(patientId){
       : Promise.resolve({data:[]})
   ]);
   const exams = examRes?.data || [];
-  console.log('[rx] openAddOrderFor pid='+patientId+' exams='+exams.length, examRes?.error);
+  console.log('[rx] openAddOrderFor pid='+patientId+' exams='+exams.length, examRes?.error||'');
   _drawOrderForm(null, patientId, patients||[], exams);
 }
 async function openEditOrder(id){
@@ -193,7 +203,7 @@ async function openEditOrder(id){
       : Promise.resolve({data:[]})
   ]);
   const exams = examRes?.data || [];
-  console.log('[rx] openEditOrder pid='+o?.patient_id+' exams='+exams.length, examRes?.error);
+  console.log('[rx] openEditOrder pid='+o?.patient_id+' exams='+exams.length, examRes?.error||'');
   _drawOrderForm(o, o?.patient_id, patients||[], exams);
 }
 
@@ -211,7 +221,8 @@ function _drawOrderForm(o, prePatient, patients, exams){
   }
 
   const rxHtml = _rxOpts(exams, selVal);
-  const rxLabel = `${t("prescription")||"Recept"} ${exams.length ? '<span style="color:var(--accent);font-size:11px;font-weight:600">('+exams.length+' обслед.)</span>' : '<span style="color:var(--red);font-size:11px">— нет обследований</span>'}`;
+  const rxCount = exams.length;
+  const rxLabel = `${t("prescription")||"Recept"} ${rxCount ? '<span style="color:var(--accent);font-size:11px;font-weight:600">('+rxCount+' обслед.)</span>' : '<span style="color:var(--text-l);font-size:11px">— нет обследований</span>'}`;
 
   openModal(`<div class="modal modal-xl">
     <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porudžbinu'):(t('new_order')||'Nova porudžbina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
@@ -426,13 +437,13 @@ async function saveQuickRx(){
   if(!ne){toast('Ошибка сохранения рецепта: '+(ne_err?.message||''),'error');return;}
   window._examCache[ne.id]=ne;
   const sel=document.getElementById('o-rx');
-  // Убираем заглушку "нет обследований" если была
   if(sel.options[0]?.value==='') sel.options[0].textContent='— без рецепта —';
+  const d=fmt(today());
   ['far','comp','near','cl'].forEach(tp => {
+    if(!_rxDioptStr(ne,tp)) return; // не добавляем пустые
     const opt=document.createElement('option');
     const val=ne.id+'|'+tp;
-    opt.value=val;
-    opt.textContent=_rxOptLabel(ne,tp,fmt(today()));
+    opt.value=val; opt.textContent=_rxOptLabel(ne,tp,d);
     if(tp===type) opt.selected=true;
     sel.appendChild(opt);
   });
@@ -447,7 +458,7 @@ async function onOrderPatientChange(pid){
   if(!pid){ sel.innerHTML='<option value="">— без рецепта —</option>'; if(prev) prev.style.display='none'; return; }
   const{data:exams, error}=await db.from('examinations').select(RX_SELECT_FIELDS)
     .eq('patient_id',pid).order('created_at',{ascending:false});
-  console.log('[rx] onOrderPatientChange pid='+pid+' exams='+exams?.length, error);
+  console.log('[rx] onOrderPatientChange pid='+pid+' exams='+exams?.length, error||'');
   (exams||[]).forEach(e=>{window._examCache[e.id]=e;});
   sel.innerHTML=_rxOpts(exams||[]);
   if(prev) prev.style.display='none';
@@ -464,30 +475,29 @@ async function showRxPreview(val){
   }
   if(!e){prev.style.display='none';return;}
 
-  const nz = val => (val && val !== '0.00' && val !== '0') ? val : null;
   const row = (eye, sph, cyl, ax) => {
-    let s = `<b>${eye}:</b> ${nz(sph)||'—'}`;
-    const c=nz(cyl); const a=nz(ax);
+    let s = `<b>${eye}:</b> ${_nz(sph)||'—'}`;
+    const c=_nz(cyl); const a=_nz(ax);
     if(c) s+=' / '+c; if(a) s+=' ax'+a;
     return s;
   };
   let html='';
   if(type==='far'){
     html=row('OD',e.rx_far_od_sph,e.rx_far_od_cyl,e.rx_far_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax);
-    if(nz(e.rx_far_od_pd)) html+=' &nbsp;<b>PD:</b> '+e.rx_far_od_pd;
-    if(nz(e.rx_far_os_pd)) html+=' &nbsp;<b>ADD:</b> '+e.rx_far_os_pd;
+    if(_nz(e.rx_far_od_pd)) html+=' &nbsp;<b>PD:</b> '+e.rx_far_od_pd;
+    if(_nz(e.rx_far_os_pd)) html+=' &nbsp;<b>ADD:</b> '+e.rx_far_os_pd;
   } else if(type==='comp'){
     html=row('OD',e.rx_comp_od_sph,e.rx_comp_od_cyl,e.rx_comp_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_comp_os_sph,e.rx_comp_os_cyl,e.rx_comp_os_ax);
-    if(nz(e.rx_comp_od_pd))  html+=' &nbsp;<b>PD:</b> '+e.rx_comp_od_pd;
-    if(nz(e.rx_comp_od_add)) html+=' &nbsp;<b>ADD:</b> '+e.rx_comp_od_add;
+    if(_nz(e.rx_comp_od_pd))  html+=' &nbsp;<b>PD:</b> '+e.rx_comp_od_pd;
+    if(_nz(e.rx_comp_od_add)) html+=' &nbsp;<b>ADD:</b> '+e.rx_comp_od_add;
   } else if(type==='near'){
     html=row('OD',e.rx_near_od_sph,e.rx_near_od_cyl,e.rx_near_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_near_os_sph,e.rx_near_os_cyl,e.rx_near_os_ax);
-    if(nz(e.rx_near_od_pd))  html+=' &nbsp;<b>PD:</b> '+e.rx_near_od_pd;
-    if(nz(e.rx_near_od_add)) html+=' &nbsp;<b>Degr:</b> '+e.rx_near_od_add;
+    if(_nz(e.rx_near_od_pd))  html+=' &nbsp;<b>PD:</b> '+e.rx_near_od_pd;
+    if(_nz(e.rx_near_od_add)) html+=' &nbsp;<b>Degr:</b> '+e.rx_near_od_add;
   } else if(type==='cl'){
     html=row('OD',e.rx_cl_od_sph,e.rx_cl_od_cyl,e.rx_cl_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_cl_os_sph,e.rx_cl_os_cyl,e.rx_cl_os_ax);
-    if(nz(e.rx_cl_od_bc))   html+=' &nbsp;<b>BC:</b> '+e.rx_cl_od_bc;
-    if(nz(e.rx_cl_od_dia))  html+=' &nbsp;<b>DIA:</b> '+e.rx_cl_od_dia;
+    if(_nz(e.rx_cl_od_bc))  html+=' &nbsp;<b>BC:</b> '+e.rx_cl_od_bc;
+    if(_nz(e.rx_cl_od_dia)) html+=' &nbsp;<b>DIA:</b> '+e.rx_cl_od_dia;
     if(e.rx_cl_od_type) html+=' &nbsp;'+e.rx_cl_od_type;
   }
   prev.innerHTML=html||'(нет данных по этому типу)';

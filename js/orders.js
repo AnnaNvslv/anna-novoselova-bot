@@ -66,9 +66,9 @@ async function openOrderCard(id){
       </div>
       <div class="divider"></div>
       <div class="form-grid mb-12">
-        <div class="form-group"><label>${t("frame_code")||"\u0160ifra okvira"}</label><input value="${o.frame_code||'—'}" readonly></div>
+        <div class="form-group"><label>${t("frame_code")||"Šifra okvira"}</label><input value="${o.frame_code||'—'}" readonly></div>
         <div class="form-group"><label>Цена оправы</label><input value="${fmtMoney(o.frame_price)}" readonly></div>
-        <div class="form-group"><label>${t("lens_name")||"Naziv so\u010diva"}</label><input value="${o.lens_name||'—'}" readonly></div>
+        <div class="form-group"><label>${t("lens_name")||"Naziv sočiva"}</label><input value="${o.lens_name||'—'}" readonly></div>
         <div class="form-group"><label>Цена линз (${o.lens_qty||2} шт. × ${fmtMoney(o.lens_price)})</label><input value="${fmtMoney(orderTotal_lenses(o))}" readonly></div>
         <div class="form-group"><label>Стоимость работы</label><input value="${o.work_price?fmtMoney(o.work_price):'—'}" readonly></div>
         <div class="form-group"><label>Предоплата</label><input value="${fmtMoney(o.prepayment)}" readonly></div>
@@ -91,14 +91,35 @@ function orderTotal_lenses(o){
 const _origOrderTotal = orderTotal;
 orderTotal = o => (+o.frame_price||0) + orderTotal_lenses(o) + (+o.work_price||0);
 
+// ═══ полный список полей рецепта для SELECT ═══
+const RX_SELECT_FIELDS = [
+  'id','visit_number','created_at',
+  'rx_far_enabled','rx_comp_enabled','rx_near_enabled','rx_cl_enabled',
+  // Даль OD
+  'rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd',
+  // Даль OS
+  'rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax','rx_far_os_pd',
+  // Компьютер OD
+  'rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_od_add',
+  // Компьютер OS
+  'rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax',
+  // Близь OD
+  'rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_od_add',
+  // Близь OS
+  'rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax',
+  // КЛ OD
+  'rx_cl_od_sph','rx_cl_od_cyl','rx_cl_od_ax','rx_cl_od_bc','rx_cl_od_dia','rx_cl_od_type',
+  // КЛ OS
+  'rx_cl_os_sph','rx_cl_os_cyl','rx_cl_os_ax',
+].join(',');
+
 // ═══ ORDER FORM ═══
 function openAddOrder(){openAddOrderFor(null);}
 async function openAddOrderFor(patientId){
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
     patientId
-      ? db.from('examinations')
-          .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+      ? db.from('examinations').select(RX_SELECT_FIELDS)
           .eq('patient_id',patientId).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
@@ -109,8 +130,7 @@ async function openEditOrder(id){
   const[{data:patients},examResult]=await Promise.all([
     db.from('patients').select('id,name').order('name'),
     o?.patient_id
-      ? db.from('examinations')
-          .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+      ? db.from('examinations').select(RX_SELECT_FIELDS)
           .eq('patient_id',o.patient_id).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
@@ -118,13 +138,48 @@ async function openEditOrder(id){
 }
 
 // Показывать рецепт если: enabled=true ИЛИ хоть одно поле заполнено
-// (защита от потери рецептов очки без Sph OD)
 function _hasRx(e, type) {
-  if(type==='far') return e.rx_far_enabled || e.rx_far_od_sph || e.rx_far_os_sph || e.rx_far_od_cyl || e.rx_far_od_ax;
+  if(type==='far')  return e.rx_far_enabled  || e.rx_far_od_sph  || e.rx_far_os_sph  || e.rx_far_od_cyl  || e.rx_far_od_ax;
   if(type==='comp') return e.rx_comp_enabled || e.rx_comp_od_sph || e.rx_comp_os_sph || e.rx_comp_od_cyl;
   if(type==='near') return e.rx_near_enabled || e.rx_near_od_sph || e.rx_near_os_sph || e.rx_near_od_cyl;
-  if(type==='cl') return e.rx_cl_enabled || e.rx_cl_od_sph || e.rx_cl_os_sph || e.rx_cl_od_bc;
+  if(type==='cl')   return e.rx_cl_enabled   || e.rx_cl_od_sph   || e.rx_cl_os_sph   || e.rx_cl_od_bc;
   return false;
+}
+
+// Строка диоптрий — полная, OD и OS с Cyl/Ax + PD/ADD/Degr
+function _rxDioptStr(e, type) {
+  if(!e) return '';
+  const dash = (v) => v || '—';
+  const seg = (sph, cyl, ax) => {
+    let s = dash(sph);
+    if(cyl) s += ' / ' + cyl;
+    if(ax)  s += ' ax' + ax;
+    return s;
+  };
+  let parts = [];
+  if(type==='far') {
+    parts.push('OD ' + seg(e.rx_far_od_sph, e.rx_far_od_cyl, e.rx_far_od_ax));
+    parts.push('OS ' + seg(e.rx_far_os_sph, e.rx_far_os_cyl, e.rx_far_os_ax));
+    if(e.rx_far_od_pd)  parts.push('PD ' + e.rx_far_od_pd);
+    if(e.rx_far_os_pd)  parts.push('ADD ' + e.rx_far_os_pd);
+  } else if(type==='comp') {
+    parts.push('OD ' + seg(e.rx_comp_od_sph, e.rx_comp_od_cyl, e.rx_comp_od_ax));
+    parts.push('OS ' + seg(e.rx_comp_os_sph, e.rx_comp_os_cyl, e.rx_comp_os_ax));
+    if(e.rx_comp_od_pd)  parts.push('PD ' + e.rx_comp_od_pd);
+    if(e.rx_comp_od_add) parts.push('ADD ' + e.rx_comp_od_add);
+  } else if(type==='near') {
+    parts.push('OD ' + seg(e.rx_near_od_sph, e.rx_near_od_cyl, e.rx_near_od_ax));
+    parts.push('OS ' + seg(e.rx_near_os_sph, e.rx_near_os_cyl, e.rx_near_os_ax));
+    if(e.rx_near_od_pd)  parts.push('PD ' + e.rx_near_od_pd);
+    if(e.rx_near_od_add) parts.push('Degr ' + e.rx_near_od_add);
+  } else if(type==='cl') {
+    parts.push('OD ' + seg(e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax));
+    parts.push('OS ' + seg(e.rx_cl_os_sph, e.rx_cl_os_cyl, e.rx_cl_os_ax));
+    if(e.rx_cl_od_bc)  parts.push('BC ' + e.rx_cl_od_bc);
+    if(e.rx_cl_od_dia) parts.push('DIA ' + e.rx_cl_od_dia);
+    if(e.rx_cl_od_type) parts.push(e.rx_cl_od_type);
+  }
+  return parts.length ? ' — <span style="color:var(--text-m);font-size:11px">' + parts.join(' | ') + '</span>' : '';
 }
 
 // Текст для option (без HTML-тегов)
@@ -135,38 +190,6 @@ function _rxOptLabel(e, type, d) {
   return diopt ? base+' | '+diopt : base;
 }
 
-// Строка диоптрий для превью
-function _rxDioptStr(e, type) {
-  if(!e) return '';
-  let parts=[];
-  if(type==='far') {
-    const od=[e.rx_far_od_sph,e.rx_far_od_cyl?'/'+e.rx_far_od_cyl:'',e.rx_far_od_ax?'ax'+e.rx_far_od_ax:''].filter(Boolean).join(' ');
-    if(od) parts.push('OD '+od);
-    if(e.rx_far_os_sph) parts.push('OS '+e.rx_far_os_sph);
-    if(e.rx_far_od_pd) parts.push('PD '+e.rx_far_od_pd);
-    if(e.rx_far_os_pd) parts.push('ADD '+e.rx_far_os_pd);
-  } else if(type==='comp') {
-    const od=[e.rx_comp_od_sph,e.rx_comp_od_cyl?'/'+e.rx_comp_od_cyl:''].filter(Boolean).join(' ');
-    if(od) parts.push('OD '+od);
-    if(e.rx_comp_os_sph) parts.push('OS '+e.rx_comp_os_sph);
-    if(e.rx_comp_od_pd) parts.push('PD '+e.rx_comp_od_pd);
-    if(e.rx_comp_od_add) parts.push('ADD '+e.rx_comp_od_add);
-  } else if(type==='near') {
-    const od=[e.rx_near_od_sph,e.rx_near_od_cyl?'/'+e.rx_near_od_cyl:''].filter(Boolean).join(' ');
-    if(od) parts.push('OD '+od);
-    if(e.rx_near_os_sph) parts.push('OS '+e.rx_near_os_sph);
-    if(e.rx_near_od_pd) parts.push('PD '+e.rx_near_od_pd);
-    if(e.rx_near_od_add) parts.push('Degr '+e.rx_near_od_add);
-  } else if(type==='cl') {
-    const od=[e.rx_cl_od_sph,e.rx_cl_od_cyl?'/'+e.rx_cl_od_cyl:''].filter(Boolean).join(' ');
-    if(od) parts.push('OD '+od);
-    if(e.rx_cl_os_sph) parts.push('OS '+e.rx_cl_os_sph);
-    if(e.rx_cl_od_bc) parts.push('BC '+e.rx_cl_od_bc);
-    if(e.rx_cl_od_dia) parts.push('DIA '+e.rx_cl_od_dia);
-  }
-  return parts.length ? ' — <span style="color:var(--text-m);font-size:11px">'+parts.join(' | ')+'</span>' : '';
-}
-
 window._examCache = {};
 
 function _rxOpts(exams, selVal){
@@ -174,11 +197,10 @@ function _rxOpts(exams, selVal){
   (exams||[]).forEach(e=>{
     window._examCache[e.id] = e;
     const d=fmt(e.created_at?.split('T')[0]);
-    // Показываем рецепт если enabled=true ИЛИ хоть одно поле заполнено
-    if(_hasRx(e,'far'))  opts.push('<option value="'+e.id+'|far" '+(selVal===e.id+'|far'?'selected':'')+'>'+_rxOptLabel(e,'far',d)+'</option>');
+    if(_hasRx(e,'far'))  opts.push('<option value="'+e.id+'|far" ' +(selVal===e.id+'|far' ?'selected':'')+'>'+_rxOptLabel(e,'far',d)+'</option>');
     if(_hasRx(e,'comp')) opts.push('<option value="'+e.id+'|comp" '+(selVal===e.id+'|comp'?'selected':'')+'>'+_rxOptLabel(e,'comp',d)+'</option>');
     if(_hasRx(e,'near')) opts.push('<option value="'+e.id+'|near" '+(selVal===e.id+'|near'?'selected':'')+'>'+_rxOptLabel(e,'near',d)+'</option>');
-    if(_hasRx(e,'cl'))   opts.push('<option value="'+e.id+'|cl" '+(selVal===e.id+'|cl'?'selected':'')+'>'+_rxOptLabel(e,'cl',d)+'</option>');
+    if(_hasRx(e,'cl'))   opts.push('<option value="'+e.id+'|cl" '  +(selVal===e.id+'|cl'  ?'selected':'')+'>'+_rxOptLabel(e,'cl',d)+'</option>');
   });
   return opts.join('');
 }
@@ -188,6 +210,14 @@ function _drawOrderForm(o, prePatient, patients, exams){
   const orderDate = o?.order_date || o?.created_at?.split('T')[0] || today();
   const lensQty = o?.lens_qty ?? 2;
   const isCL = o?.type === 'МКЛ';
+
+  // Восстанавливаем selVal для edit-режима
+  let selVal = '';
+  if(o?.examination_id && o?.prescription_label) {
+    const labelMap = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl','Даль':'far','Компьютер':'comp','Близь':'near'};
+    const rxType = labelMap[o.prescription_label] || '';
+    if(rxType) selVal = o.examination_id + '|' + rxType;
+  }
 
   openModal(`<div class="modal modal-xl">
     <div class="modal-header"><span class="modal-title">${isEdit?(t('edit_order')||'Uredi porudžbinu'):(t('new_order')||'Nova porudžbina')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
@@ -217,8 +247,8 @@ function _drawOrderForm(o, prePatient, patients, exams){
 
         <div class="form-group full">
           <div class="flex items-center justify-between mb-4"><label>${t("prescription")||"Recept"}</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ Recept</button></div>
-          <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams, o?.examination_id&&o?.prescription_label?o.examination_id+'|'+(o.prescription_label==='Даль'?'far':o.prescription_label==='Компьютер'?'comp':o.prescription_label==='Близь'?'near':'cl'):'')}</select>
-          <div id="o-rx-preview" style="margin-top:6px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:6px 10px;display:none"></div>
+          <select id="o-rx" onchange="showRxPreview(this.value)">${_rxOpts(exams, selVal)}</select>
+          <div id="o-rx-preview" style="margin-top:8px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:8px 12px;display:none;line-height:1.8"></div>
           <div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">
             <div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">Brzi unos recepta</div>
             <div class="form-grid">
@@ -320,6 +350,9 @@ function _drawOrderForm(o, prePatient, patients, exams){
       <button class="btn btn-accent" onclick="saveOrder('${o?.id||''}')">${t("save")||"Sačuvaj"}</button>
     </div>
   </div>`);
+
+  // Если есть выбранный рецепт — сразу показываем превью
+  if(selVal) setTimeout(()=>showRxPreview(selVal), 100);
 }
 
 function onOrderTypeChange(type){
@@ -413,27 +446,56 @@ async function saveQuickRx(){
 }
 async function onOrderPatientChange(pid){
   if(!pid)return;
-  const{data:exams}=await db.from('examinations')
-    .select('id,visit_number,created_at,rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,rx_far_os_pd,rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_comp_od_sph,rx_comp_od_cyl,rx_comp_od_ax,rx_comp_od_pd,rx_comp_od_add,rx_comp_os_sph,rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,rx_near_os_sph,rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_os_sph')
+  const{data:exams}=await db.from('examinations').select(RX_SELECT_FIELDS)
     .eq('patient_id',pid).order('created_at',{ascending:false});
   (exams||[]).forEach(e=>{window._examCache[e.id]=e;});
   document.getElementById('o-rx').innerHTML=_rxOpts(exams||[]);
+  document.getElementById('o-rx-preview').style.display='none';
 }
 async function showRxPreview(val){
   const prev=document.getElementById('o-rx-preview');
   if(!val){prev.style.display='none';return;}
   const[examId,type]=val.split('|');
   let e=window._examCache?.[examId];
-  if(!e){const{data:ed}=await db.from('examinations').select('*').eq('id',examId).single();e=ed;}
-  if(!e){prev.style.display='none';return;}
-  const fieldMap={far:['rx_far_od_sph','rx_far_od_cyl','rx_far_od_ax','rx_far_od_pd','rx_far_os_sph','rx_far_os_cyl','rx_far_os_ax'],comp:['rx_comp_od_sph','rx_comp_od_cyl','rx_comp_od_ax','rx_comp_od_pd','rx_comp_os_sph','rx_comp_os_cyl','rx_comp_os_ax'],near:['rx_near_od_sph','rx_near_od_cyl','rx_near_od_ax','rx_near_od_pd','rx_near_os_sph','rx_near_os_cyl','rx_near_os_ax']};
-  if(type==='cl'){
-    prev.innerHTML='<b>KS:</b> OD: '+(e.rx_cl_od_sph||'—')+' / '+(e.rx_cl_od_cyl||'')+' ax'+(e.rx_cl_od_ax||'')+' BC'+(e.rx_cl_od_bc||'')+' DIA'+(e.rx_cl_od_dia||'')+'<br>OS: '+(e.rx_cl_os_sph||'—')+' · '+(e.rx_cl_od_type||'');
-    prev.style.display='block';return;
+  if(!e){
+    const{data:ed}=await db.from('examinations').select(RX_SELECT_FIELDS).eq('id',examId).single();
+    e=ed;
+    if(e) window._examCache[e.id]=e;
   }
-  const f=fieldMap[type];if(!f){prev.style.display='none';return;}
-  prev.innerHTML='OD: <b>'+(e[f[0]]||'—')+'</b> / '+(e[f[1]]||'')+' ax'+(e[f[2]]||'')+' PD'+(e[f[3]]||'')+'<br>OS: <b>'+(e[f[4]]||'—')+'</b> / '+(e[f[5]]||'')+' ax'+(e[f[6]]||'');
-  prev.style.display='block';
+  if(!e){prev.style.display='none';return;}
+
+  const row = (eye, sph, cyl, ax) => {
+    let s = `<b>${eye}:</b> ${sph||'—'}`;
+    if(cyl) s += ' / ' + cyl;
+    if(ax)  s += ' ax' + ax;
+    return s;
+  };
+
+  let html = '';
+  if(type==='far') {
+    html = row('OD', e.rx_far_od_sph, e.rx_far_od_cyl, e.rx_far_od_ax) + ' &nbsp; ' +
+           row('OS', e.rx_far_os_sph, e.rx_far_os_cyl, e.rx_far_os_ax);
+    if(e.rx_far_od_pd)  html += ' &nbsp; <b>PD:</b> ' + e.rx_far_od_pd;
+    if(e.rx_far_os_pd)  html += ' &nbsp; <b>ADD:</b> ' + e.rx_far_os_pd;
+  } else if(type==='comp') {
+    html = row('OD', e.rx_comp_od_sph, e.rx_comp_od_cyl, e.rx_comp_od_ax) + ' &nbsp; ' +
+           row('OS', e.rx_comp_os_sph, e.rx_comp_os_cyl, e.rx_comp_os_ax);
+    if(e.rx_comp_od_pd)  html += ' &nbsp; <b>PD:</b> '  + e.rx_comp_od_pd;
+    if(e.rx_comp_od_add) html += ' &nbsp; <b>ADD:</b> ' + e.rx_comp_od_add;
+  } else if(type==='near') {
+    html = row('OD', e.rx_near_od_sph, e.rx_near_od_cyl, e.rx_near_od_ax) + ' &nbsp; ' +
+           row('OS', e.rx_near_os_sph, e.rx_near_os_cyl, e.rx_near_os_ax);
+    if(e.rx_near_od_pd)  html += ' &nbsp; <b>PD:</b> '   + e.rx_near_od_pd;
+    if(e.rx_near_od_add) html += ' &nbsp; <b>Degr:</b> ' + e.rx_near_od_add;
+  } else if(type==='cl') {
+    html = row('OD', e.rx_cl_od_sph, e.rx_cl_od_cyl, e.rx_cl_od_ax) + ' &nbsp; ' +
+           row('OS', e.rx_cl_os_sph, e.rx_cl_os_cyl, e.rx_cl_os_ax);
+    if(e.rx_cl_od_bc)   html += ' &nbsp; <b>BC:</b> '  + e.rx_cl_od_bc;
+    if(e.rx_cl_od_dia)  html += ' &nbsp; <b>DIA:</b> ' + e.rx_cl_od_dia;
+    if(e.rx_cl_od_type) html += ' &nbsp; ' + e.rx_cl_od_type;
+  }
+  prev.innerHTML = html;
+  prev.style.display = html ? 'block' : 'none';
 }
 function recalcOrder(){
   const fBase=+document.getElementById('o-fprice')?.value||0;

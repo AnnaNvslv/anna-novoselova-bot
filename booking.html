@@ -9,17 +9,28 @@
 :root{--p:#1B4F72;--a:#0891b2;--g:#047857;--gl:#d1fae5;--bg:#EFF4F8;--s:#fff;--b:#e2e8f0;--t:#1a202c;--tm:#64748b;--r:14px;--sh:0 2px 14px rgba(0,0,0,.08)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--t);font-size:16px;min-height:100vh}
-.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:10px 16px 10px}
-.hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.hdr-info{flex:1;min-width:0}
-.hdr h1{font-size:15px;font-weight:700;margin-bottom:2px;line-height:1.3}
-.hdr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px}
-.hdr-meta a{color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
-.hdr-meta a:hover{color:#fff}
-.hdr-meta .sep{color:rgba(255,255,255,.35);font-size:11px}
-.lang-sw{display:flex;gap:4px;flex-shrink:0;align-self:flex-start}
-.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 9px;cursor:pointer;font-family:inherit}
-.lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
+
+/* ═══ HEADER ═══ */
+.hdr{background:linear-gradient(135deg,#0d2640 0%,#1a4a7a 50%,#0891b2 100%);color:#fff;padding:18px 20px 16px;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,.04);border-radius:50%}
+.hdr::after{content:'';position:absolute;bottom:-60px;left:-20px;width:200px;height:200px;background:rgba(255,255,255,.03);border-radius:50%}
+.hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative}
+.hdr-main{flex:1;min-width:0}
+.hdr-name{font-size:20px;font-weight:800;line-height:1.2;letter-spacing:-.3px;margin-bottom:2px}
+.hdr-role{font-size:13px;font-weight:500;color:rgba(255,255,255,.65);margin-bottom:14px;letter-spacing:.2px}
+.hdr-links{display:flex;flex-wrap:wrap;gap:8px;position:relative}
+.hdr-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:30px;font-size:13px;font-weight:600;text-decoration:none;transition:all .15s;border:1.5px solid transparent;white-space:nowrap}
+.hdr-pill-map{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.9)}
+.hdr-pill-map:hover{background:rgba(255,255,255,.2);color:#fff}
+.hdr-pill-tg{background:#2AABEE;border-color:rgba(255,255,255,.2);color:#fff}
+.hdr-pill-tg:hover{background:#1d9bd6;color:#fff}
+.hdr-pill-channel{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.9)}
+.hdr-pill-channel:hover{background:rgba(255,255,255,.2);color:#fff}
+.hdr-pill svg{flex-shrink:0}
+.lang-sw{display:flex;gap:4px;flex-shrink:0}
+.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.35);border-radius:7px;color:rgba(255,255,255,.65);font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.lang-sw button.act{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.7)}
+
 .pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
 .pg.on{display:block}
 .card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:12px}
@@ -86,9 +97,10 @@ textarea{resize:none;min-height:80px}
 .disc-block h3{color:#991b1b}.disc-warn h3{color:#92400e}
 .disc p{color:#374151;margin-bottom:6px}.disc a{color:var(--a);font-weight:600}
 @media(max-width:600px){
-  .hdr{padding:8px 12px}
-  .hdr h1{font-size:13px}
-  .hdr-meta a,.hdr-meta .sep{font-size:11px}
+  .hdr{padding:14px 16px 14px}
+  .hdr-name{font-size:17px}
+  .hdr-role{font-size:12px;margin-bottom:12px}
+  .hdr-pill{font-size:12px;padding:6px 11px}
   .pg{padding:12px 12px 60px}
   .card{padding:14px;margin-bottom:10px}
   input,select,textarea{font-size:16px}
@@ -101,15 +113,23 @@ textarea{resize:none;min-height:80px}
 <body>
 
 <div class="hdr">
-  <div class="hdr-inner">
-    <div class="hdr-info">
-      <h1 id="hdr-title">Запись на приём к оптометристу Анне Новосёловой</h1>
-      <div class="hdr-meta">
-        <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" target="_blank">📍 Trg Republike 25, Novi Sad</a>
-        <span class="sep">·</span>
-        <a href="https://t.me/AnnaNvslv" target="_blank">✈️ @AnnaNvslv</a>
-        <span class="sep">·</span>
-        <a href="https://t.me/optometrist_anna_ns" target="_blank" id="hdr-channel-link">📢 <span id="hdr-channel-text">Канал</span></a>
+  <div class="hdr-top">
+    <div class="hdr-main">
+      <div class="hdr-name" id="hdr-title">Запись на приём к оптометристу Анне Новосёловой</div>
+      <div class="hdr-role">Optika Ginter · Trg Republike 25, Novi Sad</div>
+      <div class="hdr-links">
+        <a class="hdr-pill hdr-pill-map" href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Карта
+        </a>
+        <a class="hdr-pill hdr-pill-tg" href="https://t.me/AnnaNvslv" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.28 13.4l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.868.159z"/></svg>
+          <span id="hdr-write-label">Написать Анне</span>
+        </a>
+        <a class="hdr-pill hdr-pill-channel" href="https://t.me/optometrist_anna_ns" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.28 13.4l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.868.159z"/></svg>
+          <span id="hdr-channel-text">Канал</span>
+        </a>
       </div>
     </div>
     <div class="lang-sw"><button id="btn-ru" class="act" onclick="setLang('ru')">RU</button><button id="btn-sr" onclick="setLang('sr')">SR</button></div>
@@ -360,6 +380,7 @@ const REASONS={
 const BK={
   ru:{
     hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',
+    hdrWriteLabel:'Написать Анне',
     hdrChannel:'Канал',
     step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',
     reason:'Причина обращения',contacts:'Контактные данные',
@@ -405,6 +426,7 @@ const BK={
   },
   sr:{
     hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',
+    hdrWriteLabel:'Pisati Ani',
     hdrChannel:'Kanal',
     step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',
     reason:'Razlog dolaska',contacts:'Kontaktni podaci',
@@ -486,6 +508,7 @@ function applyLang(){
   const s=function(id,v){const e=document.getElementById(id);if(e)e.textContent=v;};
   const h=function(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;};
   s('hdr-title',T('hdrTitle'));
+  s('hdr-write-label',T('hdrWriteLabel'));
   s('hdr-channel-text',T('hdrChannel'));
   s('step1-title',T('step1'));
   s('step1-sub',T('step1sub'));

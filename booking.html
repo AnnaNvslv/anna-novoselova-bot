@@ -9,11 +9,11 @@
 :root{--p:#1B4F72;--a:#0891b2;--g:#047857;--gl:#d1fae5;--bg:#EFF4F8;--s:#fff;--b:#e2e8f0;--t:#1a202c;--tm:#64748b;--r:14px;--sh:0 2px 14px rgba(0,0,0,.08)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--t);font-size:16px;min-height:100vh}
-.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:10px 16px 10px;position:relative}
+.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:10px 16px 10px}
 .hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .hdr-info{flex:1;min-width:0}
 .hdr h1{font-size:15px;font-weight:700;margin-bottom:2px;line-height:1.3}
-.hdr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:4px}
+.hdr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:4px}
 .hdr-meta a{color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .hdr-meta a:hover{color:#fff}
 .hdr-meta .sep{color:rgba(255,255,255,.35);font-size:11px}
@@ -22,14 +22,6 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
 .pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
 .pg.on{display:block}
-.steps{display:flex;align-items:center;padding:14px 4px;gap:0}
-.st{display:flex;align-items:center;flex:1}
-.st-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.st-dot.done{background:var(--g);color:#fff}
-.st-dot.curr{background:var(--a);color:#fff}
-.st-dot.idle{background:var(--b);color:var(--tm)}
-.st-line{flex:1;height:2px;background:var(--b)}
-.st-line.done{background:var(--g)}
 .card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:12px}
 .card-title{font-size:15px;font-weight:700;color:var(--p);margin-bottom:14px}
 .type-card{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:10px;cursor:pointer;border:2px solid transparent;transition:all .15s;display:flex;align-items:flex-start;gap:14px}
@@ -38,7 +30,7 @@ body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--
 .type-icon{font-size:28px;flex-shrink:0;margin-top:2px}
 .type-name{font-size:15px;font-weight:700;margin-bottom:3px}
 .type-sub{font-size:13px;color:var(--tm);margin-bottom:6px;line-height:1.4}
-.type-meta{display:flex;gap:10px}
+.type-meta{display:flex;gap:10px;flex-wrap:wrap}
 .type-dur,.type-price{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:20px}
 .type-dur{background:#e0f2fe;color:#0369a1}
 .type-price{background:var(--gl);color:var(--g)}
@@ -76,26 +68,16 @@ textarea{resize:none;min-height:80px}
 .chip{padding:7px 13px;border:1.5px solid var(--b);border-radius:20px;font-size:14px;cursor:pointer;background:#fff;transition:all .15s;user-select:none;font-family:inherit;line-height:1.3}
 .chip:hover{border-color:var(--a)}
 .chip.on{background:var(--a);color:#fff;border-color:var(--a)}
-.con{display:flex;gap:10px;align-items:flex-start;padding:12px;background:#f8fafc;border-radius:9px;border:1.5px solid var(--b);margin-bottom:9px;cursor:pointer;text-decoration:none}
-.con input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:var(--a)}
-.con span{font-size:13.5px;color:var(--tm);line-height:1.5}
 .btn-next{width:100%;padding:15px;background:var(--a);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
 .btn-next:hover{background:var(--p)}
 .btn-next:disabled{background:#94a3b8;cursor:not-allowed}
-.btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
+.btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0;display:block}
 .conf-icon{font-size:64px;text-align:center;margin:16px 0 10px}
 .conf-title{font-size:22px;font-weight:800;color:var(--p);text-align:center;margin-bottom:6px}
 .conf-sub{font-size:14px;color:var(--tm);text-align:center;line-height:1.6;margin-bottom:16px}
-.conf-box{background:var(--gl);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.conf-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:14px}
-.conf-row:last-child{border-bottom:none}
-.conf-row .l{color:var(--tm)}
-.conf-row .v{font-weight:700}
 .tgbox{background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:var(--r);padding:16px;text-align:center;margin-bottom:12px}
 .tgbox p{font-size:14px;color:#1e40af;line-height:1.6;margin-bottom:10px}
 .tg-link{display:inline-flex;align-items:center;gap:8px;background:#2AABEE;color:#fff;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;text-decoration:none}
-.spin{text-align:center;padding:40px;color:var(--tm)}
-.sep{height:1px;background:var(--b);margin:14px 0}
 .hint{font-size:12.5px;color:var(--tm);margin-top:4px}
 .disc{border-radius:12px;padding:16px;margin:0 0 14px;font-size:14px;line-height:1.6}
 .disc-block{background:#fff1f2;border:2px solid #fca5a5}
@@ -104,9 +86,9 @@ textarea{resize:none;min-height:80px}
 .disc-block h3{color:#991b1b}.disc-warn h3{color:#92400e}
 .disc p{color:#374151;margin-bottom:6px}.disc a{color:var(--a);font-weight:600}
 @media(max-width:600px){
-  .hdr{padding:8px 12px 8px}
+  .hdr{padding:8px 12px}
   .hdr h1{font-size:13px}
-  .hdr-meta a{font-size:11px}
+  .hdr-meta a,.hdr-meta .sep{font-size:11px}
   .pg{padding:12px 12px 60px}
   .card{padding:14px;margin-bottom:10px}
   input,select,textarea{font-size:16px}
@@ -127,7 +109,7 @@ textarea{resize:none;min-height:80px}
         <span class="sep">·</span>
         <a href="https://t.me/AnnaNvslv" target="_blank">✈️ @AnnaNvslv</a>
         <span class="sep">·</span>
-        <a href="https://t.me/optometrist_anna_ns" target="_blank">📢 Канал</a>
+        <a href="https://t.me/optometrist_anna_ns" target="_blank" id="hdr-channel-link">📢 <span id="hdr-channel-text">Канал</span></a>
       </div>
     </div>
     <div class="lang-sw"><button id="btn-ru" class="act" onclick="setLang('ru')">RU</button><button id="btn-sr" onclick="setLang('sr')">SR</button></div>
@@ -145,7 +127,7 @@ textarea{resize:none;min-height:80px}
 
 <!-- PAGE: CALENDAR -->
 <div class="pg" id="pg-cal">
-  <button class="btn-back" id="back-from-cal" onclick="goPage('type')">&#8249; Назад</button>
+  <button class="btn-back" id="back-from-cal" onclick="goPage('type')">← Назад</button>
   <div id="type-sel-sum"></div>
   <div class="card" style="padding:16px">
     <div class="cal-nav">
@@ -153,7 +135,7 @@ textarea{resize:none;min-height:80px}
       <h3 id="cal-label"></h3>
       <button class="cal-nav-btn" onclick="calMove(1)">&#8250;</button>
     </div>
-    <div class="cal-grid" id="cal-days-header">
+    <div class="cal-grid">
       <div class="cal-head" id="dh0">Пн</div><div class="cal-head" id="dh1">Вт</div><div class="cal-head" id="dh2">Ср</div>
       <div class="cal-head" id="dh3">Чт</div><div class="cal-head" id="dh4">Пт</div><div class="cal-head" id="dh5">Сб</div>
       <div class="cal-head" id="dh6">Вс</div>
@@ -165,13 +147,13 @@ textarea{resize:none;min-height:80px}
       <div class="times-title" id="times-title"></div>
       <div class="times-grid" id="times-grid"></div>
     </div>
-    <button class="btn-next" id="btn-to-form" onclick="goPage('form')" disabled>Далее — заполнить анкету &#8594;</button>
+    <button class="btn-next" id="btn-to-form" onclick="goPage('form')" disabled>Далее — заполнить анкету →</button>
   </div>
 </div>
 
 <!-- PAGE: FORM -->
 <div class="pg" id="pg-form">
-  <button class="btn-back" id="back-from-form" onclick="goPage('cal')">&#8249; Назад к расписанию</button>
+  <button class="btn-back" id="back-from-form" onclick="goPage('cal')">← Назад к расписанию</button>
   <div id="form-slot-sum"></div>
 
   <div class="card">
@@ -201,7 +183,7 @@ textarea{resize:none;min-height:80px}
     </div>
     <div id="age-disc-17" class="disc disc-warn" style="display:none">
       <h3 id="ad17-title">⚠️ Важно для пациентов от 10 до 17 лет</h3>
-      <p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам настоятельно рекомендуется обследование у офтальмолога с циклоплегией. По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p>
+      <p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев).</p>
       <p id="ad17-check" style="font-size:13.5px;color:#92400e;font-weight:600;margin-top:8px">Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.</p>
     </div>
     <div class="fg">
@@ -234,8 +216,8 @@ textarea{resize:none;min-height:80px}
   </div>
 
   <div class="card">
-    <div class="card-title" id="rc-diop">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)" id="rc-diop-hint">(если знаете, примерно)</span></div>
-    <input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0" id="ph-diop">
+    <div class="card-title" id="rc-diop">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)">(если знаете, примерно)</span></div>
+    <input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0">
   </div>
 
   <div class="card">
@@ -246,7 +228,7 @@ textarea{resize:none;min-height:80px}
       <div class="chip" onclick="tog(this)" data-ru="Косоглазие" data-sr="Razrokost">Косоглазие</div>
       <div class="chip" onclick="tog(this)" data-ru="Амблиопия" data-sr="Ambliопija">Амблиопия</div>
       <div class="chip" onclick="tog(this)" data-ru="Заболевания сетчатки" data-sr="Bolesti mrežnjače">Заболевания сетчатки</div>
-      <div class="chip" onclick="tog(this)" data-ru="Макулодистрофия" data-sr="Makularна degeneracija">Макулодистрофия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Макулодистрофия" data-sr="Makularna degeneracija">Макулодистрофия</div>
       <div class="chip" onclick="tog(this)" data-ru="Кератоконус" data-sr="Keratokonus">Кератоконус</div>
       <div class="chip" onclick="tog(this)" data-ru="Синдром сухого глаза" data-sr="Sindrom suvog oka">Синдром сухого глаза</div>
       <div class="chip" onclick="tog(this)" data-ru="Частые воспаления (конъюктивит, блефарит)" data-sr="Česte upale (konjunktivitis, blefaritis)">Частые воспаления (конъюктивит, блефарит)</div>
@@ -301,15 +283,15 @@ textarea{resize:none;min-height:80px}
   </div>
 
   <div class="card">
-    <div class="card-title" id="rc-promo">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)" id="rc-promo-hint">(если есть)</span></div>
+    <div class="card-title" id="rc-promo">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)">(если есть)</span></div>
     <input id="f-promo" type="text" placeholder="Введите промокод">
   </div>
 
   <div style="font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;padding:0 4px;margin-top:8px" id="consent-text">
-    Нажимая кнопку «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.
+    Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.
   </div>
 
-  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться &#8594;</button>
+  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться →</button>
 </div>
 
 <!-- PAGE: CONFIRM -->
@@ -321,63 +303,58 @@ textarea{resize:none;min-height:80px}
   <div class="card" style="font-size:13px;color:var(--tm);text-align:center;line-height:1.7">
     <b id="addr-label">Адрес:</b> Trg Republike 25<br>
     <span id="addr-note">(Riblja pijaca, Noćni bazar)</span><br>
-    <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" style="color:var(--a);text-decoration:none">&#128205; <span id="map-link-text">Открыть на карте</span></a>
+    <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" style="color:var(--a);text-decoration:none">📍 <span id="map-link-text">Открыть на карте</span></a>
   </div>
 </div>
 
 <script>
-
-// ═══ I18N ═══
 let _lang='ru';
 
-// Причины обращения по типу приёма
 const REASONS={
-  ru:{
-    primary:[
-      {t:'Плановая проверка зрения',s:'Planska provera vida'},
-      {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
-      {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
-      {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
-      {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
-      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
-      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
-      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
-      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
-      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
-      {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
-    ],
-    repeat:[
-      {t:'Плановая проверка зрения',s:'Planska provera vida'},
-      {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
-      {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
-      {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
-      {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
-      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
-      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
-      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
-      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
-      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
-      {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
-    ],
-    cl:[
-      {t:'Плановая проверка зрения',s:'Planska provera vida'},
-      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
-      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
-      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
-      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
-    ],
-    consult:[
-      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
-      {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
-      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
-      {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
-    ],
-    help:[
-      {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
-      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
-      {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
-    ],
-  }
+  primary:[
+    {t:'Плановая проверка зрения',s:'Planska provera vida'},
+    {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
+    {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
+    {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
+    {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
+    {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+    {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+    {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+    {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+    {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+    {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
+  ],
+  repeat:[
+    {t:'Плановая проверка зрения',s:'Planska provera vida'},
+    {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
+    {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
+    {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
+    {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
+    {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+    {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+    {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+    {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+    {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+    {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
+  ],
+  cl:[
+    {t:'Плановая проверка зрения',s:'Planska provera vida'},
+    {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+    {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+    {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+    {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+  ],
+  consult:[
+    {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+    {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
+    {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+    {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
+  ],
+  help:[
+    {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
+    {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+    {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
+  ],
 };
 
 const BK={
@@ -385,7 +362,6 @@ const BK={
     hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',
     hdrChannel:'Канал',
     step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',
-    step2:'Шаг 2 из 3',step3:'Шаг 3 из 3',
     reason:'Причина обращения',contacts:'Контактные данные',
     complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',
     diop:'Диоптрии',diopHint:'(если знаете, примерно)',
@@ -416,27 +392,21 @@ const BK={
     days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
     daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
     chooseTime:'Выберите время — ',
-    phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация, которую хотите передать заранее...',
-    phPromo:'Введите промокод',
-    errReason:'Пожалуйста, укажите причину обращения',
-    errTg:'Пожалуйста, укажите Telegram username',
-    errName:'Пожалуйста, введите ваше имя',
-    errDob:'Пожалуйста, укажите дату рождения',
+    phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация, которую хотите передать заранее...',phPromo:'Введите промокод',
+    errReason:'Пожалуйста, укажите причину обращения',errTg:'Пожалуйста, укажите Telegram username',
+    errName:'Пожалуйста, введите ваше имя',errDob:'Пожалуйста, укажите дату рождения',
     errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',
     errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',
     errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',
     errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',
     errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',
-    errSlot:'Слот уже занят. Выберите другое время.',
-    errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',
+    errSlot:'Слот уже занят. Выберите другое время.',errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',
     errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv',
-    min:'минут',free:'Бесплатно',din:'дин.',
   },
   sr:{
     hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',
     hdrChannel:'Kanal',
     step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',
-    step2:'Korak 2 od 3',step3:'Korak 3 od 3',
     reason:'Razlog dolaska',contacts:'Kontaktni podaci',
     complaints:'Tegobe',correction:'Da li koristite korekciju vida?',
     diop:'Dioptrija',diopHint:'(ako znate, otprilike)',
@@ -467,27 +437,22 @@ const BK={
     days:['Ne','Po','Ut','Sr','Če','Pe','Su'],
     daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],
     chooseTime:'Izaberite vreme — ',
-    phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija koju želite unapred da saopštite...',
-    phPromo:'Unesite promo kod',
-    errReason:'Molimo navedite razlog dolaska',
-    errTg:'Molimo navedite Telegram korisničko ime',
-    errName:'Molimo unesite vaše ime',
-    errDob:'Molimo navedite datum rođenja',
+    phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija koju želite unapred da saopštite...',phPromo:'Unesite promo kod',
+    errReason:'Molimo navedite razlog dolaska',errTg:'Molimo navedite Telegram korisničko ime',
+    errName:'Molimo unesite vaše ime',errDob:'Molimo navedite datum rođenja',
     errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',
     errCorrection:'Molimo navedite da li koristite korekciju vida',
     errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',
     errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',
     errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',
-    errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',
-    errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',
+    errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',
     errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv',
-    min:'minuta',free:'Besplatno',din:'din.',
   }
 };
 
 const TYPES_DATA=[
   {id:'primary',icon:'👁',
-    ru:{name:'Проверka зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},
+    ru:{name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},
     sr:{name:'Provera vida, izbor naočara / KS',sub:'Primarni pregled',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},
     consult:3000},
   {id:'repeat',icon:'🔄',
@@ -518,123 +483,79 @@ function setLang(lang){
 }
 
 function applyLang(){
-  // Header
-  document.getElementById('hdr-title').textContent=T('hdrTitle');
-  document.getElementById('hdr-channel-text').textContent=T('hdrChannel');
-  // Step 1
-  document.getElementById('step1-title').textContent=T('step1');
-  document.getElementById('step1-sub').textContent=T('step1sub');
-  // Re-render types in new language
+  const s=function(id,v){const e=document.getElementById(id);if(e)e.textContent=v;};
+  const h=function(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;};
+  s('hdr-title',T('hdrTitle'));
+  s('hdr-channel-text',T('hdrChannel'));
+  s('step1-title',T('step1'));
+  s('step1-sub',T('step1sub'));
   renderTypes();
-  // Calendar back btn
-  const bc=document.getElementById('back-from-cal');if(bc)bc.textContent=T('back');
-  const bf=document.getElementById('back-from-form');if(bf)bf.textContent=T('backCal');
-  // btn-to-form
-  const btf=document.getElementById('btn-to-form');
-  if(btf)btf.textContent=btf.disabled?T('nextForm'):T('nextForm');
-  // submit
-  const sb=document.getElementById('submit-btn');
-  if(sb&&!sb.disabled)sb.textContent=T('submit');
-  // Card titles
-  const rc=document.getElementById('rc-reason-title');if(rc)rc.innerHTML=T('reason')+' <span class="req">*</span>';
-  const cc=document.getElementById('rc-contacts');if(cc)cc.textContent=T('contacts');
-  const cm=document.getElementById('rc-complaints');if(cm)cm.innerHTML=T('complaints')+' <span class="req">*</span>';
-  const cor=document.getElementById('rc-correction');if(cor)cor.innerHTML=T('correction')+' <span class="req">*</span>';
-  const rd=document.getElementById('rc-diop');if(rd)rd.innerHTML=T('diop')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('diopHint')+'</span>';
-  const re=document.getElementById('rc-eye');if(re)re.innerHTML=T('eye')+' <span class="req">*</span>';
-  const rg=document.getElementById('rc-general');if(rg)rg.innerHTML=T('general')+' <span class="req">*</span>';
-  const rl=document.getElementById('rc-loads');if(rl)rl.innerHTML=T('loads')+' <span class="req">*</span>';
-  const rn=document.getElementById('rc-notes');if(rn)rn.textContent=T('notes');
-  const rs=document.getElementById('rc-source');if(rs)rs.textContent=T('source');
-  const rp=document.getElementById('rc-promo');if(rp)rp.innerHTML=T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>';
-  // Labels
-  const lt=document.getElementById('lbl-tg');if(lt)lt.innerHTML=T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>';
-  const ln=document.getElementById('lbl-name');if(ln)ln.innerHTML=T('lblName')+' <span class="req">*</span>';
-  const ld=document.getElementById('lbl-dob');if(ld)ld.innerHTML=T('lblDob')+' <span class="req">*</span>';
-  const lp=document.getElementById('lbl-phone');if(lp)lp.innerHTML=T('lblPhone')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'nije obavezno':'необязательно')+')</span>';
-  const hn=document.getElementById('hint-name');if(hn)hn.textContent=T('hintName');
-  // Age disclaimers
-  document.getElementById('ad10-title').textContent=T('ad10t');
-  document.getElementById('ad10-text').textContent=T('ad10');
-  document.getElementById('ad17-title').textContent=T('ad17t');
-  document.getElementById('ad17-text').textContent=T('ad17');
-  const ac=document.getElementById('ad17-check');if(ac)ac.textContent=T('ad17check');
-  // Chips translate
-  document.querySelectorAll('.chip[data-ru]').forEach(c=>{
-    c.textContent=_lang==='sr'?(c.dataset.sr||c.dataset.ru):c.dataset.ru;
-  });
-  // Source select
+  s('back-from-cal',T('back'));
+  s('back-from-form',T('backCal'));
+  const btf=document.getElementById('btn-to-form');if(btf)btf.textContent=T('nextForm');
+  const sb=document.getElementById('submit-btn');if(sb&&!sb.disabled)sb.textContent=T('submit');
+  h('rc-reason-title',T('reason')+' <span class="req">*</span>');
+  s('rc-contacts',T('contacts'));
+  h('rc-complaints',T('complaints')+' <span class="req">*</span>');
+  h('rc-correction',T('correction')+' <span class="req">*</span>');
+  h('rc-diop',T('diop')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('diopHint')+'</span>');
+  h('rc-eye',T('eye')+' <span class="req">*</span>');
+  h('rc-general',T('general')+' <span class="req">*</span>');
+  h('rc-loads',T('loads')+' <span class="req">*</span>');
+  s('rc-notes',T('notes'));s('rc-source',T('source'));
+  h('rc-promo',T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>');
+  h('lbl-tg',T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>');
+  h('lbl-name',T('lblName')+' <span class="req">*</span>');
+  h('lbl-dob',T('lblDob')+' <span class="req">*</span>');
+  h('lbl-phone',T('lblPhone')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'nije obavezno':'необязательно')+')</span>');
+  s('hint-name',T('hintName'));
+  s('ad10-title',T('ad10t'));s('ad10-text',T('ad10'));
+  s('ad17-title',T('ad17t'));s('ad17-text',T('ad17'));s('ad17-check',T('ad17check'));
+  document.querySelectorAll('.chip[data-ru]').forEach(c=>{c.textContent=_lang==='sr'?(c.dataset.sr||c.dataset.ru):c.dataset.ru;});
   const sel=document.getElementById('f-source');
-  if(sel){const cur=sel.value;sel.innerHTML=`<option value="">- ${T('srcPlaceholder')} -</option>`+T('srcOpts').map(o=>`<option value="${o}">${o}</option>`).join('');sel.value=cur;}
-  // Placeholders
+  if(sel){const cur=sel.value;sel.innerHTML='<option value="">'+T('srcPlaceholder')+'</option>'+T('srcOpts').map(o=>'<option value="'+o+'">'+o+'</option>').join('');sel.value=cur;}
   const pd=document.getElementById('f-diop');if(pd)pd.placeholder=T('phDiop');
   const pn=document.getElementById('f-notes');if(pn)pn.placeholder=T('phNotes');
   const pp=document.getElementById('f-promo');if(pp)pp.placeholder=T('phPromo');
-  // Consent
-  const ct=document.getElementById('consent-text');if(ct)ct.textContent=T('consent');
-  // Confirm page
-  const cti=document.getElementById('conf-title');if(cti)cti.textContent=T('confTitle');
-  const csu=document.getElementById('conf-sub');if(csu)csu.textContent=T('confSub');
-  const al=document.getElementById('addr-label');if(al)al.textContent=T('addrLabel');
-  const an=document.getElementById('addr-note');if(an)an.textContent=T('addrNote');
-  const ml=document.getElementById('map-link-text');if(ml)ml.textContent=T('mapLink');
-  // Calendar day headers
+  s('consent-text',T('consent'));
+  s('conf-title',T('confTitle'));s('conf-sub',T('confSub'));
+  s('addr-label',T('addrLabel'));s('addr-note',T('addrNote'));s('map-link-text',T('mapLink'));
   const days=T('days');
-  ['dh0','dh1','dh2','dh3','dh4','dh5','dh6'].forEach((id,i)=>{
-    // Mon-Sun order: Mon=index1, Tue=2, ... Sun=0 in JS
-    const jsDay=[1,2,3,4,5,6,0][i];
-    const el=document.getElementById(id);if(el)el.textContent=days[jsDay];
-  });
-  // re-render calendar label if shown
+  [['dh0',1],['dh1',2],['dh2',3],['dh3',4],['dh4',5],['dh5',6],['dh6',0]].forEach(([id,js])=>s(id,days[js]));
   if(calYear)renderCalendar();
-  // Re-render reasons if type selected
   if(selectedType)renderReasons();
-  // Re-render type-sel-sum and slot-sum labels
   if(selectedType)updateTypeSumLang();
   if(selectedSlot)updateSlotSumLang();
 }
 
 function updateTypeSumLang(){
   if(!selectedType)return;
-  const td=TYPES_DATA.find(t=>t.id===selectedType.id);
-  if(!td)return;
+  const td=TYPES_DATA.find(t=>t.id===selectedType.id);if(!td)return;
   const loc=td[_lang]||td.ru;
-  document.getElementById('type-sel-sum').innerHTML=`
-    <div class="sel-sum type-sum">
-      <div class="label">${T('selType')}</div>
-      <div class="value">${td.icon} ${loc.name}</div>
-      <div style="font-size:13px;color:var(--tm);margin-top:4px">${loc.dur} &nbsp;·&nbsp; ${loc.price}</div>
-    </div>`;
+  document.getElementById('type-sel-sum').innerHTML=
+    '<div class="sel-sum type-sum"><div class="label">'+T('selType')+'</div><div class="value">'+td.icon+' '+loc.name+'</div><div style="font-size:13px;color:var(--tm);margin-top:4px">'+loc.dur+' &nbsp;·&nbsp; '+loc.price+'</div></div>';
 }
 
 function updateSlotSumLang(){
   if(!selectedSlot||!selectedType)return;
-  const td=TYPES_DATA.find(t=>t.id===selectedType.id);
-  if(!td)return;
+  const td=TYPES_DATA.find(t=>t.id===selectedType.id);if(!td)return;
   const loc=td[_lang]||td.ru;
   const dt=new Date(selectedSlot.date+'T12:00:00');
-  const monthsG=T('monthsG');
-  const daysFull=T('daysFull');
-  const dateLabel=`${dt.getDate()} ${monthsG[dt.getMonth()]}, ${daysFull[dt.getDay()]}`;
-  document.getElementById('form-slot-sum').innerHTML=`
-    <div class="sel-sum slot-sum">
-      <div class="label">${T('selSlot')}</div>
-      <div class="value">📅 ${dateLabel}</div>
-      <div style="font-size:14px;opacity:.85;margin-top:3px">⏰ ${selectedSlot.time} &nbsp;·&nbsp; ${loc.dur} &nbsp;·&nbsp; ${loc.price}</div>
-    </div>`;
+  const mG=T('monthsG'),dF=T('daysFull');
+  const dl=dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()];
+  document.getElementById('form-slot-sum').innerHTML=
+    '<div class="sel-sum slot-sum"><div class="label">'+T('selSlot')+'</div><div class="value">📅 '+dl+'</div><div style="font-size:14px;opacity:.85;margin-top:3px">⏰ '+selectedSlot.time+' &nbsp;·&nbsp; '+loc.dur+' &nbsp;·&nbsp; '+loc.price+'</div></div>';
 }
 
-// ═══ REASONS ═══
 function renderReasons(){
   if(!selectedType)return;
-  const list=REASONS.ru[selectedType.id]||REASONS.ru.primary;
+  const list=REASONS[selectedType.id]||REASONS.primary;
   document.getElementById('ch-reason').innerHTML=list.map(r=>{
     const txt=_lang==='sr'?r.s:r.t;
-    return `<div class="chip" onclick="tog(this)" data-ru="${r.t}" data-sr="${r.s}">${txt}</div>`;
+    return '<div class="chip" onclick="tog(this)" data-ru="'+r.t+'" data-sr="'+r.s+'">'+txt+'</div>';
   }).join('');
 }
 
-// ═══ AGE CHECK ═══
 function calcAge(dob){
   if(!dob)return null;
   const b=new Date(dob),n=new Date();
@@ -644,66 +565,35 @@ function calcAge(dob){
 }
 function checkAge(dob){
   const age=calcAge(dob);
-  const d10=document.getElementById('age-disc-10');
-  const d17=document.getElementById('age-disc-17');
-  if(age!==null&&age<10){d10.style.display='block';d17.style.display='none';}
-  else if(age!==null&&age<18){d10.style.display='none';d17.style.display='block';}
-  else{d10.style.display='none';d17.style.display='none';}
-  updateSubmitBtn();
-}
-function updateSubmitBtn(){
-  const age=calcAge(v('f-dob'));
-  const btn=document.getElementById('submit-btn');if(!btn)return;
-  if(age!==null&&age<10){btn.disabled=true;return;}
-  btn.disabled=false;
+  document.getElementById('age-disc-10').style.display=(age!==null&&age<10)?'block':'none';
+  document.getElementById('age-disc-17').style.display=(age!==null&&age>=10&&age<18)?'block':'none';
+  const btn=document.getElementById('submit-btn');if(btn)btn.disabled=(age!==null&&age<10);
 }
 
-// ═══ CONFIG ═══
 const SB_URL='https://ncfqiznpilikwmpqhapb.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
 const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
 
-let selectedType=null;
-let selectedSlot=null;
-let selectedDateStr=null;
-let allSlots=[];
-let calYear=0;
-let calMonth=0;
-let botUsername='';
+let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='';
 
-// ═══ INIT ═══
 document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('f-dob').max=new Date().toISOString().split('T')[0];
   applyLang();
   renderTypes();
   const now=new Date();
   calYear=now.getFullYear();calMonth=now.getMonth();
-  try{
-    const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');
-    if(r&&r[0])botUsername=r[0].value;
-  }catch(e){}
+  try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');if(r&&r[0])botUsername=r[0].value;}catch(e){}
   const today=now.toISOString().split('T')[0];
   const future=new Date(now);future.setDate(future.getDate()+60);
   const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
   allSlots=slots||[];
 });
 
-// ═══ TYPES ═══
 function renderTypes(){
   document.getElementById('type-list').innerHTML=TYPES_DATA.map(t=>{
     const loc=t[_lang]||t.ru;
-    return `<div class="type-card" onclick="selectType('${t.id}')">
-      <div class="type-icon">${t.icon}</div>
-      <div style="flex:1">
-        <div class="type-name">${loc.name}</div>
-        <div class="type-sub">${loc.sub}</div>
-        <div class="type-meta">
-          <span class="type-dur">⏱ ${loc.dur}</span>
-          <span class="type-price">${loc.price}</span>
-        </div>
-      </div>
-    </div>`;
+    return '<div class="type-card" onclick="selectType(\''+t.id+'\')">'+'<div class="type-icon">'+t.icon+'</div>'+'<div style="flex:1"><div class="type-name">'+loc.name+'</div><div class="type-sub">'+loc.sub+'</div><div class="type-meta"><span class="type-dur">⏱ '+loc.dur+'</span><span class="type-price">'+loc.price+'</span></div></div></div>';
   }).join('');
 }
 
@@ -711,17 +601,12 @@ function selectType(id){
   selectedType=TYPES_DATA.find(t=>t.id===id);
   document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
   event.currentTarget.classList.add('sel');
-  updateTypeSumLang();
-  renderReasons();
-  renderCalendar();
-  goPage('cal');
+  updateTypeSumLang();renderReasons();renderCalendar();goPage('cal');
 }
 
-// ═══ CALENDAR ═══
 function calMove(dir){
   calMonth+=dir;
-  if(calMonth>11){calMonth=0;calYear++;}
-  if(calMonth<0){calMonth=11;calYear--;}
+  if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}
   renderCalendar();
   document.getElementById('times-section').style.display='none';
   selectedDateStr=null;selectedSlot=null;
@@ -730,48 +615,34 @@ function calMove(dir){
 
 function renderCalendar(){
   const today=new Date();today.setHours(0,0,0,0);
-  const months=T('months');
-  document.getElementById('cal-label').textContent=months[calMonth]+' '+calYear;
+  document.getElementById('cal-label').textContent=T('months')[calMonth]+' '+calYear;
   const firstDay=new Date(calYear,calMonth,1);
-  let startDow=firstDay.getDay();
-  if(startDow===0)startDow=7;
+  let startDow=firstDay.getDay();if(startDow===0)startDow=7;
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const availDates=new Set();
-  allSlots.forEach(s=>{
-    const d=new Date(s.date+'T12:00:00');
-    if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);
-  });
+  allSlots.forEach(s=>{const d=new Date(s.date+'T12:00:00');if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);});
   let html='';
-  for(let i=1;i<startDow;i++)html+=`<div class="cal-cell empty"></div>`;
+  for(let i=1;i<startDow;i++)html+='<div class="cal-cell empty"></div>';
   for(let d=1;d<=daysInMonth;d++){
-    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const dt=new Date(calYear,calMonth,d);
-    const isPast=dt<today;
-    const isAvail=availDates.has(dateStr)&&!isPast;
-    const isSel=dateStr===selectedDateStr;
+    const isPast=dt<today,isAvail=availDates.has(ds)&&!isPast,isSel=ds===selectedDateStr;
     let cls='cal-cell';
-    if(isPast)cls+=' past';
-    else if(isSel)cls+=' sel-day';
-    else if(isAvail)cls+=' avail';
-    const click=isAvail&&!isSel?`onclick="selectDate('${dateStr}')"`:'';
-    html+=`<div class="${cls}" ${click}>${d}</div>`;
+    if(isPast)cls+=' past';else if(isSel)cls+=' sel-day';else if(isAvail)cls+=' avail';
+    html+='<div class="'+cls+'"'+(isAvail&&!isSel?' onclick="selectDate(\''+ds+'\')"':'')+'>'+d+'</div>';
   }
   document.getElementById('cal-grid').innerHTML=html;
 }
 
 function selectDate(dateStr){
-  selectedDateStr=dateStr;
-  selectedSlot=null;
+  selectedDateStr=dateStr;selectedSlot=null;
   document.getElementById('btn-to-form').disabled=true;
   renderCalendar();
   const dt=new Date(dateStr+'T12:00:00');
-  const monthsG=T('monthsG');
-  const daysFull=T('daysFull');
-  const label=`${dt.getDate()} ${monthsG[dt.getMonth()]}, ${daysFull[dt.getDay()]}`;
-  document.getElementById('times-title').textContent=T('chooseTime')+label;
+  const mG=T('monthsG'),dF=T('daysFull');
+  document.getElementById('times-title').textContent=T('chooseTime')+dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()];
   const daySlots=allSlots.filter(s=>s.date===dateStr);
-  document.getElementById('times-grid').innerHTML=daySlots.map(s=>`
-    <button class="time-btn" onclick="selectTime(this,'${s.id}','${dateStr}','${(s.start_time||'').substr(0,5)}')">${(s.start_time||'').substr(0,5)}</button>`).join('');
+  document.getElementById('times-grid').innerHTML=daySlots.map(s=>'<button class="time-btn" onclick="selectTime(this,\''+s.id+'\',\''+dateStr+'\',\''+s.start_time.substr(0,5)+'\')">'+(s.start_time||'').substr(0,5)+'</button>').join('');
   document.getElementById('times-section').style.display='block';
   setTimeout(()=>document.getElementById('times-section').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
@@ -785,14 +656,13 @@ function selectTime(btn,id,date,time){
   document.getElementById('btn-to-form').textContent=T('nextForm');
 }
 
-// ═══ FORM ═══
 function tog(el){el.classList.toggle('on');}
 function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.dataset.ru||e.textContent);}
 function v(id){return(document.getElementById(id)?.value||'').trim();}
 
 async function submitBooking(){
   const tg=v('f-tg'),name=v('f-name'),dob=v('f-dob');
-  const age=calcAge(v('f-dob'));
+  const age=calcAge(dob);
   if(age!==null&&age<10){alert(T('errAge'));return;}
   if(!chips('ch-reason').length){alert(T('errReason'));return;}
   if(!tg){alert(T('errTg'));return;}
@@ -807,48 +677,29 @@ async function submitBooking(){
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;btn.textContent=T('submitting');
   try{
-    const{data:slotCheck}=await db.from('available_slots').select('is_booked,booked_by').eq('id',selectedSlot.id).single();
-    if(slotCheck?.is_booked){
-      alert(T('errSlot'));
-      btn.disabled=false;btn.textContent=T('submit');
-      goPage('cal');return;
-    }
+    const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
+    if(slotCheck?.is_booked){alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
     const{data:p,error:pe}=await db.from('patients').insert({
-      name,dob:dob||null,
-      phone:v('f-phone')||null,
-      telegram_username:tg||null,
-      visit_reason:chips('ch-reason'),
-      complaints:chips('ch-complaints'),
-      correction_types:chips('ch-correction'),
-      approx_diopters:v('f-diop')||null,
-      eye_diseases:chips('ch-eye'),
-      general_diseases:chips('ch-general'),
-      visual_loads:chips('ch-loads'),
-      pre_notes:v('f-notes')||null,
-      source:v('f-source')||null,
-      promo_code:v('f-promo')||null,
-      data_consent:true,
-      accuracy_consent:true,
-      is_first_visit:true,
+      name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,
+      visit_reason:chips('ch-reason'),complaints:chips('ch-complaints'),correction_types:chips('ch-correction'),
+      approx_diopters:v('f-diop')||null,eye_diseases:chips('ch-eye'),general_diseases:chips('ch-general'),
+      visual_loads:chips('ch-loads'),pre_notes:v('f-notes')||null,source:v('f-source')||null,
+      promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true,
     }).select().single();
     if(pe)throw pe;
     const num=await genNum(selectedSlot.date);
     const td=TYPES_DATA.find(t=>t.id===selectedType.id);
     const{data:a,error:ae}=await db.from('appointments').insert({
-      patient_id:p.id,slot_id:selectedSlot.id,
-      date:selectedSlot.date,time:selectedSlot.time,
-      type:td?.ru?.apptName||selectedType.id,
-      status:'запланирован',
-      appointment_number:num,
-      consultation_price:td?.consult||0,
+      patient_id:p.id,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,
+      type:td?.ru?.apptName||selectedType.id,status:'запланирован',
+      appointment_number:num,consultation_price:td?.consult||0,
     }).select().single();
     if(ae)throw ae;
     await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
     showConfirm(a.id);
   }catch(e){
-    console.error(e);
-    alert(T('errBook'));
+    console.error(e);alert(T('errBook'));
     btn.disabled=false;btn.textContent=T('submit');
   }
 }
@@ -875,12 +726,11 @@ async function notifyAnna(name,date,time,num,typeName){
 function showConfirm(apptId){
   const bot=botUsername?botUsername.replace('@',''):'';
   document.getElementById('tg-hint').innerHTML=bot
-    ?`<p>${T('tgPrompt')}</p><a class="tg-link" href="https://t.me/${bot}?start=appt_${apptId}" target="_blank">${T('tgBtn')}</a>`
-    :`<p>${T('tgFallback')}</p>`;
+    ?'<p>'+T('tgPrompt')+'</p><a class="tg-link" href="https://t.me/'+bot+'?start=appt_'+apptId+'" target="_blank">'+T('tgBtn')+'</a>'
+    :'<p>'+T('tgFallback')+'</p>';
   goPage('confirm');
 }
 
-// ═══ NAV ═══
 function goPage(n){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.getElementById('pg-'+n).classList.add('on');

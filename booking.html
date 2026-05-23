@@ -9,10 +9,17 @@
 :root{--p:#1B4F72;--a:#0891b2;--g:#047857;--gl:#d1fae5;--bg:#EFF4F8;--s:#fff;--b:#e2e8f0;--t:#1a202c;--tm:#64748b;--r:14px;--sh:0 2px 14px rgba(0,0,0,.08)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--t);font-size:16px;min-height:100vh}
-.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:14px 16px 12px;text-align:center}
-.hdr-av{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2.5px solid rgba(255,255,255,.3)}
-.hdr h1{font-size:17px;font-weight:700;margin-bottom:3px}
-.hdr p{font-size:13px;opacity:.8;line-height:1.5}
+.hdr{background:linear-gradient(135deg,#1a3a5c,#0891b2);color:#fff;padding:10px 16px 10px;position:relative}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hdr-info{flex:1;min-width:0}
+.hdr h1{font-size:15px;font-weight:700;margin-bottom:2px;line-height:1.3}
+.hdr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:4px}
+.hdr-meta a{color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.hdr-meta a:hover{color:#fff}
+.hdr-meta .sep{color:rgba(255,255,255,.35);font-size:11px}
+.lang-sw{display:flex;gap:4px;flex-shrink:0;align-self:flex-start}
+.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 9px;cursor:pointer;font-family:inherit}
+.lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
 .pg{display:none;max-width:520px;margin:0 auto;padding:20px 16px 56px}
 .pg.on{display:block}
 .steps{display:flex;align-items:center;padding:14px 4px;gap:0}
@@ -76,9 +83,9 @@ textarea{resize:none;min-height:80px}
 .btn-next:hover{background:var(--p)}
 .btn-next:disabled{background:#94a3b8;cursor:not-allowed}
 .btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0}
-.conf-icon{font-size:72px;text-align:center;margin:20px 0 14px}
-.conf-title{font-size:24px;font-weight:800;color:var(--p);text-align:center;margin-bottom:8px}
-.conf-sub{font-size:15px;color:var(--tm);text-align:center;line-height:1.6;margin-bottom:20px}
+.conf-icon{font-size:64px;text-align:center;margin:16px 0 10px}
+.conf-title{font-size:22px;font-weight:800;color:var(--p);text-align:center;margin-bottom:6px}
+.conf-sub{font-size:14px;color:var(--tm);text-align:center;line-height:1.6;margin-bottom:16px}
 .conf-box{background:var(--gl);border-radius:var(--r);padding:16px;margin-bottom:14px}
 .conf-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:14px}
 .conf-row:last-child{border-bottom:none}
@@ -90,9 +97,6 @@ textarea{resize:none;min-height:80px}
 .spin{text-align:center;padding:40px;color:var(--tm)}
 .sep{height:1px;background:var(--b);margin:14px 0}
 .hint{font-size:12.5px;color:var(--tm);margin-top:4px}
-.lang-sw{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
-.lang-sw button{background:none;border:1.5px solid rgba(255,255,255,.4);border-radius:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit}
-.lang-sw button.act{background:rgba(255,255,255,.25);color:#fff;border-color:rgba(255,255,255,.8)}
 .disc{border-radius:12px;padding:16px;margin:0 0 14px;font-size:14px;line-height:1.6}
 .disc-block{background:#fff1f2;border:2px solid #fca5a5}
 .disc-warn{background:#fffbeb;border:2px solid #fcd34d}
@@ -100,6 +104,9 @@ textarea{resize:none;min-height:80px}
 .disc-block h3{color:#991b1b}.disc-warn h3{color:#92400e}
 .disc p{color:#374151;margin-bottom:6px}.disc a{color:var(--a);font-weight:600}
 @media(max-width:600px){
+  .hdr{padding:8px 12px 8px}
+  .hdr h1{font-size:13px}
+  .hdr-meta a{font-size:11px}
   .pg{padding:12px 12px 60px}
   .card{padding:14px;margin-bottom:10px}
   input,select,textarea{font-size:16px}
@@ -112,24 +119,33 @@ textarea{resize:none;min-height:80px}
 <body>
 
 <div class="hdr">
-  <div class="lang-sw"><button id="btn-ru" class="act" onclick="setLang('ru')">RU</button><button id="btn-sr" onclick="setLang('sr')">SR</button></div>
-  <div class="hdr-av">&#128065;</div>
-  <h1>Анна Новосёлова</h1>
-  <p>Оптометрист &middot; Нови-Сад<br>Оптика Ginter, Trg Republike 25</p>
+  <div class="hdr-inner">
+    <div class="hdr-info">
+      <h1 id="hdr-title">Запись на приём к оптометристу Анне Новосёловой</h1>
+      <div class="hdr-meta">
+        <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" target="_blank">📍 Trg Republike 25, Novi Sad</a>
+        <span class="sep">·</span>
+        <a href="https://t.me/AnnaNvslv" target="_blank">✈️ @AnnaNvslv</a>
+        <span class="sep">·</span>
+        <a href="https://t.me/optometrist_anna_ns" target="_blank">📢 Канал</a>
+      </div>
+    </div>
+    <div class="lang-sw"><button id="btn-ru" class="act" onclick="setLang('ru')">RU</button><button id="btn-sr" onclick="setLang('sr')">SR</button></div>
+  </div>
 </div>
 
 <!-- PAGE: TYPE -->
 <div class="pg on" id="pg-type">
   <div style="padding:16px 0 8px">
-    <div style="font-size:19px;font-weight:800">Выберите вид приёма</div>
-    <div style="font-size:13px;color:var(--tm);margin-top:3px">Шаг 1 из 3</div>
+    <div style="font-size:19px;font-weight:800" id="step1-title">Выберите вид приёма</div>
+    <div style="font-size:13px;color:var(--tm);margin-top:3px" id="step1-sub">Шаг 1 из 3</div>
   </div>
   <div id="type-list"></div>
 </div>
 
 <!-- PAGE: CALENDAR -->
 <div class="pg" id="pg-cal">
-  <button class="btn-back" onclick="goPage('type')">&#8249; Назад</button>
+  <button class="btn-back" id="back-from-cal" onclick="goPage('type')">&#8249; Назад</button>
   <div id="type-sel-sum"></div>
   <div class="card" style="padding:16px">
     <div class="cal-nav">
@@ -138,9 +154,9 @@ textarea{resize:none;min-height:80px}
       <button class="cal-nav-btn" onclick="calMove(1)">&#8250;</button>
     </div>
     <div class="cal-grid" id="cal-days-header">
-      <div class="cal-head">Пн</div><div class="cal-head">Вт</div><div class="cal-head">Ср</div>
-      <div class="cal-head">Чт</div><div class="cal-head">Пт</div><div class="cal-head">Сб</div>
-      <div class="cal-head">Вс</div>
+      <div class="cal-head" id="dh0">Пн</div><div class="cal-head" id="dh1">Вт</div><div class="cal-head" id="dh2">Ср</div>
+      <div class="cal-head" id="dh3">Чт</div><div class="cal-head" id="dh4">Пт</div><div class="cal-head" id="dh5">Сб</div>
+      <div class="cal-head" id="dh6">Вс</div>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
@@ -155,37 +171,27 @@ textarea{resize:none;min-height:80px}
 
 <!-- PAGE: FORM -->
 <div class="pg" id="pg-form">
-  <button class="btn-back" onclick="goPage('cal')">&#8249; Назад к расписанию</button>
+  <button class="btn-back" id="back-from-form" onclick="goPage('cal')">&#8249; Назад к расписанию</button>
   <div id="form-slot-sum"></div>
 
   <div class="card">
     <div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div>
-    <div class="chips" id="ch-reason">
-      <div class="chip" onclick="tog(this)" data-ru="Плановая проверка зрения" data-sr="Planska provera vida">Плановая проверка зрения</div>
-      <div class="chip" onclick="tog(this)" data-ru="Подбор очков для дали" data-sr="Izbor naočara za daljinu">Подбор очков для дали</div>
-      <div class="chip" onclick="tog(this)" data-ru="Подбор очков для близи/работы" data-sr="Izbor naočara za blizinu/rad">Подбор очков для близи/работы</div>
-      <div class="chip" onclick="tog(this)" data-ru="Подбор очков с прогрессивными линзами" data-sr="Izbor naočara s progresivnim sočivima">Подбор очков с прогрессивными линзами</div>
-      <div class="chip" onclick="tog(this)" data-ru="Нужны новые очки (старые не подходят/сломались/потерялись)" data-sr="Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)">Нужны новые очки (старые не подходят/сломались/потерялись)</div>
-      <div class="chip" onclick="tog(this)" data-ru="Подбор контактных линз" data-sr="Izbor kontaktnih sočiva">Подбор контактных линз</div>
-      <div class="chip" onclick="tog(this)" data-ru="Подбор КЛ с обучением" data-sr="Izbor KS s obukom">Подбор КЛ с обучением</div>
-      <div class="chip" onclick="tog(this)" data-ru="Сложности с адаптацией к очкам/КЛ" data-sr="Teškoće s adaptacijom na naočare/KS">Сложности с адаптацией к очкам/КЛ</div>
-      <div class="chip" onclick="tog(this)" data-ru="Консультация по гигиене зрения и ношению очков/КЛ" data-sr="Konsultacija o higijeni vida i nošenju naočara/KS">Консультация по гигиене зрения и ношению очков/КЛ</div>
-    </div>
+    <div class="chips" id="ch-reason"></div>
   </div>
 
   <div class="card">
     <div class="card-title" id="rc-contacts">Контактные данные</div>
     <div class="fg">
-      <label>Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label>
+      <label id="lbl-tg">Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label>
       <input id="f-tg" type="text" placeholder="@username">
     </div>
     <div class="fg">
-      <label>Фамилия и имя (латиницей) <span class="req">*</span></label>
+      <label id="lbl-name">Фамилия и имя (латиницей) <span class="req">*</span></label>
       <input id="f-name" type="text" placeholder="Ivanova Maria" autocomplete="name">
-      <div class="hint">Пример: Ivanova Maria Petrovna</div>
+      <div class="hint" id="hint-name">Пример: Ivanova Maria Petrovna</div>
     </div>
     <div class="fg">
-      <label>Дата рождения <span class="req">*</span></label>
+      <label id="lbl-dob">Дата рождения <span class="req">*</span></label>
       <input id="f-dob" type="date" onchange="checkAge(this.value)">
     </div>
     <div id="age-disc-10" class="disc disc-block" style="display:none">
@@ -199,90 +205,90 @@ textarea{resize:none;min-height:80px}
       <p id="ad17-check" style="font-size:13.5px;color:#92400e;font-weight:600;margin-top:8px">Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.</p>
     </div>
     <div class="fg">
-      <label>Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label>
+      <label id="lbl-phone">Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label>
       <input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel">
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Жалобы <span class="req">*</span></div>
+    <div class="card-title" id="rc-complaints">Жалобы <span class="req">*</span></div>
     <div class="chips" id="ch-complaints">
-      <div class="chip" onclick="tog(this)">Снижение остроты зрения вдаль</div>
-      <div class="chip" onclick="tog(this)">Снижение остроты зрения вблизи</div>
-      <div class="chip" onclick="tog(this)">Усталость глаз</div>
-      <div class="chip" onclick="tog(this)">Головные боли</div>
-      <div class="chip" onclick="tog(this)">Двоение</div>
-      <div class="chip" onclick="tog(this)">Дискомфорт в очках</div>
-      <div class="chip" onclick="tog(this)">Мушки / точки перед глазами</div>
-      <div class="chip" onclick="tog(this)">Нет выраженных жалоб</div>
+      <div class="chip" onclick="tog(this)" data-ru="Снижение остроты зрения вдаль" data-sr="Slabljenje vida na daljinu">Снижение остроты зрения вдаль</div>
+      <div class="chip" onclick="tog(this)" data-ru="Снижение остроты зрения вблизи" data-sr="Slabljenje vida na blizinu">Снижение остроты зрения вблизи</div>
+      <div class="chip" onclick="tog(this)" data-ru="Усталость глаз" data-sr="Zamor očiju">Усталость глаз</div>
+      <div class="chip" onclick="tog(this)" data-ru="Головные боли" data-sr="Glavobolje">Головные боли</div>
+      <div class="chip" onclick="tog(this)" data-ru="Двоение" data-sr="Dvostruki vid">Двоение</div>
+      <div class="chip" onclick="tog(this)" data-ru="Дискомфорт в очках" data-sr="Nelagodnost u naočarima">Дискомфорт в очках</div>
+      <div class="chip" onclick="tog(this)" data-ru="Мушки / точки перед глазами" data-sr="Muhe / tačke pred očima">Мушки / точки перед глазами</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет выраженных жалоб" data-sr="Nema izraženih tegoba">Нет выраженных жалоб</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Используете ли вы коррекцию зрения? <span class="req">*</span></div>
+    <div class="card-title" id="rc-correction">Используете ли вы коррекцию зрения? <span class="req">*</span></div>
     <div class="chips" id="ch-correction">
-      <div class="chip" onclick="tog(this)">Пользуюсь очками</div>
-      <div class="chip" onclick="tog(this)">Пользуюсь контактными линзами</div>
-      <div class="chip" onclick="tog(this)">Не пользуюсь</div>
+      <div class="chip" onclick="tog(this)" data-ru="Пользуюсь очками" data-sr="Nosim naočare">Пользуюсь очками</div>
+      <div class="chip" onclick="tog(this)" data-ru="Пользуюсь контактными линзами" data-sr="Nosim kontaktna sočiva">Пользуюсь контактными линзами</div>
+      <div class="chip" onclick="tog(this)" data-ru="Не пользуюсь" data-sr="Ne koristim">Не пользуюсь</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)">(если знаете, примерно)</span></div>
-    <input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0">
+    <div class="card-title" id="rc-diop">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)" id="rc-diop-hint">(если знаете, примерно)</span></div>
+    <input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0" id="ph-diop">
   </div>
 
   <div class="card">
-    <div class="card-title">Заболевания глаз <span class="req">*</span></div>
+    <div class="card-title" id="rc-eye">Заболевания глаз <span class="req">*</span></div>
     <div class="chips" id="ch-eye">
-      <div class="chip" onclick="tog(this)">Катаракта</div>
-      <div class="chip" onclick="tog(this)">Глаукома</div>
-      <div class="chip" onclick="tog(this)">Косоглазие</div>
-      <div class="chip" onclick="tog(this)">Амблиопия</div>
-      <div class="chip" onclick="tog(this)">Заболевания сетчатки</div>
-      <div class="chip" onclick="tog(this)">Макулодистрофия</div>
-      <div class="chip" onclick="tog(this)">Кератоконус</div>
-      <div class="chip" onclick="tog(this)">Синдром сухого глаза</div>
-      <div class="chip" onclick="tog(this)">Частые воспаления (конъюктивит, блефарит)</div>
-      <div class="chip" onclick="tog(this)">Операции на глазах (LASIK, PRK, замена хрусталика)</div>
-      <div class="chip" onclick="tog(this)">Нет заболеваний</div>
+      <div class="chip" onclick="tog(this)" data-ru="Катаракта" data-sr="Katarakta">Катаракта</div>
+      <div class="chip" onclick="tog(this)" data-ru="Глаукома" data-sr="Glaukom">Глаукома</div>
+      <div class="chip" onclick="tog(this)" data-ru="Косоглазие" data-sr="Razrokost">Косоглазие</div>
+      <div class="chip" onclick="tog(this)" data-ru="Амблиопия" data-sr="Ambliопija">Амблиопия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Заболевания сетчатки" data-sr="Bolesti mrežnjače">Заболевания сетчатки</div>
+      <div class="chip" onclick="tog(this)" data-ru="Макулодистрофия" data-sr="Makularна degeneracija">Макулодистрофия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Кератоконус" data-sr="Keratokonus">Кератоконус</div>
+      <div class="chip" onclick="tog(this)" data-ru="Синдром сухого глаза" data-sr="Sindrom suvog oka">Синдром сухого глаза</div>
+      <div class="chip" onclick="tog(this)" data-ru="Частые воспаления (конъюктивит, блефарит)" data-sr="Česte upale (konjunktivitis, blefaritis)">Частые воспаления (конъюктивит, блефарит)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Операции на глазах (LASIK, PRK, замена хрусталика)" data-sr="Operacije oka (LASIK, PRK, zamena sočiva)">Операции на глазах (LASIK, PRK, замена хрусталика)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Общие заболевания <span class="req">*</span></div>
+    <div class="card-title" id="rc-general">Общие заболевания <span class="req">*</span></div>
     <div class="chips" id="ch-general">
-      <div class="chip" onclick="tog(this)">Повышенное / нестабильное артериальное давление</div>
-      <div class="chip" onclick="tog(this)">Заболевания щитовидной железы</div>
-      <div class="chip" onclick="tog(this)">Сахарный диабет или преддиабет</div>
-      <div class="chip" onclick="tog(this)">Мигрень (с аурой)</div>
-      <div class="chip" onclick="tog(this)">Черепно-мозговые травмы / сотрясения</div>
-      <div class="chip" onclick="tog(this)">Эпилепсия</div>
-      <div class="chip" onclick="tog(this)">Инсульт</div>
-      <div class="chip" onclick="tog(this)">Операция на голове</div>
-      <div class="chip" onclick="tog(this)">Нет заболеваний</div>
+      <div class="chip" onclick="tog(this)" data-ru="Повышенное / нестабильное артериальное давление" data-sr="Povišen / nestabilan krvni pritisak">Повышенное / нестабильное артериальное давление</div>
+      <div class="chip" onclick="tog(this)" data-ru="Заболевания щитовидной железы" data-sr="Bolesti štitne žlezde">Заболевания щитовидной железы</div>
+      <div class="chip" onclick="tog(this)" data-ru="Сахарный диабет или преддиабет" data-sr="Dijabetes ili predijabetes">Сахарный диабет или преддиабет</div>
+      <div class="chip" onclick="tog(this)" data-ru="Мигрень (с аурой)" data-sr="Migrena (sa aurom)">Мигрень (с аурой)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Черепно-мозговые травмы / сотрясения" data-sr="Povrede glave / potres mozga">Черепно-мозговые травмы / сотрясения</div>
+      <div class="chip" onclick="tog(this)" data-ru="Эпилепсия" data-sr="Epilepsija">Эпилепсия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Инсульт" data-sr="Moždani udar">Инсульт</div>
+      <div class="chip" onclick="tog(this)" data-ru="Операция на голове" data-sr="Operacija glave">Операция на голове</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Зрительные нагрузки <span class="req">*</span></div>
+    <div class="card-title" id="rc-loads">Зрительные нагрузки <span class="req">*</span></div>
     <div class="chips" id="ch-loads">
-      <div class="chip" onclick="tog(this)">Работа за монитором более 5&#8211;6 часов</div>
-      <div class="chip" onclick="tog(this)">Частое использование смартфона</div>
-      <div class="chip" onclick="tog(this)">Вождение в тёмное время суток</div>
-      <div class="chip" onclick="tog(this)">Специфические занятия (вышивание, ювелирное дело и др.)</div>
-      <div class="chip" onclick="tog(this)">Ночные смены</div>
-      <div class="chip" onclick="tog(this)">Ничего из перечисленного</div>
+      <div class="chip" onclick="tog(this)" data-ru="Работа за монитором более 5–6 часов" data-sr="Rad za monitorom više od 5–6 sati">Работа за монитором более 5–6 часов</div>
+      <div class="chip" onclick="tog(this)" data-ru="Частое использование смартфона" data-sr="Često korišćenje pametnog telefona">Частое использование смартфона</div>
+      <div class="chip" onclick="tog(this)" data-ru="Вождение в тёмное время суток" data-sr="Vožnja noću">Вождение в тёмное время суток</div>
+      <div class="chip" onclick="tog(this)" data-ru="Специфические занятия (вышивание, ювелирное дело и др.)" data-sr="Specifične aktivnosti (vezenje, juvelirstvo i sl.)">Специфические занятия (вышивание, ювелирное дело и др.)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Ночные смены" data-sr="Noćne smene">Ночные смены</div>
+      <div class="chip" onclick="tog(this)" data-ru="Ничего из перечисленного" data-sr="Ništa od navedenog">Ничего из перечисленного</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Что хотели бы сообщить перед приёмом?</div>
+    <div class="card-title" id="rc-notes">Что хотели бы сообщить перед приёмом?</div>
     <textarea id="f-notes" placeholder="Любая важная информация, которую хотите передать заранее..."></textarea>
   </div>
 
   <div class="card">
-    <div class="card-title">Откуда вы узнали о нас?</div>
+    <div class="card-title" id="rc-source">Откуда вы узнали о нас?</div>
     <select id="f-source">
       <option value="">— выберите —</option>
       <option>Посоветовали друзья / знакомые</option>
@@ -295,11 +301,11 @@ textarea{resize:none;min-height:80px}
   </div>
 
   <div class="card">
-    <div class="card-title">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)">(если есть)</span></div>
+    <div class="card-title" id="rc-promo">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)" id="rc-promo-hint">(если есть)</span></div>
     <input id="f-promo" type="text" placeholder="Введите промокод">
   </div>
 
-  <div style="font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;padding:0 4px;margin-top:8px">
+  <div style="font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;padding:0 4px;margin-top:8px" id="consent-text">
     Нажимая кнопку «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.
   </div>
 
@@ -308,15 +314,14 @@ textarea{resize:none;min-height:80px}
 
 <!-- PAGE: CONFIRM -->
 <div class="pg" id="pg-confirm">
-  <div class="conf-icon">&#9989;</div>
-  <div class="conf-title">Вы записаны!</div>
-  <div class="conf-sub">Ждём вас на приёме.</div>
-  <div class="conf-box" id="conf-details"></div>
+  <div class="conf-icon">📲</div>
+  <div class="conf-title" id="conf-title">Последний шаг!</div>
+  <div class="conf-sub" id="conf-sub">Напишите боту в Telegram — это подтвердит вашу запись и вы получите напоминания о приёме.</div>
   <div class="tgbox" id="tg-hint"></div>
-  <div class="card" style="font-size:14px;color:var(--tm);text-align:center;line-height:1.7">
-    <b>Адрес:</b> Trg Republike 25<br>
-    (Рибља пијаца, там где Ночной Базар)<br>
-    <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48" style="color:var(--a);text-decoration:none">&#128205; Открыть на карте</a>
+  <div class="card" style="font-size:13px;color:var(--tm);text-align:center;line-height:1.7">
+    <b id="addr-label">Адрес:</b> Trg Republike 25<br>
+    <span id="addr-note">(Riblja pijaca, Noćni bazar)</span><br>
+    <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" style="color:var(--a);text-decoration:none">&#128205; <span id="map-link-text">Открыть на карте</span></a>
   </div>
 </div>
 
@@ -324,55 +329,309 @@ textarea{resize:none;min-height:80px}
 
 // ═══ I18N ═══
 let _lang='ru';
+
+// Причины обращения по типу приёма
+const REASONS={
+  ru:{
+    primary:[
+      {t:'Плановая проверка зрения',s:'Planska provera vida'},
+      {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
+      {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
+      {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
+      {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
+      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+      {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
+    ],
+    repeat:[
+      {t:'Плановая проверка зрения',s:'Planska provera vida'},
+      {t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},
+      {t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},
+      {t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},
+      {t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare (stare ne odgovaraju/slomljene/izgubljene)'},
+      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+      {t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'},
+    ],
+    cl:[
+      {t:'Плановая проверка зрения',s:'Planska provera vida'},
+      {t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},
+      {t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},
+      {t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},
+      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+    ],
+    consult:[
+      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+      {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
+      {t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},
+      {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
+    ],
+    help:[
+      {t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},
+      {t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},
+      {t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'},
+    ],
+  }
+};
+
 const BK={
-  ru:{title:'Запись к оптометристу',subtitle:'Анна Новосёлова · Оптика Ginter · Нови-Сад',
-    reason:'Причина обращения',contacts:'Контактные данные',confirmed:'Вы записаны!',confSub:'Ждём вас на приёме.',
-    submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',nextForm:'Далее — заполнить анкету →',
+  ru:{
+    hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',
+    hdrChannel:'Канал',
+    step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',
+    step2:'Шаг 2 из 3',step3:'Шаг 3 из 3',
+    reason:'Причина обращения',contacts:'Контактные данные',
+    complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',
+    diop:'Диоптрии',diopHint:'(если знаете, примерно)',
+    eye:'Заболевания глаз',general:'Общие заболевания',loads:'Зрительные нагрузки',
+    notes:'Что хотели бы сообщить перед приёмом?',source:'Откуда вы узнали о нас?',
+    promo:'Промокод',promoHint:'(если есть)',
+    lblTg:'Telegram',lblName:'Фамилия и имя (латиницей)',lblDob:'Дата рождения',lblPhone:'Телефон',
+    hintName:'Пример: Ivanova Maria Petrovna',
+    submit:'Записаться →',submitting:'Оформляем...',
+    backCal:'← Назад к расписанию',back:'← Назад',nextForm:'Далее — заполнить анкету →',
+    confTitle:'Последний шаг!',
+    confSub:'Напишите боту в Telegram — это подтвердит вашу запись и вы получите напоминания о приёме.',
+    tgPrompt:'Напишите боту, чтобы подтвердить запись и получать напоминания:',
+    tgBtn:'✈️ Написать боту в Telegram',
+    tgFallback:'По вопросам пишите: @AnnaNvslv',
+    addrLabel:'Адрес:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Открыть на карте',
     ad10t:'⛔ Приём детей до 10 лет не проводится',
-    ad10:'Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии. Оптометрист может помочь с выбором оправы по готовому рецепту.',
+    ad10:'Оптометрист не осматривает детей младше 10 лет. Для проверки зрения и выписки рецепта необходим приём врача-офтальмолога с применением циклоплегии.',
     ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',
-    ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Подросткам рекомендуется обследование с циклоплегией. По вопросам: @AnnaNvslv',
+    ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев).',
     ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',
     srcPlaceholder:'— выберите —',
     srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],
+    consent:'Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',
+    selType:'Выбранный вид приёма',selSlot:'Ваша запись',
+    months:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
+    monthsG:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],
+    days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
+    daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
+    chooseTime:'Выберите время — ',
+    phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация, которую хотите передать заранее...',
+    phPromo:'Введите промокод',
+    errReason:'Пожалуйста, укажите причину обращения',
+    errTg:'Пожалуйста, укажите Telegram username',
+    errName:'Пожалуйста, введите ваше имя',
+    errDob:'Пожалуйста, укажите дату рождения',
+    errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',
+    errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',
+    errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',
+    errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',
+    errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',
+    errSlot:'Слот уже занят. Выберите другое время.',
+    errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',
+    errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv',
+    min:'минут',free:'Бесплатно',din:'дин.',
   },
-  sr:{title:'Zakazivanje kod optometriste',subtitle:'Anna Novoselova · Optika Ginter · Novi Sad',
-    reason:'Razlog dolaska',contacts:'Kontaktni podaci',confirmed:'Zakazano!',confSub:'Radujemo se vašem dolasku.',
-    submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',nextForm:'Dalje — popunite anketu →',
-    ad10t:'⛔ Prijem dece do 10 godina nije dostupan',
-    ad10:'Optometrista ne pregleda decu mlađu od 10 godina. Za proveru vida i recept potreban je pregled dečijeg oftalmologa s cikloplegijom. Optometrista može pomoći sa izborom okvira prema gotovom receptu.',
+  sr:{
+    hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',
+    hdrChannel:'Kanal',
+    step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',
+    step2:'Korak 2 od 3',step3:'Korak 3 od 3',
+    reason:'Razlog dolaska',contacts:'Kontaktni podaci',
+    complaints:'Tegobe',correction:'Da li koristite korekciju vida?',
+    diop:'Dioptrija',diopHint:'(ako znate, otprilike)',
+    eye:'Bolesti oka',general:'Opšte bolesti',loads:'Vizuelna opterećenja',
+    notes:'Šta biste voleli da nam saopštite pre pregleda?',source:'Kako ste saznali za nas?',
+    promo:'Promo kod',promoHint:'(ako imate)',
+    lblTg:'Telegram',lblName:'Prezime i ime (latinicom)',lblDob:'Datum rođenja',lblPhone:'Telefon',
+    hintName:'Primer: Ivanova Maria Petrovna',
+    submit:'Zakaži →',submitting:'Zakazujemo...',
+    backCal:'← Nazad na raspored',back:'← Nazad',nextForm:'Dalje — popunite anketu →',
+    confTitle:'Poslednji korak!',
+    confSub:'Pišite botu na Telegram — to će potvrditi vaš termin i dobićete podsetnik pre pregleda.',
+    tgPrompt:'Pišite botu da biste potvrdili termin i primali podsetnik:',
+    tgBtn:'✈️ Pisati botu na Telegram',
+    tgFallback:'Za pitanja pišite: @AnnaNvslv',
+    addrLabel:'Adresa:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Otvori na mapi',
+    ad10t:'⛔ Pregled dece do 10 godina nije dostupan',
+    ad10:'Optometrista ne pregleda decu mlađu od 10 godina. Za proveru vida i recept potreban je pregled dečijeg oftalmologa s cikloplegijom.',
     ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',
-    ad17:'Prijem je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Adolescentima se preporučuje pregled s cikloplegijom. Za pitanja: @AnnaNvslv',
+    ad17:'Pregled je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci).',
     ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',
     srcPlaceholder:'— izaberite —',
     srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],
+    consent:'Klikom na "Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram bota.',
+    selType:'Izabrana vrsta pregleda',selSlot:'Vaš termin',
+    months:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],
+    monthsG:['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],
+    days:['Ne','Po','Ut','Sr','Če','Pe','Su'],
+    daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],
+    chooseTime:'Izaberite vreme — ',
+    phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija koju želite unapred da saopštite...',
+    phPromo:'Unesite promo kod',
+    errReason:'Molimo navedite razlog dolaska',
+    errTg:'Molimo navedite Telegram korisničko ime',
+    errName:'Molimo unesite vaše ime',
+    errDob:'Molimo navedite datum rođenja',
+    errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',
+    errCorrection:'Molimo navedite da li koristite korekciju vida',
+    errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',
+    errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',
+    errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',
+    errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',
+    errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',
+    errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv',
+    min:'minuta',free:'Besplatno',din:'din.',
   }
 };
-function T(k){return BK[_lang]?.[k]||BK.ru[k]||k;}
+
+const TYPES_DATA=[
+  {id:'primary',icon:'👁',
+    ru:{name:'Проверka зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},
+    sr:{name:'Provera vida, izbor naočara / KS',sub:'Primarni pregled',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},
+    consult:3000},
+  {id:'repeat',icon:'🔄',
+    ru:{name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём'},
+    sr:{name:'Ponovni pregled',sub:'U roku od 6 meseci od primarnog',dur:'60 minuta',price:'2000 din.',apptName:'Ponovni pregled'},
+    consult:2000},
+  {id:'cl',icon:'🔬',
+    ru:{name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением'},
+    sr:{name:'Provera vida, izbor i obuka KS',sub:'Uključuje obuku za nošenje sočiva',dur:'90–120 minuta',price:'3500 din.',apptName:'Izbor KS s obukom'},
+    consult:3500},
+  {id:'consult',icon:'💬',
+    ru:{name:'Очная консультация в оптике',sub:'Без проверки зрения · 30 минут',dur:'30 минут',price:'1000 дин.',apptName:'Помощь в оптике'},
+    sr:{name:'Lična konsultacija u optici',sub:'Bez provere vida · 30 minuta',dur:'30 minuta',price:'1000 din.',apptName:'Pomoć u optici'},
+    consult:1000},
+  {id:'help',icon:'🛍',
+    ru:{name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике'},
+    sr:{name:'Pomoć pri formiranju porudžbine',sub:'Uz dostupnost slobodnog termina',dur:'15 minuta',price:'Besplatno',apptName:'Pomoć u optici'},
+    consult:0},
+];
+
+function T(k){return BK[_lang]?.[k]??BK.ru[k]??k;}
+
 function setLang(lang){
   _lang=lang;
   document.getElementById('btn-ru').classList.toggle('act',lang==='ru');
   document.getElementById('btn-sr').classList.toggle('act',lang==='sr');
   applyLang();
 }
+
 function applyLang(){
-  document.querySelector('.hdr h1').textContent=T('title');
-  document.querySelector('.hdr p').textContent=T('subtitle');
+  // Header
+  document.getElementById('hdr-title').textContent=T('hdrTitle');
+  document.getElementById('hdr-channel-text').textContent=T('hdrChannel');
+  // Step 1
+  document.getElementById('step1-title').textContent=T('step1');
+  document.getElementById('step1-sub').textContent=T('step1sub');
+  // Re-render types in new language
+  renderTypes();
+  // Calendar back btn
+  const bc=document.getElementById('back-from-cal');if(bc)bc.textContent=T('back');
+  const bf=document.getElementById('back-from-form');if(bf)bf.textContent=T('backCal');
+  // btn-to-form
+  const btf=document.getElementById('btn-to-form');
+  if(btf)btf.textContent=btf.disabled?T('nextForm'):T('nextForm');
+  // submit
+  const sb=document.getElementById('submit-btn');
+  if(sb&&!sb.disabled)sb.textContent=T('submit');
+  // Card titles
   const rc=document.getElementById('rc-reason-title');if(rc)rc.innerHTML=T('reason')+' <span class="req">*</span>';
   const cc=document.getElementById('rc-contacts');if(cc)cc.textContent=T('contacts');
-  document.querySelectorAll('.btn-back').forEach(b=>b.textContent=T('backCal'));
-  const bf=document.getElementById('btn-to-form');if(bf&&!bf.disabled)bf.textContent=T('nextForm');
-  const sb=document.getElementById('submit-btn');if(sb&&!sb.disabled)sb.textContent=T('submit');
+  const cm=document.getElementById('rc-complaints');if(cm)cm.innerHTML=T('complaints')+' <span class="req">*</span>';
+  const cor=document.getElementById('rc-correction');if(cor)cor.innerHTML=T('correction')+' <span class="req">*</span>';
+  const rd=document.getElementById('rc-diop');if(rd)rd.innerHTML=T('diop')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('diopHint')+'</span>';
+  const re=document.getElementById('rc-eye');if(re)re.innerHTML=T('eye')+' <span class="req">*</span>';
+  const rg=document.getElementById('rc-general');if(rg)rg.innerHTML=T('general')+' <span class="req">*</span>';
+  const rl=document.getElementById('rc-loads');if(rl)rl.innerHTML=T('loads')+' <span class="req">*</span>';
+  const rn=document.getElementById('rc-notes');if(rn)rn.textContent=T('notes');
+  const rs=document.getElementById('rc-source');if(rs)rs.textContent=T('source');
+  const rp=document.getElementById('rc-promo');if(rp)rp.innerHTML=T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>';
+  // Labels
+  const lt=document.getElementById('lbl-tg');if(lt)lt.innerHTML=T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>';
+  const ln=document.getElementById('lbl-name');if(ln)ln.innerHTML=T('lblName')+' <span class="req">*</span>';
+  const ld=document.getElementById('lbl-dob');if(ld)ld.innerHTML=T('lblDob')+' <span class="req">*</span>';
+  const lp=document.getElementById('lbl-phone');if(lp)lp.innerHTML=T('lblPhone')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'nije obavezno':'необязательно')+')</span>';
+  const hn=document.getElementById('hint-name');if(hn)hn.textContent=T('hintName');
+  // Age disclaimers
   document.getElementById('ad10-title').textContent=T('ad10t');
   document.getElementById('ad10-text').textContent=T('ad10');
   document.getElementById('ad17-title').textContent=T('ad17t');
   document.getElementById('ad17-text').textContent=T('ad17');
   const ac=document.getElementById('ad17-check');if(ac)ac.textContent=T('ad17check');
-  document.querySelectorAll('.conf-title').forEach(e=>e.textContent=T('confirmed'));
-  document.querySelectorAll('.conf-sub').forEach(e=>e.textContent=T('confSub'));
-  document.querySelectorAll('#ch-reason .chip').forEach(c=>{c.textContent=c.dataset[_lang]||c.dataset.ru||c.textContent;});
+  // Chips translate
+  document.querySelectorAll('.chip[data-ru]').forEach(c=>{
+    c.textContent=_lang==='sr'?(c.dataset.sr||c.dataset.ru):c.dataset.ru;
+  });
+  // Source select
   const sel=document.getElementById('f-source');
   if(sel){const cur=sel.value;sel.innerHTML=`<option value="">- ${T('srcPlaceholder')} -</option>`+T('srcOpts').map(o=>`<option value="${o}">${o}</option>`).join('');sel.value=cur;}
+  // Placeholders
+  const pd=document.getElementById('f-diop');if(pd)pd.placeholder=T('phDiop');
+  const pn=document.getElementById('f-notes');if(pn)pn.placeholder=T('phNotes');
+  const pp=document.getElementById('f-promo');if(pp)pp.placeholder=T('phPromo');
+  // Consent
+  const ct=document.getElementById('consent-text');if(ct)ct.textContent=T('consent');
+  // Confirm page
+  const cti=document.getElementById('conf-title');if(cti)cti.textContent=T('confTitle');
+  const csu=document.getElementById('conf-sub');if(csu)csu.textContent=T('confSub');
+  const al=document.getElementById('addr-label');if(al)al.textContent=T('addrLabel');
+  const an=document.getElementById('addr-note');if(an)an.textContent=T('addrNote');
+  const ml=document.getElementById('map-link-text');if(ml)ml.textContent=T('mapLink');
+  // Calendar day headers
+  const days=T('days');
+  ['dh0','dh1','dh2','dh3','dh4','dh5','dh6'].forEach((id,i)=>{
+    // Mon-Sun order: Mon=index1, Tue=2, ... Sun=0 in JS
+    const jsDay=[1,2,3,4,5,6,0][i];
+    const el=document.getElementById(id);if(el)el.textContent=days[jsDay];
+  });
+  // re-render calendar label if shown
+  if(calYear)renderCalendar();
+  // Re-render reasons if type selected
+  if(selectedType)renderReasons();
+  // Re-render type-sel-sum and slot-sum labels
+  if(selectedType)updateTypeSumLang();
+  if(selectedSlot)updateSlotSumLang();
+}
+
+function updateTypeSumLang(){
+  if(!selectedType)return;
+  const td=TYPES_DATA.find(t=>t.id===selectedType.id);
+  if(!td)return;
+  const loc=td[_lang]||td.ru;
+  document.getElementById('type-sel-sum').innerHTML=`
+    <div class="sel-sum type-sum">
+      <div class="label">${T('selType')}</div>
+      <div class="value">${td.icon} ${loc.name}</div>
+      <div style="font-size:13px;color:var(--tm);margin-top:4px">${loc.dur} &nbsp;·&nbsp; ${loc.price}</div>
+    </div>`;
+}
+
+function updateSlotSumLang(){
+  if(!selectedSlot||!selectedType)return;
+  const td=TYPES_DATA.find(t=>t.id===selectedType.id);
+  if(!td)return;
+  const loc=td[_lang]||td.ru;
+  const dt=new Date(selectedSlot.date+'T12:00:00');
+  const monthsG=T('monthsG');
+  const daysFull=T('daysFull');
+  const dateLabel=`${dt.getDate()} ${monthsG[dt.getMonth()]}, ${daysFull[dt.getDay()]}`;
+  document.getElementById('form-slot-sum').innerHTML=`
+    <div class="sel-sum slot-sum">
+      <div class="label">${T('selSlot')}</div>
+      <div class="value">📅 ${dateLabel}</div>
+      <div style="font-size:14px;opacity:.85;margin-top:3px">⏰ ${selectedSlot.time} &nbsp;·&nbsp; ${loc.dur} &nbsp;·&nbsp; ${loc.price}</div>
+    </div>`;
+}
+
+// ═══ REASONS ═══
+function renderReasons(){
+  if(!selectedType)return;
+  const list=REASONS.ru[selectedType.id]||REASONS.ru.primary;
+  document.getElementById('ch-reason').innerHTML=list.map(r=>{
+    const txt=_lang==='sr'?r.s:r.t;
+    return `<div class="chip" onclick="tog(this)" data-ru="${r.t}" data-sr="${r.s}">${txt}</div>`;
+  }).join('');
 }
 
 // ═══ AGE CHECK ═══
@@ -405,19 +664,6 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
 
-const TYPES=[
-  {id:'primary',icon:'👁',name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)',consult:3000},
-  {id:'repeat',icon:'🔄',name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём',consult:2000},
-  {id:'cl',icon:'🔬',name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением',consult:3500},
-  {id:'consult',icon:'💬',name:'Очная консультация в оптике',sub:'Без проверки зрения',dur:'30 минут',price:'1000 дин.',apptName:'Помощь в оптике',consult:1000},
-  {id:'help',icon:'🛍',name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике',consult:0},
-];
-
-const MONTHS_R=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const MONTHS_G=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-const DAYS_FULL=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-const DS=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-
 let selectedType=null;
 let selectedSlot=null;
 let selectedDateStr=null;
@@ -445,30 +691,28 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
 // ═══ TYPES ═══
 function renderTypes(){
-  document.getElementById('type-list').innerHTML=TYPES.map(t=>`
-    <div class="type-card" onclick="selectType('${t.id}')">
+  document.getElementById('type-list').innerHTML=TYPES_DATA.map(t=>{
+    const loc=t[_lang]||t.ru;
+    return `<div class="type-card" onclick="selectType('${t.id}')">
       <div class="type-icon">${t.icon}</div>
       <div style="flex:1">
-        <div class="type-name">${t.name}</div>
-        <div class="type-sub">${t.sub}</div>
+        <div class="type-name">${loc.name}</div>
+        <div class="type-sub">${loc.sub}</div>
         <div class="type-meta">
-          <span class="type-dur">&#128337; ${t.dur}</span>
-          <span class="type-price">${t.price}</span>
+          <span class="type-dur">⏱ ${loc.dur}</span>
+          <span class="type-price">${loc.price}</span>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function selectType(id){
-  selectedType=TYPES.find(t=>t.id===id);
+  selectedType=TYPES_DATA.find(t=>t.id===id);
   document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
   event.currentTarget.classList.add('sel');
-  document.getElementById('type-sel-sum').innerHTML=`
-    <div class="sel-sum type-sum">
-      <div class="label">Выбранный вид приёма</div>
-      <div class="value">${selectedType.icon} ${selectedType.name}</div>
-      <div style="font-size:13px;color:var(--tm);margin-top:4px">${selectedType.dur} &nbsp;·&nbsp; ${selectedType.price}</div>
-    </div>`;
+  updateTypeSumLang();
+  renderReasons();
   renderCalendar();
   goPage('cal');
 }
@@ -486,7 +730,8 @@ function calMove(dir){
 
 function renderCalendar(){
   const today=new Date();today.setHours(0,0,0,0);
-  document.getElementById('cal-label').textContent=MONTHS_R[calMonth]+' '+calYear;
+  const months=T('months');
+  document.getElementById('cal-label').textContent=months[calMonth]+' '+calYear;
   const firstDay=new Date(calYear,calMonth,1);
   let startDow=firstDay.getDay();
   if(startDow===0)startDow=7;
@@ -508,7 +753,7 @@ function renderCalendar(){
     if(isPast)cls+=' past';
     else if(isSel)cls+=' sel-day';
     else if(isAvail)cls+=' avail';
-    const click=isAvail&&!isSel?`onclick="selectDate('${dateStr}')"` :'';
+    const click=isAvail&&!isSel?`onclick="selectDate('${dateStr}')"`:'';
     html+=`<div class="${cls}" ${click}>${d}</div>`;
   }
   document.getElementById('cal-grid').innerHTML=html;
@@ -520,8 +765,10 @@ function selectDate(dateStr){
   document.getElementById('btn-to-form').disabled=true;
   renderCalendar();
   const dt=new Date(dateStr+'T12:00:00');
-  const label=`${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}`;
-  document.getElementById('times-title').textContent='Выберите время — '+label;
+  const monthsG=T('monthsG');
+  const daysFull=T('daysFull');
+  const label=`${dt.getDate()} ${monthsG[dt.getMonth()]}, ${daysFull[dt.getDay()]}`;
+  document.getElementById('times-title').textContent=T('chooseTime')+label;
   const daySlots=allSlots.filter(s=>s.date===dateStr);
   document.getElementById('times-grid').innerHTML=daySlots.map(s=>`
     <button class="time-btn" onclick="selectTime(this,'${s.id}','${dateStr}','${(s.start_time||'').substr(0,5)}')">${(s.start_time||'').substr(0,5)}</button>`).join('');
@@ -533,43 +780,37 @@ function selectTime(btn,id,date,time){
   document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
   selectedSlot={id,date,time};
-  const dt=new Date(date+'T12:00:00');
-  const dateLabel=`${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}`;
-  document.getElementById('form-slot-sum').innerHTML=`
-    <div class="sel-sum slot-sum">
-      <div class="label">Ваша запись</div>
-      <div class="value">&#128197; ${dateLabel}</div>
-      <div style="font-size:14px;opacity:.85;margin-top:3px">&#9200; ${time} &nbsp;·&nbsp; ${selectedType.dur} &nbsp;·&nbsp; ${selectedType.price}</div>
-    </div>`;
+  updateSlotSumLang();
   document.getElementById('btn-to-form').disabled=false;
+  document.getElementById('btn-to-form').textContent=T('nextForm');
 }
 
 // ═══ FORM ═══
 function tog(el){el.classList.toggle('on');}
-function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.textContent);}
+function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.dataset.ru||e.textContent);}
 function v(id){return(document.getElementById(id)?.value||'').trim();}
 
 async function submitBooking(){
   const tg=v('f-tg'),name=v('f-name'),dob=v('f-dob');
   const age=calcAge(v('f-dob'));
-  if(age!==null&&age<10){alert('Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv');return;}
-  if(!chips('ch-reason').length){alert('Пожалуйста, укажите причину обращения');return;}
-  if(!tg){alert('Пожалуйста, укажите Telegram username');return;}
-  if(!name){alert('Пожалуйста, введите ваше имя');return;}
-  if(!dob){alert('Пожалуйста, укажите дату рождения');return;}
-  if(!chips('ch-complaints').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»');return;}
-  if(!chips('ch-correction').length){alert('Пожалуйста, укажите используете ли вы коррекцию зрения');return;}
-  if(!chips('ch-eye').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»');return;}
-  if(!chips('ch-general').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»');return;}
-  if(!chips('ch-loads').length){alert('Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»');return;}
+  if(age!==null&&age<10){alert(T('errAge'));return;}
+  if(!chips('ch-reason').length){alert(T('errReason'));return;}
+  if(!tg){alert(T('errTg'));return;}
+  if(!name){alert(T('errName'));return;}
+  if(!dob){alert(T('errDob'));return;}
+  if(!chips('ch-complaints').length){alert(T('errComplaints'));return;}
+  if(!chips('ch-correction').length){alert(T('errCorrection'));return;}
+  if(!chips('ch-eye').length){alert(T('errEye'));return;}
+  if(!chips('ch-general').length){alert(T('errGeneral'));return;}
+  if(!chips('ch-loads').length){alert(T('errLoads'));return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');
-  btn.disabled=true;btn.textContent=_lang==='sr'?'Zakazujemo...':'Оформляем...';
+  btn.disabled=true;btn.textContent=T('submitting');
   try{
     const{data:slotCheck}=await db.from('available_slots').select('is_booked,booked_by').eq('id',selectedSlot.id).single();
     if(slotCheck?.is_booked){
-      alert(_lang==='sr'?'Ovaj termin je već zauzet. Izaberite drugo vreme.':'Этот слот уже занят. Пожалуйста, выберите другое время.');
-      btn.disabled=false;btn.textContent=_lang==='sr'?'Zakaži →':'Записаться →';
+      alert(T('errSlot'));
+      btn.disabled=false;btn.textContent=T('submit');
       goPage('cal');return;
     }
     const{data:p,error:pe}=await db.from('patients').insert({
@@ -592,23 +833,23 @@ async function submitBooking(){
     }).select().single();
     if(pe)throw pe;
     const num=await genNum(selectedSlot.date);
+    const td=TYPES_DATA.find(t=>t.id===selectedType.id);
     const{data:a,error:ae}=await db.from('appointments').insert({
       patient_id:p.id,slot_id:selectedSlot.id,
       date:selectedSlot.date,time:selectedSlot.time,
-      type:selectedType.apptName,
+      type:td?.ru?.apptName||selectedType.id,
       status:'запланирован',
       appointment_number:num,
-      consultation_price:selectedType.consult,
+      consultation_price:td?.consult||0,
     }).select().single();
     if(ae)throw ae;
     await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
-    await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,selectedType.name);
-    // Передаём appointment ID для бота
-    showConfirm(name,selectedSlot.date,selectedSlot.time,num,tg,a.id);
+    await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
+    showConfirm(a.id);
   }catch(e){
     console.error(e);
-    alert('Ошибка записи. Напишите нам: @AnnaNvslv');
-    btn.disabled=false;btn.textContent='Записаться →';
+    alert(T('errBook'));
+    btn.disabled=false;btn.textContent=T('submit');
   }
 }
 
@@ -624,25 +865,18 @@ async function notifyAnna(name,date,time,num,typeName){
     const s={};(r||[]).forEach(x=>s[x.key]=x.value);
     if(!s.bot_token||!s.my_chat_id)return;
     const dt=new Date(date+'T12:00:00');
-    const msg='📋 Новая запись онлайн!\n\nПациент: '+name+'\nВид: '+typeName+'\n📅 '+dt.getDate()+' '+MONTHS_G[dt.getMonth()]+', '+DAYS_FULL[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num;
+    const mG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    const dF=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+    const msg='📋 Новая запись онлайн!\n\nПациент: '+name+'\nВид: '+typeName+'\n📅 '+dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num;
     await fetch('https://api.telegram.org/bot'+s.bot_token+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:s.my_chat_id,text:msg,parse_mode:'HTML'})});
   }catch(e){}
 }
 
-function showConfirm(name,date,time,num,tg,apptId){
-  const dt=new Date(date+'T12:00:00');
-  document.getElementById('conf-details').innerHTML=`
-    <div class="conf-row"><span class="l">Пациент</span><span class="v">${name}</span></div>
-    <div class="conf-row"><span class="l">Вид приёма</span><span class="v">${selectedType.name}</span></div>
-    <div class="conf-row"><span class="l">Дата</span><span class="v">${dt.getDate()} ${MONTHS_G[dt.getMonth()]}, ${DAYS_FULL[dt.getDay()]}</span></div>
-    <div class="conf-row"><span class="l">Время</span><span class="v">${time}</span></div>
-    <div class="conf-row"><span class="l">Стоимость</span><span class="v">${selectedType.price}</span></div>
-    <div class="conf-row"><span class="l">Номер записи</span><span class="v">${num}</span></div>`;
+function showConfirm(apptId){
   const bot=botUsername?botUsername.replace('@',''):'';
-  // Ссылка с start=appt_ID — бот получит ID записи и сохранит chat_id пациента
   document.getElementById('tg-hint').innerHTML=bot
-    ?`<p>Напишите боту — получите подтверждение записи и напоминания о приёме:</p><a class="tg-link" href="https://t.me/${bot}?start=appt_${apptId}" target="_blank">&#9992;&#65039; Написать боту</a>`
-    :`<p>По вопросам пишите: <b>@AnnaNvslv</b></p>`;
+    ?`<p>${T('tgPrompt')}</p><a class="tg-link" href="https://t.me/${bot}?start=appt_${apptId}" target="_blank">${T('tgBtn')}</a>`
+    :`<p>${T('tgFallback')}</p>`;
   goPage('confirm');
 }
 

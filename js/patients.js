@@ -100,7 +100,7 @@ async function _renderPatientCard(pid) {
   const[{data:p},{data:appts},{data:orders},{data:exams}]=await Promise.all([
     db.from('patients').select('*').eq('id',pid).single(),
     db.from('appointments').select('*').eq('patient_id',pid).is('deleted_at',null).order('date',{ascending:false}),
-    db.from('orders').select('*').eq('patient_id',pid).order('created_at',{ascending:false}),
+    db.from('orders').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false}),
     db.from('examinations').select('*').eq('patient_id',pid).order('created_at',{ascending:false})
   ]);
   if(!p){closeModal();return;}
@@ -215,7 +215,7 @@ function _patientForm(p){
           <div id="age-hint" class="age-hint">${p?.dob?calcAge(p.dob)+' лет':''}</div>
         </div>
         <div class="form-group"><label>Telegram @username</label><input id="p-tguser" value="${p?.telegram_username||''}"></div>
-        <div class="form-group"><label>Telegram Chat ID</label><input id="p-tgid" value="${p?.telegram_chat_id||''}" placeholder="123456789"></div>
+        <div class="form-group"><label>Telegram Chat ID</label><input type="number" id="p-tgid" value="${p?.telegram_chat_id||''}" placeholder="123456789"></div>
         <div class="form-group full"><label>${t('source')}</label>
           <select id="p-source"><option value="">— выберите —</option>${SOURCES.map(s=>`<option ${p?.source===s?'selected':''}>${s}</option>`).join('')}</select>
         </div>
@@ -231,18 +231,27 @@ function _patientForm(p){
 function showAgeHint(dob){const a=calcAge(dob);document.getElementById('age-hint').textContent=a?a+' лет':'';}
 async function savePatient(id){
   const name=v('p-name');if(!name){alert(t('enter_name'));return;}
-  const data={name,phone:v('p-phone'),email:v('p-email'),dob:v('p-dob')||null,telegram_username:v('p-tguser'),telegram_chat_id:v('p-tgid'),source:v('p-source'),notes:v('p-notes')};
-  if(id){
-    await db.from('patients').update(data).eq('id',id);
-    toast(t('updated'));_lastAddedPatientId=null;
-    closeModal();openPatientCard(id);
-  } else {
-    const{data:np}=await db.from('patients').insert(data).select().single();
-    _lastAddedPatientId=np?.id;
-    toast(t('added'));
-    closeModal();
-    if(np?.id) openPatientCard(np.id);
-    else render();
+  const tgIdRaw=v('p-tgid');
+  const telegram_chat_id=tgIdRaw?+tgIdRaw:null; // #5 fix: число, не строка
+  const data={name,phone:v('p-phone'),email:v('p-email'),dob:v('p-dob')||null,telegram_username:v('p-tguser'),telegram_chat_id,source:v('p-source'),notes:v('p-notes')};
+  try {
+    if(id){
+      const{error}=await db.from('patients').update(data).eq('id',id);
+      if(error) throw error;
+      toast(t('updated'));_lastAddedPatientId=null;
+      closeModal();openPatientCard(id);
+    } else {
+      const{data:np,error}=await db.from('patients').insert(data).select().single();
+      if(error) throw error;
+      _lastAddedPatientId=np?.id;
+      toast(t('added'));
+      closeModal();
+      if(np?.id) openPatientCard(np.id);
+      else render();
+    }
+  } catch(err) {
+    console.error('savePatient error:',err);
+    alert('❌ Ошибка сохранения: '+(err.message||'нет связи'));
   }
 }
 async function delPatient(id){if(!confirm(t('confirm_delete_patient')))return;await db.from('patients').update({deleted_at:new Date().toISOString()}).eq('id',id);toast(t('moved_to_trash')||'U korpu');render();}

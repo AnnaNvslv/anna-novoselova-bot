@@ -4,7 +4,8 @@ const fmtMoney = n => (+n||0).toLocaleString('ru-RU')+' дин.';
 const initials = n => (n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
 const today = () => new Date().toISOString().split('T')[0];
 const addMonths = (d,m) => { const dt=new Date(d); dt.setMonth(dt.getMonth()+m); return dt.toISOString().split('T')[0]; };
-const orderTotal = o => (+o.frame_price||0)+(+o.lens_price||0)*2+(+o.work_price||0);
+// orderTotal учитывает lens_qty (по умолчанию 2)
+const orderTotal = o => (+o.frame_price||0) + (+o.lens_price||0)*(+(o.lens_qty)||2) + (+o.work_price||0);
 const orderBalance = o => orderTotal(o)-(+o.prepayment||0);
 const isAdmin = () => role==='admin';
 const isErvin = () => role==='ervin';

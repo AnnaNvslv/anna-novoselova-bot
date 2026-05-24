@@ -4,18 +4,33 @@ async function renderAnalytics() {
   const loc=_lang==='sr'?'sr-RS':'ru-RU';
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('analytics')}</h1></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
   const nowMonth=today().substr(0,7);
+  const monthStart=nowMonth+'-01';
+  // Следующий месяц для границы
+  const nextMonthDate=new Date(monthStart); nextMonthDate.setMonth(nextMonthDate.getMonth()+1);
+  const monthEnd=nextMonthDate.toISOString().split('T')[0];
+
   const[{data:allOrders},{data:patients},{data:monthAppts}]=await Promise.all([
-    db.from('orders').select('*'),
-    db.from('patients').select('id'),
-    db.from('appointments').select('consultation_price,status').gte('created_at',nowMonth+'-01').lte('created_at',nowMonth+'-31T23:59:59')
+    // Заказы без удалённых
+    db.from('orders').select('*').is('deleted_at',null),
+    db.from('patients').select('id').is('deleted_at',null),
+    // Зарплата по приёмам: фильтр по ДАТЕ приёма (date), а не created_at
+    db.from('appointments').select('consultation_price,status,date')
+      .gte('date',monthStart).lt('date',monthEnd).neq('status','отменён').is('deleted_at',null)
   ]);
   const orders=allOrders||[];
   const issued=orders.filter(o=>o.status==='выдан');
-  const salaryOrders=orders.filter(o=>o.counts_for_salary&&(o.created_at||'').substr(0,7)===nowMonth);
+  // Выручка за месяц — по issued_date (дата выдачи), а не created_at
+  const monthRev=issued.filter(o=>{
+    const d=o.issued_date||o.created_at?.split('T')[0]||'';
+    return d>=monthStart && d<monthEnd;
+  }).reduce((s,o)=>s+orderTotal(o),0);
+  const salaryOrders=orders.filter(o=>o.counts_for_salary&&(()=>{
+    const d=o.issued_date||o.order_date||o.created_at?.split('T')[0]||'';
+    return d>=monthStart && d<monthEnd;
+  })());
   const salaryFromOrders=salaryOrders.reduce((s,o)=>s+orderTotal(o),0)*0.10;
   const salaryFromAppts=(monthAppts||[]).reduce((s,a)=>s+(+a.consultation_price||0),0);
   const totalSalary=Math.round(salaryFromOrders)+salaryFromAppts;
-  const monthRev=issued.filter(o=>(o.created_at||'').substr(0,7)===nowMonth).reduce((s,o)=>s+orderTotal(o),0);
   const avgCheck=issued.length?Math.round(issued.reduce((s,o)=>s+orderTotal(o),0)/issued.length):0;
   const apptCount=(monthAppts||[]).length;
   document.querySelector('.content').innerHTML=`

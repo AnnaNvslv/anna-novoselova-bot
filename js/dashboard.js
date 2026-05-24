@@ -11,7 +11,12 @@ async function renderDashboard() {
     db.from('available_slots').select('*').eq('date',todayStr).order('start_time'),
   ]);
   const nowMonth=todayStr.substr(0,7);
-  const{data:monthRevOrders}=await db.from('orders').select('frame_price,lens_price,work_price').eq('status','выдан').gte('created_at',nowMonth+'-01');
+  const monthStart=nowMonth+'-01';
+  const nextMonthDate=new Date(monthStart); nextMonthDate.setMonth(nextMonthDate.getMonth()+1);
+  const monthEnd=nextMonthDate.toISOString().split('T')[0];
+  // Выручка по issued_date, а не created_at
+  const{data:monthRevOrders}=await db.from('orders').select('frame_price,lens_price,lens_qty,work_price,issued_date,created_at')
+    .eq('status','выдан').gte('issued_date',monthStart).lt('issued_date',monthEnd);
   const monthRev=(monthRevOrders||[]).reduce((s,o)=>s+orderTotal(o),0);
 
   // Build today's slot grid
@@ -21,12 +26,13 @@ async function renderDashboard() {
   (todaySlots||[]).forEach(s=>{slotByTime[s.start_time?.substr(0,5)]=s;});
   const allTimes=[...new Set([...Object.keys(slotByTime),...Object.keys(apptByTime)])].sort();
 
-  const todayGridHtml = allTimes.length ? allTimes.map(t=>{
-    const appt=apptByTime[t];
-    const slot=slotByTime[t];
+  // #9 fix: переименовываем параметр map чтобы не затенять глобальную t()
+  const todayGridHtml = allTimes.length ? allTimes.map(tm=>{
+    const appt=apptByTime[tm];
+    const slot=slotByTime[tm];
     if(appt){
       return`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:#dbeafe;margin-bottom:5px;cursor:pointer" onclick="openPatientCard('${appt.patient_id}')">
-        <div style="font-size:13px;font-weight:700;color:#1e3a8a;min-width:40px">${t}</div>
+        <div style="font-size:13px;font-weight:700;color:#1e3a8a;min-width:40px">${tm}</div>
         <div style="flex:1">
           <div style="font-size:13.5px;font-weight:700;color:#1e3a8a">${appt.patients?.name?.split(' ')[0]||'—'}</div>
           <div style="font-size:11.5px;color:#3b5dbf;opacity:.8">${apptTypeName(appt.type||'').split('(')[0]?.trim()||''}</div>
@@ -36,13 +42,13 @@ async function renderDashboard() {
     }
     if(slot&&!slot.is_booked){
       return`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:#d1fae5;margin-bottom:5px">
-        <div style="font-size:13px;font-weight:700;color:#065f46;min-width:40px">${t}</div>
+        <div style="font-size:13px;font-weight:700;color:#065f46;min-width:40px">${tm}</div>
         <div style="font-size:13px;color:#065f46">Slobodan termin</div>
       </div>`;
     }
     if(slot&&slot.booked_by==='ervin'){
       return`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;background:#fde68a;margin-bottom:5px">
-        <div style="font-size:13px;font-weight:700;color:#92400e;min-width:40px">${t}</div>
+        <div style="font-size:13px;font-weight:700;color:#92400e;min-width:40px">${tm}</div>
         <div style="font-size:13px;color:#92400e">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div>
       </div>`;
     }

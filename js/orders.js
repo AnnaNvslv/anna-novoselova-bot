@@ -75,13 +75,11 @@ function _rxOpts(exams, selVal){
     window._examCache[e.id] = e;
     const d = fmt(e.created_at?.split('T')[0]);
     ['far','comp','near','cl'].forEach(type => {
-      // Пропускаем тип если нет ни одного заполненного поля
       if(!_rxDioptStr(e, type)) return;
       const val = e.id+'|'+type;
       opts.push('<option value="'+val+'"'+(selVal===val?' selected':'')+'>'+_rxOptLabel(e, type, d)+'</option>');
     });
   });
-  // Если у пациента есть обследования но все поля пустые
   if(opts.length === 1) {
     opts.push('<option value="" disabled>— обследования без данных рецепта —</option>');
   }
@@ -178,8 +176,7 @@ function orderTotal_lenses(o){
   const qty = o.lens_qty ?? 2;
   return (+o.lens_price||0) * qty;
 }
-const _origOrderTotal = orderTotal;
-orderTotal = o => (+o.frame_price||0) + orderTotal_lenses(o) + (+o.work_price||0);
+// ВАЖНО: НЕ переопределяем глобальный orderTotal — он уже корректен в utils.js (учитывает lens_qty)
 
 // ═══ ORDER FORM ═══
 function openAddOrder(){openAddOrderFor(null);}
@@ -440,7 +437,7 @@ async function saveQuickRx(){
   if(sel.options[0]?.value==='') sel.options[0].textContent='— без рецепта —';
   const d=fmt(today());
   ['far','comp','near','cl'].forEach(tp => {
-    if(!_rxDioptStr(ne,tp)) return; // не добавляем пустые
+    if(!_rxDioptStr(ne,tp)) return;
     const opt=document.createElement('option');
     const val=ne.id+'|'+tp;
     opt.value=val; opt.textContent=_rxOptLabel(ne,tp,d);
@@ -544,22 +541,30 @@ async function saveOrder(id){
     work_price:v('o-wprice')?Math.max(+v('o-wprice'),0):null,
     prepayment:Math.max(+v('o-prepay')||0,0),
     promised_date:v('o-pdate')||null,notes:v('o-notes')};
-  if(id){
-    const st=v('o-status');
-    await db.from('orders').update({...data,status:st}).eq('id',id);
-    toast('Заказ обновлён');
-  } else {
-    await db.from('orders').insert({...data,status:'оформлен'});
-    toast('Заказ оформлен');
+  try {
+    if(id){
+      const st=v('o-status');
+      const{error}=await db.from('orders').update({...data,status:st}).eq('id',id);
+      if(error) throw error;
+      toast('Заказ обновлён');
+    } else {
+      const{error}=await db.from('orders').insert({...data,status:'оформлен'});
+      if(error) throw error;
+      toast('Заказ оформлен');
+    }
+    await recalcSalary(patient_id);
+    closeModal();render();
+  } catch(err) {
+    console.error('saveOrder error:',err);
+    alert('❌ Ошибка сохранения заказа: '+(err.message||'нет связи'));
   }
-  await recalcSalary(patient_id);
-  closeModal();render();
 }
 async function updateOrderStatus(id,status){
   const updates={status};
   if(status==='готов') updates.ready_date=today();
   if(status==='выдан') updates.issued_date=today();
-  await db.from('orders').update(updates).eq('id',id);
+  const{error}=await db.from('orders').update(updates).eq('id',id);
+  if(error){toast('Ошибка: '+error.message,'error');return;}
   toast('Статус: '+status);
   render();
 }
@@ -567,7 +572,8 @@ async function issueOrder(id){
   const{data:o}=await db.from('orders').select('*').eq('id',id).single();
   const bal=orderBalance(o);
   if(bal>0&&!confirm('Остаток '+fmtMoney(bal)+'. Выдать?'))return;
-  await db.from('orders').update({status:'выдан',issued_date:today()}).eq('id',id);
+  const{error}=await db.from('orders').update({status:'выдан',issued_date:today()}).eq('id',id);
+  if(error){toast('Ошибка: '+error.message,'error');return;}
   toast('Выдан ✓');render();
 }
 async function notifyOrderReady(id){
@@ -589,6 +595,7 @@ async function sendFollowUpSurvey(orderId){
 }
 async function delOrder(id){
   if(!confirm(t('confirm_delete_order')))return;
-  await db.from('orders').update({deleted_at:new Date().toISOString()}).eq('id',id);
+  const{error}=await db.from('orders').update({deleted_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Ошибка: '+error.message,'error');return;}
   toast(t('moved_to_trash')||'U korpu');render();
 }

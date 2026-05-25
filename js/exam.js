@@ -335,7 +335,7 @@ function _renderCorrs(){
           <div class="form-group full" style="grid-column:span 2"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value"></div>
         `}
       </div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`  +
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}` +
     `</div>`;
   }).join('');
 }
@@ -409,7 +409,7 @@ async function _buildPrintCard(examId) {
   const age=p?.dob?calcAge(p.dob):'';
   const hd=(fields)=>fields.some(f=>rx(f));
   const date=fmt((e?.created_at||today()).split('T')[0]);
-  const doctor=s.doctor_name||'Анна Новосёлова';
+  const doctor=s.doctor_name||'Ana Novoselova';
 
   const rxBlock=(title,rows,shared)=>{
     if(!rows.some(r=>r.v1||r.v2||r.v3)) return '';
@@ -431,36 +431,36 @@ async function _buildPrintCard(examId) {
     <div class="pc-header">
       <div>
         <div style="font-size:9pt;color:#555">${doctor}</div>
-        <div class="pc-doctor-sub">Оптометрист · Нови-Сад, Сербия</div>
+        <div class="pc-doctor-sub">Optometrista · Novi Sad, Srbija</div>
       </div>
       <div class="pc-meta">
-        <div style="font-size:11pt;font-weight:800;color:#1B4F72">${e?.appointment_number||('Визит №'+(e?.visit_number||1))}</div>
+        <div style="font-size:11pt;font-weight:800;color:#1B4F72">${e?.appointment_number||('Poseta br.'+(e?.visit_number||1))}</div>
         <div style="font-size:9pt;color:#555">${date}</div>
       </div>
     </div>
-    <div class="pc-title">Карта оптометрического обследования</div>
+    <div class="pc-title">Karton optometrijskog pregleda</div>
     <div class="pc-patient-block">
       <div style="font-size:14pt;font-weight:800;color:#1a1a2e">${p?.name||''}</div>
-      <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' лет':''}${p?.patient_code?' · ID: '+p.patient_code:''}</div>
+      <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' god.':''}${p?.patient_code?' · ID: '+p.patient_code:''}</div>
     </div>
-    ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Причина обращения</div><div class="pc-text">${rx('visit_reason')}</div></div>`:'' }
-    ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Жалобы</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
-    ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Глазные заболевания</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
-    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Анамнез (со слов пациента)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}
+    ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Razlog dolaska</div><div class="pc-text">${rx('visit_reason')}</div></div>`:''}
+    ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Tegobe</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
+    ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Bolesti oka</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
+    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Anamneza (prema rečima pacijenta)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}
     ${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Используемая коррекция</div>
+      <div class="pc-sec-label">Korekcija u upotrebi</div>
       ${e.current_corrections.map(c=>`<div style="margin-bottom:5pt">
         <div style="font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:2pt">${c.type}${c.duration?' · '+c.duration:''}</div>
         <table class="pc-table"><tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${c.type==='МКЛ'?'<th>BC</th><th>DIA</th>':'<th>PD</th>'}${c.od_add?'<th>ADD</th>':''}</tr>
           <tr><td class="eye">OD</td><td>${c.od_sph||''}</td><td>${c.od_cyl||''}</td><td>${c.od_ax||''}</td><td>${c.type==='МКЛ'?(c.bc||''):(c.pd||'')}</td>${c.od_add?`<td>${c.od_add}</td>`:''}</tr>
           <tr><td class="eye">OS</td><td>${c.os_sph||''}</td><td>${c.os_cyl||''}</td><td>${c.os_ax||''}</td><td>${c.type==='МКЛ'?(c.dia||''):''}${c.type!=='МКЛ'?'':''}</td>${c.os_add?`<td>${c.os_add}</td>`:''}</tr>
         </table>
-        ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Вид МКЛ: ${c.cl_type}</div>`:''}
-        ${c.note?`<div style="font-size:7.5pt;color:#555">Примечание: ${c.note}</div>`:''}
+        ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Vrsta KS: ${c.cl_type}</div>`:''}
+        ${c.note?`<div style="font-size:7.5pt;color:#555">Napomena: ${c.note}</div>`:''}
       </div>`).join('')}
     </div>`:''}`+
     `<div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Авторефрактометрия</div>
+      <div class="pc-sec-label">Autorefraktometrija</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>R AVE</th></tr>
         <tr><td class="eye">OD</td><td>${rx('refr_od_sph')}</td><td>${rx('refr_od_cyl')}</td><td>${rx('refr_od_ax')}</td><td>${rx('refr_od_ave')}</td></tr>
@@ -469,25 +469,25 @@ async function _buildPrintCard(examId) {
       ${rx('refr_od_pd')?`<div style="font-size:8pt;margin-top:4pt"><b>PD:</b> ${rx('refr_od_pd')}</div>`:''}
     </div>
     <div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Результаты обследования</div>
+      <div class="pc-sec-label">Rezultati pregleda</div>
       <table class="pc-table">
-        <tr><th></th><th>Visus без корр.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus с корр.</th></tr>
+        <tr><th></th><th>Visus bez kor.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th></tr>
         <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td></tr>
         <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td></tr>
       </table>
-      ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>OU с коррекцией:</b> ${rx('exam_ou')}</div>`:''}
+      ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>OU sa korekcijom:</b> ${rx('exam_ou')}</div>`:''}
     </div>
-    ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock('Параметры для изготовления очков для дали',
+    ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock('Parametri za izradu naočara za daljinu',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax')}],
       [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}]):''}
-    ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock('Параметры для изготовления очков для компьютера',
+    ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock('Parametri za izradu naočara za rad za računarom',
       [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax')}],
       [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}]):''}
-    ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock('Параметры для изготовления очков для близи',
+    ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock('Parametri za izradu naočara za blizinu',
       [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax')}],
       [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}]):''}
     ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block" style="page-break-inside:avoid">
-      <div class="pc-rx-title">Параметры для назначения МКЛ</div>
+      <div class="pc-rx-title">Parametri za propisivanje KS</div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${rx('rx_cl_od_sph')}</td><td>${rx('rx_cl_od_cyl')}</td><td>${rx('rx_cl_od_ax')}</td></tr>
@@ -496,16 +496,16 @@ async function _buildPrintCard(examId) {
       <div style="font-size:8pt;margin-top:4pt;display:flex;gap:16pt">
         ${rx('rx_cl_od_bc')?`<span><b>BC:</b> ${rx('rx_cl_od_bc')}</span>`:''}
         ${rx('rx_cl_od_dia')?`<span><b>DIA:</b> ${rx('rx_cl_od_dia')}</span>`:''}
-        ${rx('rx_cl_od_type')?`<span><b>Вид МКЛ:</b> ${rx('rx_cl_od_type')}</span>`:''}
+        ${rx('rx_cl_od_type')?`<span><b>Vrsta KS:</b> ${rx('rx_cl_od_type')}</span>`:''}
       </div>
     </div>`:''}
     <div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Рекомендации и заключение</div>
+      <div class="pc-sec-label">Preporuke i zaključak</div>
       <div class="pc-recs">${rx('recommendations')||'—'}</div>
     </div>
     <div class="pc-footer">
-      <div class="pc-note">Документ предназначен для подбора и изготовления оптической коррекции (очки / МКЛ). При наличии заболеваний глаз, болях или резком ухудшении зрения обратитесь к врачу-офтальмологу.</div>
-      ${e?.control_date?`<div class="pc-control">Контрольный визит:<br>${fmt(e.control_date)}</div>`:''}
+      <div class="pc-note">Dokument je namenjen za izbor i izradu optičke korekcije (naočare / KS). U slučaju bolesti oka, bolova ili naglog pogoršanja vida, obratite se lekaru oftalmologu.</div>
+      ${e?.control_date?`<div class="pc-control">Kontrolna poseta:<br>${fmt(e.control_date)}</div>`:''}
     </div>
   </div>`;
   document.getElementById('print-area').innerHTML = html;
@@ -523,18 +523,18 @@ async function emailExam(examId,target){
   const{data:sRows}=await db.from('settings').select('key,value').in('key',['doctor_name']);
   const s={}; (sRows||[]).forEach(r=>s[r.key]=r.value);
   const date=fmt((e?.created_at||today()).split('T')[0]);
-  const title=`${t('exam_card')} — ${p?.name||'пациент'} — ${date}`;
+  const title=`${t('exam_card')} — ${p?.name||'pacijent'} — ${date}`;
   const html=document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
   let toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p?.email||'');
-  if(target==='patient'&&!toEmail){ toast('Email пациента не указан','error'); return; }
+  if(target==='patient'&&!toEmail){ toast('Email pacijenta nije naveden','error'); return; }
   let subj, body;
   if(target==='clinic'){
     subj=`${p?.name||''}`;
     body=`Karta pacijenta ${p?.name||''}`;
   } else {
     subj=`${p?.name||''}`;
-    body=`Здравствуйте!\n\nПрикрепляю вашу карту оптометрического обследования.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Анна Новосёлова'}`;
+    body=`Здравствуйте!\n\nПрикрепляю вашу карту оптометрического обследования.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Ana Novoselova'}`;
   }
   toast('Sačuvajte PDF i priložite uz pismo','info');
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1500);
@@ -550,7 +550,7 @@ async function _buildPatientPrintCard(pid) {
   ]);
   if(!p) return null;
   const age = p.dob ? calcAge(p.dob) : '';
-  const today_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const today_str = new Date().toLocaleDateString('sr-Latn-RS',{day:'2-digit',month:'2-digit',year:'numeric'});
 
   const apptRows = (appts||[]).map(a=>`
     <tr>
@@ -560,18 +560,18 @@ async function _buildPatientPrintCard(pid) {
       <td>${a.time?.substr(0,5)||'—'}</td>
       <td>${a.status||'—'}</td>
       <td>${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
-    </tr>`).join('') || '<tr><td colspan="6" style="color:#999;text-align:center">Нет приёмов</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="6" style="color:#999;text-align:center">Nema pregleda</td></tr>';
 
   const lastExam = (exams||[])[0];
   const examBlock = lastExam ? `
     <div class="pc-sec">
-      <div class="pc-sec-label">Последняя карта — ${lastExam.appointment_number||('Визит №'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
+      <div class="pc-sec-label">Poslednji karton — ${lastExam.appointment_number||('Poseta br.'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
       <table class="pc-table" style="font-size:8pt">
-        <tr><th></th><th>Sph даль</th><th>Cyl</th><th>Ax</th></tr>
+        <tr><th></th><th>Sph daljina</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td></tr>
         <tr><td class="eye">OS</td><td>${lastExam.rx_far_os_sph||'—'}</td><td>${lastExam.rx_far_os_cyl||'—'}</td><td>${lastExam.rx_far_os_ax||'—'}</td></tr>
       </table>
-      ${lastExam.control_date?`<div style="margin-top:4pt;font-size:8pt;color:#b45309"><b>Контрольный визит:</b> ${fmt(lastExam.control_date)}</div>`:''}
+      ${lastExam.control_date?`<div style="margin-top:4pt;font-size:8pt;color:#b45309"><b>Kontrolna poseta:</b> ${fmt(lastExam.control_date)}</div>`:''}
     </div>` : '';
 
   const orderRows = (orders||[]).map(o=>`
@@ -580,53 +580,53 @@ async function _buildPatientPrintCard(pid) {
       <td>${o.type||'—'}</td>
       <td>${o.status||'—'}</td>
       <td>${o.order_total?fmtMoney(o.order_total):'—'}</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="color:#999;text-align:center">Нет заказов</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="4" style="color:#999;text-align:center">Nema porudžbina</td></tr>';
 
   const html = `<div class="print-card">
     <div class="pc-bar"></div>
     <div class="pc-header">
       <div>
-        <div class="pc-doctor">Анна Новосёлова</div>
-        <div class="pc-doctor-sub">Оптометрист · Нови-Сад, Сербия · Оптика Ginter</div>
+        <div class="pc-doctor">Ana Novoselova</div>
+        <div class="pc-doctor-sub">Optometrista · Novi Sad, Srbija · Optika Ginter</div>
       </div>
       <div class="pc-meta">
-        <div class="pc-meta-num">${t('patient_profile')}</div>
-        <div>Дата: ${today_str}</div>
+        <div class="pc-meta-num">Karton pacijenta</div>
+        <div>Datum: ${today_str}</div>
       </div>
     </div>
-    <div class="pc-title">${t('patient_profile')}</div>
+    <div class="pc-title">Karton pacijenta</div>
     <div class="pc-patient-block">
       <div class="pc-patient-name">${p.name||''}</div>
-      <div class="pc-patient-sub">${age?age+' лет':''}${p.dob?' · Д.р.: '+fmt(p.dob):''}${p.patient_code?' · ID: '+p.patient_code:''}</div>
+      <div class="pc-patient-sub">${age?age+' god.':''}${p.dob?' · D.r.: '+fmt(p.dob):''}${p.patient_code?' · ID: '+p.patient_code:''}</div>
     </div>
     <div class="pc-sec">
-      <div class="pc-sec-label">Контактная информация</div>
+      <div class="pc-sec-label">Kontaktni podaci</div>
       <table style="font-size:8.5pt;width:100%;border-collapse:collapse">
-        <tr><td style="width:35%;color:#555;padding:2pt 0">Телефон</td><td>${p.phone||'—'}</td></tr>
+        <tr><td style="width:35%;color:#555;padding:2pt 0">Telefon</td><td>${p.phone||'—'}</td></tr>
         <tr><td style="color:#555;padding:2pt 0">Email</td><td>${p.email||'—'}</td></tr>
         <tr><td style="color:#555;padding:2pt 0">Telegram</td><td>${p.telegram_chat_id?'ID: '+p.telegram_chat_id:p.telegram_username?'@'+p.telegram_username:'—'}</td></tr>
-        <tr><td style="color:#555;padding:2pt 0">Источник</td><td>${p.source||'—'}</td></tr>
-        <tr><td style="color:#555;padding:2pt 0">В базе с</td><td>${fmt(p.created_at?.split('T')[0])}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">Izvor</td><td>${p.source||'—'}</td></tr>
+        <tr><td style="color:#555;padding:2pt 0">U bazi od</td><td>${fmt(p.created_at?.split('T')[0])}</td></tr>
       </table>
-      ${p.notes?`<div style="margin-top:6pt;font-size:8pt;background:#f0f9ff;padding:5pt 8pt;border-radius:4pt"><b>Примечания:</b> ${p.notes}</div>`:''}
+      ${p.notes?`<div style="margin-top:6pt;font-size:8pt;background:#f0f9ff;padding:5pt 8pt;border-radius:4pt"><b>Napomene:</b> ${p.notes}</div>`:''}
     </div>
     ${examBlock}
     <div class="pc-sec">
-      <div class="pc-sec-label">История приёмов</div>
+      <div class="pc-sec-label">Istorija pregleda</div>
       <table class="pc-table" style="font-size:8pt">
-        <tr><th>Дата</th><th>№ приёма</th><th>Вид</th><th>Время</th><th>Статус</th><th>Стоимость</th></tr>
+        <tr><th>Datum</th><th>Br. pregleda</th><th>Vrsta</th><th>Vreme</th><th>Status</th><th>Cena</th></tr>
         ${apptRows}
       </table>
     </div>
     <div class="pc-sec">
-      <div class="pc-sec-label">Заказы</div>
+      <div class="pc-sec-label">Porudžbine</div>
       <table class="pc-table" style="font-size:8pt">
-        <tr><th>Дата</th><th>Тип</th><th>Статус</th><th>Сумма</th></tr>
+        <tr><th>Datum</th><th>Vrsta</th><th>Status</th><th>Iznos</th></tr>
         ${orderRows}
       </table>
     </div>
     <div class="pc-footer">
-      <div class="pc-note">Документ сформирован автоматически из CRM Оптики Ginter. Конфиденциально.</div>
+      <div class="pc-note">Dokument je automatski generisan iz CRM sistema Optike Ginter. Poverljivo.</div>
     </div>
   </div>`;
   document.getElementById('print-area').innerHTML = html;
@@ -672,7 +672,7 @@ async function savePatientPDF(pid) {
   toast('Строим карточку...','info');
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
-  const title = `${t('patient_profile')} — ${p.name||'пациент'} — ${new Date().toLocaleDateString('ru-RU')}`;
+  const title = `Karton pacijenta — ${p.name||'pacijent'} — ${new Date().toLocaleDateString('sr-Latn-RS')}`;
   const html = document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
 }
@@ -681,15 +681,15 @@ async function emailPatientPDF(pid, target) {
   toast('Строим карточку...','info');
   const p = await _buildPatientPrintCard(pid);
   if(!p) { toast('Ошибка: пациент не найден','error'); return; }
-  const date_str = new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const title = `${t('patient_profile')} — ${p.name||'пациент'} — ${date_str}`;
+  const date_str = new Date().toLocaleDateString('sr-Latn-RS',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const title = `Karton pacijenta — ${p.name||'pacijent'} — ${date_str}`;
   const html = document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
   const toEmail = target==='clinic' ? 'optikaginter@yahoo.com' : (p.email||'');
-  if(target==='patient' && !toEmail) { toast('Email пациента не указан в карточке','error'); return; }
-  const subj = `${t('patient_profile')} — ${p.name||''} — ${date_str}`;
+  if(target==='patient' && !toEmail) { toast('Email pacijenta nije naveden u kartonu','error'); return; }
+  const subj = `Karton pacijenta — ${p.name||''} — ${date_str}`;
   const body = target==='clinic'
-    ? `Kartica pacijenta ${p.name||''} formirana ${date_str}.\n\nPriložite sačuvani PDF uz pismo.\n\nS poštovanjem,\nАнна Новосёлова`
-    : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАнна Новосёлова\nОптометрист · Нови-Сад`;
+    ? `Kartica pacijenta ${p.name||''} formirana ${date_str}.\n\nPriložite sačuvani PDF uz pismo.\n\nS poštovanjem,\nAna Novoselova`
+    : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАна Новосёлова\nОптометрист · Нови-Сад`;
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1200);
 }

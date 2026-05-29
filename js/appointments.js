@@ -17,8 +17,8 @@ async function renderAppointments() {
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="flex gap-8">
-          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">&#128203; Kartica</button><button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">&#10003;</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">&#128683;</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">&#128465;</button>`:''}
-          ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
+          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price||3000})">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
+          ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
@@ -157,7 +157,7 @@ async function saveAppt(id){
     if(v('a-notify')==='yes'&&!id){
       const{data:p}=await db.from('patients').select('name,telegram_chat_id').eq('id',patient_id).single();
       if(p?.telegram_chat_id){
-        const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n\ud83d\udcc5 ${fmtDateLong(date)}\n\u23f0 ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибльа пијаца, там, где проходит Ночной Базар)</a> \ud83d\udccd\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n\ud83d\udcb0 Стоимость приёма: ${(+(v('a-price')||3000)).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули.\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
+        const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n📅 ${fmtDateLong(date)}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n💰 Стоимость приёма: ${(+(v('a-price')||3000)).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули.\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
         await tgSend(p.telegram_chat_id,msg);
       }
     }
@@ -189,11 +189,41 @@ async function blockSlotsByDuration(date,startTime,durationMin,appointmentId){
   for(const sl of toBlock) await db.from('available_slots').update({is_booked:true,booked_by:null,appointment_id:appointmentId}).eq('id',sl.id);
 }
 
-async function confirmCompleteAppt(id){
-  if(!confirm(t('confirm_complete')))return;
-  const{error}=await db.from('appointments').update({status:'завершён'}).eq('id',id);
+// ═══ COMPLETE APPOINTMENT POPUP ═══
+function openCompleteApptPopup(id, defaultPrice) {
+  openModal(`<div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✅ Завершить приём</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Сумма оплаты (дин.)</label>
+        <input type="number" id="complete-price" value="${defaultPrice||3000}" class="" style="font-size:20px;font-weight:700;text-align:center;padding:12px;border:2px solid var(--accent);border-radius:8px;width:100%">
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label>Комментарий</label>
+        <input type="text" id="complete-note" placeholder="необязательно" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-success" onclick="doCompleteAppt('${id}')">✓ Завершить</button>
+    </div>
+  </div>`);
+  setTimeout(()=>{ const el=document.getElementById('complete-price'); if(el){el.focus();el.select();} },100);
+}
+
+async function doCompleteAppt(id) {
+  const price = parseFloat(document.getElementById('complete-price')?.value) || 0;
+  const note = document.getElementById('complete-note')?.value?.trim() || '';
+  const updates = { status: 'завершён', consultation_price: price };
+  if (note) updates.notes = note;
+  const{error}=await db.from('appointments').update(updates).eq('id',id);
   if(error){toast('Ошибка: '+error.message,'error');return;}
-  toast(t('appt_done'));render();
+  closeModal();
+  toast(t('appt_done'));
+  if(_openPatientId){_renderPatientCard(_openPatientId);}else{render();}
 }
 
 async function cancelAppt(id){
@@ -214,7 +244,7 @@ async function deleteAppt(id){
   }
   const{error}=await db.from('appointments').update({deleted_at:new Date().toISOString()}).eq('id',id);
   if(error){toast('Ошибка удаления: '+error.message,'error');return;}
-  toast(t('moved_to_trash')||'Premišteno u korpu');
+  toast(t('moved_to_trash')||'Premješteno u korpu');
   if(_openPatientId){_renderPatientCard(_openPatientId);}else{renderAppointments();}
 }
 
@@ -231,4 +261,11 @@ function _apptSaveState(){
   window._pendingApptType=v('a-type');
   window._pendingApptDate=v('a-date');
   window._pendingApptTime=v('a-time');
+}
+
+async function generateApptNumber(date){
+  const mon=date.substr(5,2); const yr=date.substr(2,2);
+  const prefix=`OG-${mon}${yr}`;
+  const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',`${prefix}-%`);
+  return`${prefix}-${String((count||0)+1).padStart(2,'0')}`;
 }

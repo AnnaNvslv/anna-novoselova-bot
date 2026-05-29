@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Семейный бюджет</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3350;
+  --text: #e8eaf6;
+  --text-m: #8b8fa8;
+  --text-l: #555970;
+  --accent: #6c63ff;
+  --accent-l: rgba(108,99,255,0.12);
+  --green: #10b981;
+  --green-l: rgba(16,185,129,0.12);
+  --red: #ef4444;
+  --red-l: rgba(239,68,68,0.12);
+  --warn: #f59e0b;
+  --warn-l: rgba(245,158,11,0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; min-height: 100vh; }
+.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
+.topbar-logo span { color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.month-nav { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; }
+.month-label { font-size: 16px; font-weight: 700; min-width: 160px; text-align: center; }
+.main { padding: 28px 32px 48px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.summary-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; flex-wrap: wrap; }
+.summary-card { flex: 1; min-width: 120px; text-align: center; padding: 12px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); }
+.summary-income { border-color: rgba(16,185,129,0.3); }
+.summary-expense { border-color: rgba(239,68,68,0.25); }
+.summary-balance { border-color: rgba(108,99,255,0.3); }
+.summary-savings { border-color: rgba(108,99,255,0.2); }
+.savings-missing { border-color: var(--warn) !important; background: var(--warn-l) !important; }
+.balance-negative { border-color: var(--red) !important; background: var(--red-l) !important; }
+.summary-icon { font-size: 20px; margin-bottom: 4px; }
+.summary-val { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.summary-lbl { font-size: 11px; color: var(--text-m); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+.summary-sub { font-size: 11px; color: var(--text-l); margin-top: 2px; }
+.summary-arrow { font-size: 24px; color: var(--text-l); font-weight: 300; padding: 0 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.b-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.b-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.b-section-title { font-size: 18px; font-weight: 700; flex: 1; }
+.b-total-badge { font-size: 14px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+.income-badge { background: var(--green-l); color: var(--green); }
+.expense-badge { background: var(--red-l); color: var(--red); }
+.paid-badge { background: var(--green-l); color: var(--green); font-size: 12px; }
+.reserved-badge { background: var(--warn-l); color: var(--warn); font-size: 12px; }
+.income-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.income-card { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 18px 16px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s; position: relative; }
+.income-card--filled { border-color: rgba(16,185,129,0.4); }
+.income-card--auto { border-color: rgba(108,99,255,0.3); }
+.income-card-icon { font-size: 24px; }
+.income-card-label { font-size: 13px; color: var(--text-m); font-weight: 600; }
+.income-auto-badge { position: absolute; top: 10px; right: 10px; font-size: 9px; background: var(--accent-l); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+.income-card-amount { font-size: 20px; font-weight: 800; color: var(--green); }
+.income-card-amount--empty { color: var(--text-l); font-size: 16px; }
+.income-orig { font-size: 12px; color: var(--text-m); font-weight: 400; }
+.income-note { font-size: 12px; color: var(--text-l); }
+.income-card-actions { margin-top: 8px; display: flex; gap: 6px; }
+.expense-totals { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.expense-category { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: hidden; }
+.cat--paid { border-color: rgba(16,185,129,0.25); }
+.cat--planned { border-color: var(--border); }
+.cat--partial { border-color: rgba(245,158,11,0.25); }
+.expense-cat-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface2); font-weight: 700; font-size: 14px; }
+.expense-cat-name { display: flex; align-items: center; gap: 8px; }
+.expense-cat-total { font-size: 14px; color: var(--text-m); }
+.cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-paid { background: var(--green); }
+.dot-planned { background: var(--text-l); }
+.dot-reserved { background: var(--warn); }
+.expense-row { display: flex; align-items: center; padding: 10px 14px; border-top: 1px solid var(--border); gap: 12px; transition: background 0.15s; }
+.expense-row:hover { background: var(--surface2); }
+.row-paid { background: rgba(16,185,129,0.04); }
+.row-reserved { background: rgba(245,158,11,0.04); }
+.expense-row-info { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.expense-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.expense-sub { font-size: 14px; }
+.expense-note { font-size: 12px; color: var(--text-m); }
+.expense-amount { text-align: right; min-width: 110px; }
+.recurring-badge { font-size: 14px; opacity: 0.6; }
+.amt-main { font-size: 14px; font-weight: 700; display: block; }
+.amt-sub { font-size: 11px; color: var(--text-m); display: block; }
+.status-select { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; }
+.savings-warn { border-color: var(--warn) !important; }
+.savings-no-contrib { background: var(--warn-l); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px; color: var(--warn); margin-bottom: 16px; }
+.savings-total-block { text-align: center; }
+.savings-total-label { font-size: 11px; color: var(--text-m); text-transform: uppercase; letter-spacing: 0.5px; }
+.savings-total-value { font-size: 28px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+.savings-month-stats { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.savings-stat { flex: 1; display: flex; justify-content: space-between; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; }
+.savings-stat-add { background: var(--green-l); color: var(--green); }
+.savings-stat-withdraw { background: var(--red-l); color: var(--red); }
+.savings-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+.savings-history { display: flex; flex-direction: column; gap: 6px; }
+.savings-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; }
+.srow-add { background: var(--green-l); color: var(--green); }
+.srow-withdraw { background: var(--red-l); color: var(--red); }
+.savings-note { font-weight: 400; color: var(--text-m); flex: 1; }
+.analytics-bars { display: flex; flex-direction: column; gap: 10px; }
+.analytics-row { display: flex; align-items: center; gap: 12px; }
+.analytics-cat { width: 140px; font-size: 13px; color: var(--text-m); flex-shrink: 0; }
+.analytics-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.analytics-bar { height: 100%; background: linear-gradient(90deg, var(--accent), #a78bfa); border-radius: 4px; transition: width 0.4s ease; min-width: 2px; }
+.analytics-amt { font-size: 13px; font-weight: 700; min-width: 110px; text-align: right; }
+.analytics-pct { font-size: 12px; color: var(--text-l); min-width: 36px; text-align: right; }
+.b-btn { padding: 8px 16px; border: none; border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.b-btn-accent { background: var(--accent); color: #fff; }
+.b-btn-accent:hover { background: #5a52e0; }
+.b-btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.b-btn-ghost:hover { background: var(--border); }
+.b-btn-danger { background: var(--red-l); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+.b-btn-danger:hover { background: rgba(239,68,68,0.2); }
+.b-btn-sm { padding: 5px 10px; font-size: 12px; }
+.b-btn-icon { background: none; color: var(--text-m); padding: 4px 6px; font-size: 14px; }
+.b-btn-icon:hover { color: var(--text); }
+#b-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#b-overlay.hidden { display: none; }
+.b-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 380px; max-width: 560px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+.b-modal-lg { max-width: 720px; }
+.b-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+.b-modal-title { font-size: 17px; font-weight: 700; }
+.b-modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+.b-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px 20px; border-top: 1px solid var(--border); }
+.b-form-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.b-form-group { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 6px; }
+.b-form-group label { font-size: 12px; font-weight: 600; color: var(--text-m); text-transform: uppercase; letter-spacing: 0.5px; }
+.b-input { width: 100%; padding: 10px 12px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.15s; }
+.b-input:focus { border-color: var(--accent); }
+.b-cur-sel { padding: 10px 12px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: inherit; font-size: 14px; cursor: pointer; width: 100%; }
+.b-info-box { background: var(--accent-l); border: 1px solid rgba(108,99,255,0.2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--text-m); margin-bottom: 14px; }
+.b-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.b-settings-title { font-size: 14px; font-weight: 700; color: var(--text-m); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.recurring-list { display: flex; flex-direction: column; gap: 8px; }
+.recurring-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap; }
+.recurring-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.recurring-cat { font-size: 13px; font-weight: 700; }
+.recurring-sub { font-size: 12px; color: var(--text-m); }
+.recurring-amount { font-size: 13px; font-weight: 700; color: var(--red); min-width: 80px; text-align: right; }
+.recurring-freq { font-size: 11px; color: var(--text-l); min-width: 60px; text-align: center; }
+#b-toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.b-toast-msg { padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; color: #fff; box-shadow: var(--shadow); animation: slideIn 0.2s ease; }
+@keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.b-spinner { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-m); font-size: 16px; gap: 12px; }
+.b-spinner::before { content: ''; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+@media (max-width: 768px) {
+  .topbar { padding: 0 16px; }
+  .main { padding: 16px; }
+  .two-col { grid-template-columns: 1fr; }
+  .summary-bar { padding: 14px 16px; gap: 6px; }
+  .summary-card { min-width: 90px; padding: 8px 6px; }
+  .summary-val { font-size: 14px; }
+  .b-modal { min-width: unset; }
+  .analytics-cat { width: 90px; font-size: 11px; }
+  .income-grid { grid-template-columns: repeat(2, 1fr); }
+  .b-section { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<div id="b-overlay" class="hidden" onclick="if(event.target===this)bCloseModal()">
+  <div id="b-modal-container"></div>
+</div>
+<div id="b-toast"></div>
+<div class="app-shell">
+  <div class="topbar">
+    <div class="topbar-logo">💸 Семейный <span>бюджет</span></div>
+    <div class="topbar-right">
+      <div class="month-nav">
+        <button class="b-btn b-btn-ghost b-btn-sm" onclick="changeMonth(-1)">‹</button>
+        <div class="month-label" id="month-display">—</div>
+        <button class="b-btn b-btn-ghost b-btn-sm" onclick="changeMonth(1)">›</button>
+      </div>
+      <button class="b-btn b-btn-ghost b-btn-sm" onclick="syncIncomeFromCRM(currentMonth)" title="Синхронизировать зарплату из CRM">🔄 CRM</button>
+      <button class="b-btn b-btn-ghost b-btn-sm" onclick="openBudgetSettings()">⚙️</button>
+    </div>
+  </div>
+  <div class="main" id="main-content">
+    <div class="b-spinner">Загрузка...</div>
+  </div>
+</div>
+<div id="print-area" style="display:none"></div>
+<script src="js/budget-config.js?v=1"></script>
+<script src="js/budget-utils.js?v=1"></script>
+<script src="js/budget-income.js?v=1"></script>
+<script src="js/budget-expenses.js?v=1"></script>
+<script src="js/budget-savings.js?v=1"></script>
+<script src="js/budget-analytics.js?v=1"></script>
+<script src="js/budget-settings.js?v=1"></script>
+<script>
+async function renderMonth(month) {
+  currentMonth = month;
+  document.getElementById('month-display').textContent = monthLabel(month);
+  document.getElementById('main-content').innerHTML = '<div class="b-spinner">Загрузка...</div>';
+  await loadRates();
+  await ensureRecurringForMonth(month);
+  const [income, expenses, savings] = await Promise.all([
+    loadIncome(month),
+    loadExpenses(month),
+    loadSavings(month),
+  ]);
+  document.getElementById('main-content').innerHTML = `
+    ${renderSummaryBar(income, expenses, savings, month)}
+    <div class="two-col">
+      <div>
+        ${renderIncomeSection(income, month)}
+        ${renderSavingsSection(savings, month)}
+      </div>
+      <div>
+        ${renderExpensesSection(expenses, month)}
+      </div>
+    </div>
+    ${renderAnalyticsSection(expenses)}
+  `;
+}
+function changeMonth(dir) {
+  const month = dir > 0 ? nextMonth(currentMonth) : prevMonth(currentMonth);
+  renderMonth(month);
+}
+window.addEventListener('DOMContentLoaded', async () => {
+  await renderMonth(currentMonth);
+  syncAnyaOpticaIncome(currentMonth).catch(() => {});
+});
+</script>
+</body>
+</html>

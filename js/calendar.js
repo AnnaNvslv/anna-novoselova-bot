@@ -59,7 +59,6 @@ async function renderSlots() {
       </div>`;}
     if(slot&&!slot.is_booked){
       if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">Zauzimi</div></div>`;
-      // Admin: clicking free slot opens appointment form
       if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">+ ${t('appointments')||'Pregled'}</div></div>`;
       return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
@@ -92,14 +91,14 @@ async function renderSlots() {
     .cal-pill-ervin-add:hover{background:#fef3c7}
     .cal-pill-past{opacity:.25}
   </style>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+  <div class="cal-controls-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div class="flex gap-8 items-center">
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2--;renderSlots()">${t('back')}</button>
       <b style="font-size:15px;min-width:160px;text-align:center">${monthLabel}</b>
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2=0;renderSlots()">${t('today')}</button>
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2++;renderSlots()">${t('forward')}</button>
     </div>
-    <div class="flex gap-8 items-center">
+    <div class="flex gap-8 items-center" style="flex-wrap:wrap">
       ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">${t('custom_slot')}</button>
         <button class="btn btn-ghost btn-sm" onclick="openRemoveSlotDialog()" title="Удалить слот">🗑 ${t('slot_remove')||'Ukloni slot'}</button>
         <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">${`📅 ${t('open_day')}`}</button>
@@ -107,21 +106,23 @@ async function renderSlots() {
       ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">${`+ ${t('my_slot')}`}</button>`:''}
     </div>
   </div>
-  <div class="cal-grid">
-    <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)">${s.cal_duration||60}м +${s.cal_break||15}м</div>
-    ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isToday=d===todayStr;const isWork=workDays.includes(dt.getDay());
-      return`<div class="cal-grid-head${isToday?' today':''}" style="${!isWork?'opacity:.45':''}">
-        <div style="font-size:11px">${DOW[dt.getDay()]}</div>
-        <div class="cal-date">${dt.getDate()}</div>
-        ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
-      </div>`;}).join('')}
-    ${allTimes.map(tm=>`
-      <div class="cal-grid-time">${tm}</div>
-      ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
-        return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,tm)}</div>`;}).join('')}
-    `).join('')}
+  <div class="cal-grid-wrap">
+    <div class="cal-grid">
+      <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)">${s.cal_duration||60}м +${s.cal_break||15}м</div>
+      ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isToday=d===todayStr;const isWork=workDays.includes(dt.getDay());
+        return`<div class="cal-grid-head${isToday?' today':''}" style="${!isWork?'opacity:.45':''}">
+          <div style="font-size:11px">${DOW[dt.getDay()]}</div>
+          <div class="cal-date">${dt.getDate()}</div>
+          ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
+        </div>`;}).join('')}
+      ${allTimes.map(tm=>`
+        <div class="cal-grid-time">${tm}</div>
+        ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
+          return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,tm)}</div>`;}).join('')}
+      `).join('')}
+    </div>
   </div>
-  <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap">
+  <div class="cal-legend" style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>${t("slot_open")} (клик → записать)</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#dbeafe;display:inline-block"></span>${t("patient")}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fde68a;display:inline-block"></span>${t("slot_ervin")}</span>
@@ -135,7 +136,6 @@ async function addSlotAt(date,time){
   renderSlots();
 }
 
-// Dialog to remove a specific free slot (admin only, via separate UI — not by clicking a booked slot)
 async function openRemoveSlotDialog(){
   const toD=new Date();toD.setDate(toD.getDate()+21);
   const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');

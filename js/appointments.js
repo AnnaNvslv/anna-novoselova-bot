@@ -16,8 +16,8 @@ async function renderAppointments() {
         <td style="font-size:13.5px">${a.type||'—'}</td>
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
-        <td><div class="flex gap-8">
-          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price||3000})">✓</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
+        <td><div class="appt-actions">
+          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price||3000})">✓ Завершить</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
           ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
@@ -199,7 +199,7 @@ function openCompleteApptPopup(id, defaultPrice) {
     <div class="modal-body">
       <div class="form-group">
         <label>Сумма оплаты (дин.)</label>
-        <input type="number" id="complete-price" value="${defaultPrice||3000}" class="" style="font-size:20px;font-weight:700;text-align:center;padding:12px;border:2px solid var(--accent);border-radius:8px;width:100%">
+        <input type="number" id="complete-price" value="${defaultPrice||3000}" style="font-size:20px;font-weight:700;text-align:center;padding:12px;border:2px solid var(--accent);border-radius:8px;width:100%">
       </div>
       <div class="form-group" style="margin-top:12px">
         <label>Комментарий</label>

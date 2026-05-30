@@ -255,7 +255,7 @@ input[type=number]{-moz-appearance:textfield}
   .topbar{padding:12px 14px 0;flex-wrap:wrap;gap:8px;align-items:flex-start}
   .topbar h1{font-size:17px;flex:1}
   .topbar-actions{flex-wrap:wrap;gap:6px;width:100%}
-  .topbar-actions .btn{flex:1 1 auto;justify-content:center;min-height:40px}
+  .topbar-actions .btn{flex:1 1 auto;justify-content:center;min-height:44px}
   .content{padding:12px 12px 20px}
   .search-wrap{width:100%}
   .search-wrap input{width:100%!important}
@@ -289,24 +289,82 @@ input[type=number]{-moz-appearance:textfield}
   .rx-shared-row .form-group{min-width:120px}
   .tab-bar{-webkit-overflow-scrolling:touch}
   .tab{padding:8px 12px!important;font-size:13px!important}
+  .filter-bar{overflow-x:auto;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .filter-btn{white-space:nowrap;min-height:36px}
+  .section-header{flex-direction:column;align-items:flex-start;gap:8px}
+  #toast{bottom:68px!important;right:12px!important;left:12px!important}
+  .login-box{width:92vw!important;padding:28px 20px!important}
+  .corr-item > div[style*="grid-template-columns:50px"]{grid-template-columns:40px 1fr 1fr!important;}
+
+  /* ═══ ТАБЛИЦЫ → КАРТОЧКИ (кроме rx-table, cal-grid, pc-table) ═══ */
   .table-wrap{overflow-x:visible!important}
-  table,thead,tbody,th,td,tr{display:block!important}
-  thead{display:none!important}
-  tbody tr{background:var(--surface);border-radius:10px;margin-bottom:10px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border);}
-  tbody tr:hover td{background:transparent!important}
-  td{padding:3px 0!important;border:none!important;font-size:14px;line-height:1.4}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid),
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) thead,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) th,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) td,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tr{display:block!important}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) thead{display:none!important}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody tr{
+    background:var(--surface);border-radius:10px;margin-bottom:10px;
+    padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border);
+  }
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody tr:hover td{background:transparent!important}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) td{
+    padding:3px 0!important;border:none!important;font-size:14px;line-height:1.4
+  }
   td .flex{flex-wrap:wrap!important;gap:6px!important;margin-top:8px}
   td .btn{min-height:38px}
+
+  /* ═══ ПРИЁМЫ: кнопки действий в карточке ═══ */
+  /* Кнопки действий — в 2 ряда, крупные, удобные для пальца */
+  .appt-actions{
+    display:flex!important;flex-wrap:wrap!important;
+    gap:6px!important;margin-top:10px!important;
+  }
+  .appt-actions .btn{
+    flex:1 1 calc(50% - 3px)!important;
+    min-width:0!important;
+    justify-content:center!important;
+    min-height:42px!important;
+    font-size:13px!important;
+  }
+
+  /* ═══ ИСТОРИЯ В ПРОФИЛЕ ═══ */
   .history-item{flex-direction:column;gap:8px}
   .history-item .flex{flex-wrap:wrap;gap:6px}
   .history-item .flex .btn{flex:1 1 auto;justify-content:center;min-height:40px}
   .modal-header .patient-avatar{width:38px!important;height:38px!important;font-size:14px!important}
-  .filter-bar{overflow-x:auto;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
-  .filter-btn{white-space:nowrap;min-height:36px}
-  .section-header{flex-direction:column;align-items:flex-start;gap:8px}
-  .cal-week{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .cal-nav{gap:8px}
-  #toast{bottom:68px!important;right:12px!important;left:12px!important}
-  .login-box{width:92vw!important;padding:28px 20px!important}
-  .corr-item > div[style*="grid-template-columns:50px"]{grid-template-columns:40px 1fr 1fr!important;}
+
+  /* ═══ РАСПИСАНИЕ (calendar.js рендерит .cal-grid через inline CSS-grid) ═══ */
+  /* Оборачиваем сетку в горизонтальный скролл-контейнер */
+  .cal-grid-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    margin:0 -12px;
+    padding:0 12px;
+  }
+  /* Минимальная ширина: 52px (time) + 7 * 90px = 682px — умещается в скролл */
+  .cal-grid{
+    min-width:640px;
+  }
+  /* Ячейки чуть компактнее на мобиле */
+  .cal-grid-cell{min-height:46px!important;padding:3px 2px!important}
+  .cal-pill{padding:4px 5px!important;font-size:10px!important}
+  .cal-pill-name{font-size:10px!important}
+  .cal-pill-sub{font-size:9px!important}
+  .cal-pill-add{font-size:18px!important}
+  .cal-grid-head{padding:6px 4px!important;font-size:10px!important}
+  .cal-date{font-size:17px!important}
+  .cal-grid-time{font-size:10px!important;padding:4px 4px 4px 0!important}
+  /* Кнопки навигации расписания — перенос */
+  .cal-controls-top{
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .cal-controls-top > .flex{
+    flex-wrap:wrap;gap:6px;
+  }
+  .cal-controls-top .btn{flex:1 1 auto;justify-content:center;min-height:40px}
+  /* Легенда под сеткой */
+  .cal-legend{flex-direction:column!important;gap:6px!important}
 }

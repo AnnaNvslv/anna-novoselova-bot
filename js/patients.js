@@ -88,6 +88,7 @@ function filterPatientsUI(q) {
   ):_allPatients;
   renderPatientsTable(f);
 }
+
 // ═══ PATIENT CARD (Профиль пациента) ═══
 async function openPatientCard(pid) {
   _cardTab='appts';
@@ -109,15 +110,20 @@ async function _renderPatientCard(pid) {
     <div class="modal modal-full">
       <div class="modal-header">
         <div class="flex items-center gap-12">
-          <div class="patient-avatar" style="width:52px;height:52px;font-size:20px">${initials(p.name)}</div>
-          <div>
-            <div style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${p.name} ${p.patient_code?`<span class="badge badge-gray" style="font-size:13px;font-weight:600">${p.patient_code}</span>`:''} ${_patientBadge(pid)}</div>
-            <div style="font-size:13px;color:var(--text-m)">${age?(age+' '+(t('years')||'god.')+' · '):''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
+          <div class="patient-avatar" style="width:46px;height:46px;font-size:18px;flex-shrink:0">${initials(p.name)}</div>
+          <div style="min-width:0">
+            <div style="font-size:18px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.3">
+              <span style="word-break:break-word">${p.name}</span>
+              ${p.patient_code?`<span class="badge badge-gray" style="font-size:12px;font-weight:600;flex-shrink:0">${p.patient_code}</span>`:''}
+              ${_patientBadge(pid)}
+            </div>
+            <div style="font-size:12px;color:var(--text-m);margin-top:2px">${age?(age+' '+(t('years')||'god.')+' · '):''} ${p.phone||''} ${p.telegram_chat_id?'· ✈️ TG':''}</div>
           </div>
         </div>
-        <div class="flex gap-8">
-          ${!isErvin()?`<button class="btn btn-accent" onclick="openAddAppointmentFor('${pid}')">+ ${t('appointments')}</button>`:''}
-          ${isAdmin()?`<button class="btn btn-accent" onclick="openAddOrderFor('${pid}')">+ ${t('orders')}</button><button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard('${pid}')" title="Obriši pacijenta">🗑</button>`:''}
+        <div class="profile-actions">
+          ${!isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddAppointmentFor('${pid}')">+ ${t('appointments')}</button>`:''}
+          ${isAdmin()?`<button class="btn btn-accent btn-sm" onclick="openAddOrderFor('${pid}')">+ ${t('orders')}</button>`:''}
+          ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient('${pid}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard('${pid}')" title="Obriši pacijenta">🗑</button>`:''}
           ${!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="savePatientPDF('${pid}')">💾 PDF</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
         </div>
@@ -145,19 +151,20 @@ async function _renderPatientCard(pid) {
       </div>
     </div>`;
 }
+
 function _apptTab(appts,pid){
   if(!appts.length)return`<div class="empty"><p>${t('no_appts')}</p></div>`;
   return appts.map(a=>`<div class="history-item">
     <div class="history-dot"></div>
-    <div style="flex:1">
-      <div class="history-date">${fmt(a.date)} в ${a.time?.substr(0,5)} · <span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}" style="font-size:11px">${a.status}</span></div>
-      <div class="history-title">${a.appointment_number?'<span class="badge badge-accent" style="font-size:10px;margin-right:4px">'+a.appointment_number+'</span>':''}${a.type||t('appointments')}</div>
+    <div style="flex:1;min-width:0">
+      <div class="history-date">${fmt(a.date)} в ${a.time?.substr(0,5)} · <span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}" style="font-size:11px">${statusLabel(a.status)}</span></div>
+      <div class="history-title" style="word-break:break-word">${a.appointment_number?'<span class="badge badge-accent" style="font-size:10px;margin-right:4px">'+a.appointment_number+'</span>':''}${a.type||t('appointments')}</div>
       ${a.consultation_price?`<div class="text-sm text-m">${t('cost')}: ${fmtMoney(a.consultation_price)}</div>`:''}
     </div>
-    <div class="flex gap-8">
+    <div class="history-actions">
       ${!isErvin()?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${pid}')">📋 ${t('exam_card_short')}</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button>
-      ${a.status==='запланирован'&&!isErvin()?`<button class="btn btn-success btn-sm" onclick="confirmCompleteAppt('${a.id}')">✓</button><button class="btn btn-ghost btn-sm" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
+      ${a.status==='запланирован'&&!isErvin()?`<button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price||3000})">✓</button><button class="btn btn-ghost btn-sm" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
       ${a.status==='отменён'?`<span class="badge badge-gray">${t('status_cancelled')}</span>`:''}
     </div>
   </div>`).join('');
@@ -166,13 +173,13 @@ function _examTabHtml(exams,pid){
   if(!exams.length)return`<div class="empty"><p>${t('exam_card')} - нет</p></div>`;
   return exams.map(e=>`<div class="history-item">
     <div class="history-dot" style="background:var(--primary-l);border-color:var(--primary)"></div>
-    <div style="flex:1">
+    <div style="flex:1;min-width:0">
       <div class="history-date">${t('visit')}${e.visit_number||'—'} · ${fmt(e.created_at?.split('T')[0])}</div>
       <div class="history-title">${t('exam_card')}</div>
       <div class="text-sm text-m">${[e.rx_far_od_sph?'Даль':'',e.rx_comp_od_sph?'Компьютер':'',e.rx_near_od_sph?'Близь':'',e.rx_cl_od_sph?'МКЛ':''].filter(Boolean).join(' · ')||'Параметры не заполнены'}</div>
       ${e.control_date?`<div class="text-sm" style="color:var(--warn)">Контроль: ${fmt(e.control_date)}</div>`:''}
     </div>
-    <div class="flex gap-8">
+    <div class="history-actions">
       <button class="btn btn-ghost btn-sm" onclick="openExamView('${e.id}','${pid}')">Otvori</button>
       <button class="btn btn-primary btn-sm" onclick="printExam('${e.id}')">🖨️</button>
     </div>
@@ -182,13 +189,13 @@ function _orderTab(orders,pid){
   if(!orders.length)return`<div class="empty"><p>${t('no_orders')}</p></div>`;
   return orders.map(o=>{const bal=orderBalance(o);return`<div class="history-item">
     <div class="history-dot" style="background:var(--accent-l);border-color:var(--accent)"></div>
-    <div style="flex:1">
-      <div class="history-date">${fmt(o.created_at?.split('T')[0])} · <span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}" style="font-size:11px">${o.status}</span>${o.counts_for_salary?' <span class="salary-badge">💰</span>':''}</div>
-      <div class="history-title">${o.type}${o.prescription_label?' — '+o.prescription_label:''}${o.order_number?' <span class="badge badge-gray" style="font-size:10px">№'+o.order_number+'</span>':''}</div>
+    <div style="flex:1;min-width:0">
+      <div class="history-date">${fmt(o.created_at?.split('T')[0])} · <span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}" style="font-size:11px">${statusLabel(o.status)}</span>${o.counts_for_salary?' <span class="salary-badge">💰</span>':''}</div>
+      <div class="history-title" style="word-break:break-word">${o.type}${o.prescription_label?' — '+o.prescription_label:''}${o.order_number?' <span class="badge badge-gray" style="font-size:10px">№'+o.order_number+'</span>':''}</div>
       <div class="text-sm text-m">${[o.frame_code,o.lens_name].filter(Boolean).join(' / ')||'—'}</div>
-      <div class="text-sm mt-4">Итого: <b>${fmtMoney(orderTotal(o))}</b> · Предоплата: ${fmtMoney(o.prepayment)} · Остаток: <span class="${bal>0?'money-debt':'money-paid'}">${fmtMoney(bal)}</span></div>
+      <div class="text-sm mt-4">Итого: <b>${fmtMoney(orderTotal(o))}</b> · Предопл: ${fmtMoney(o.prepayment)} · Ост: <span class="${bal>0?'money-debt':'money-paid'}">${fmtMoney(bal)}</span></div>
     </div>
-    <div class="flex gap-8">
+    <div class="history-actions">
       ${o.status==='в работе'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="updateOrderStatus('${o.id}','готов')">Spreman</button>`:''}
       ${o.status==='готов'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady('${o.id}')">📨</button><button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">Preuzmi</button>`:''}
       ${o.status==='выдан'&&!isErvin()?`<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey('${o.id}')">🔁</button>`:''}
@@ -232,7 +239,7 @@ function showAgeHint(dob){const a=calcAge(dob);document.getElementById('age-hint
 async function savePatient(id){
   const name=v('p-name');if(!name){alert(t('enter_name'));return;}
   const tgIdRaw=v('p-tgid');
-  const telegram_chat_id=tgIdRaw?+tgIdRaw:null; // #5 fix: число, не строка
+  const telegram_chat_id=tgIdRaw?+tgIdRaw:null;
   const data={name,phone:v('p-phone'),email:v('p-email'),dob:v('p-dob')||null,telegram_username:v('p-tguser'),telegram_chat_id,source:v('p-source'),notes:v('p-notes')};
   try {
     if(id){

@@ -1,1 +1,3 @@
-PLACEHOLDER
+/* see crm-base.css + crm-mobile.css — split due to size limit */
+@import url('crm-base.css');
+@import url('crm-mobile.css');

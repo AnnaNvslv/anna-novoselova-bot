@@ -41,9 +41,11 @@ function _weekLabel(mon, sun) {
   return fmt2(mon) + ' – ' + fmt2(sun) + '.' + sun.getFullYear();
 }
 
-// Вернуть дату заказа для фильтрации по периоду
+// Дата оформления заказа: сначала вручную проставленная order_date,
+// затем created_at как резервный вариант.
+// issued_date здесь НЕ используется — она про выдачу, а не про период оформления.
 function _orderDate(o) {
-  return o.issued_date || o.order_date || (o.created_at ? o.created_at.split('T')[0] : '');
+  return o.order_date || (o.created_at ? o.created_at.split('T')[0] : '');
 }
 
 async function renderAnalytics() {
@@ -57,9 +59,7 @@ async function renderAnalytics() {
   const { start: periodStart, end: periodEnd, label: periodLabel } = _getPeriodBounds();
 
   const [{ data: allOrders }, { data: allPatients }, { data: periodAppts }] = await Promise.all([
-    // Все активные заказы — фильтрация по дате на стороне JS
     db.from('orders').select('*').is('deleted_at', null),
-    // Все активные пациенты — фильтрация по дате на стороне JS
     db.from('patients').select('id,created_at').is('deleted_at', null),
     // Только ЗАВЕРШЁННЫЕ приёмы с заполненной стоимостью за период
     db.from('appointments').select('consultation_price,status,date')
@@ -69,7 +69,7 @@ async function renderAnalytics() {
       .is('deleted_at', null)
   ]);
 
-  // Заказы за период (по дате заказа)
+  // Заказы за период — по дате оформления (order_date)
   const periodOrders = (allOrders || []).filter(o => {
     const d = _orderDate(o);
     return d >= periodStart && d < periodEnd;
@@ -81,16 +81,17 @@ async function renderAnalytics() {
     return d >= periodStart && d < periodEnd;
   });
 
-  // Выручка — выданные заказы за период
-  const issuedPeriod = periodOrders.filter(o => o.status === 'выдан');
-  const periodRev = issuedPeriod.reduce((s, o) => s + orderTotal(o), 0);
+  // Выручка — все заказы периода кроме отменённых и возвратов
+  const revenueOrders = periodOrders.filter(o => o.status !== 'отменен' && o.status !== 'возврат');
+  const periodRev = revenueOrders.reduce((s, o) => s + orderTotal(o), 0);
 
   // Средний чек — по выданным за период
+  const issuedPeriod = periodOrders.filter(o => o.status === 'выдан');
   const avgCheck = issuedPeriod.length
     ? Math.round(issuedPeriod.reduce((s, o) => s + orderTotal(o), 0) / issuedPeriod.length)
     : 0;
 
-  // Зарплата: завершённые приёмы (consultation_price > 0) + 10% от заказов counts_for_salary за период
+  // Зарплата: завершённые приёмы с ценой + 10% от заказов counts_for_salary за период
   const salaryOrders = periodOrders.filter(o => o.counts_for_salary);
   const salaryFromOrders = salaryOrders.reduce((s, o) => s + orderTotal(o), 0) * 0.10;
   const salaryFromAppts = (periodAppts || []).reduce((s, a) => s + (+a.consultation_price || 0), 0);
@@ -122,7 +123,7 @@ async function renderAnalytics() {
       </div>
     </div>
     <div class="stats-grid">
-      <div class="stat-card stat-green"><div class="stat-label">${t('revenue')}</div><div class="stat-value">${periodRev.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')} (${t('issued_orders')})</div></div>
+      <div class="stat-card stat-green"><div class="stat-label">${t('revenue')}</div><div class="stat-value">${periodRev.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')} (${t('all_orders_period')})</div></div>
       <div class="stat-card stat-accent"><div class="stat-label">${t('avg_check')}</div><div class="stat-value">${avgCheck.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')}</div></div>
       <div class="stat-card"><div class="stat-label">${t('total_patients')}</div><div class="stat-value">${periodPatients.length}</div><div class="stat-sub">${t('added_period')}</div></div>
       <div class="stat-card"><div class="stat-label">${t('total_orders')}</div><div class="stat-value">${periodOrders.length}</div><div class="stat-sub">${t('added_period')}</div></div>

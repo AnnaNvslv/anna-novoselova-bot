@@ -64,6 +64,7 @@ const TRANSLATIONS = {
     currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
     period_month: 'Месяц', period_week: 'Неделя', added_period: 'за период',
+    all_orders_period: 'все заказы периода',
     // SETTINGS
     settings: 'Настройки', general: 'Основное', doctor_name: 'Имя врача', clinic_name: 'Название клиники',
     pin_codes: 'PIN-коды', admin_pin: 'PIN администратора', staff_pin: 'PIN сотрудника', ervin_pin: 'PIN Ervin',
@@ -159,6 +160,7 @@ const TRANSLATIONS = {
     currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
     period_month: 'Mesec', period_week: 'Nedelja', added_period: 'za period',
+    all_orders_period: 'sve porudžbine perioda',
     // SETTINGS
     settings: 'Podešavanja', general: 'Osnovno', doctor_name: 'Ime doktora', clinic_name: 'Naziv klinike',
     pin_codes: 'PIN-kodovi', admin_pin: 'PIN administratora', staff_pin: 'PIN zaposlenog', ervin_pin: 'PIN Ervin',

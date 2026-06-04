@@ -35,7 +35,6 @@ function _getPeriodBounds() {
 }
 
 function _monthLabel(date) {
-  const loc = _lang === 'sr' ? 'sr-RS' : 'ru-RU';
   const months = t('months');
   return months[date.getMonth()] + ' ' + date.getFullYear();
 }
@@ -55,35 +54,43 @@ async function renderAnalytics() {
 
   const { start: periodStart, end: periodEnd, label: periodLabel } = _getPeriodBounds();
 
-  const [{ data: allOrders }, { data: patients }, { data: periodAppts }] = await Promise.all([
-    db.from('orders').select('*').is('deleted_at', null),
-    db.from('patients').select('id').is('deleted_at', null),
+  const [{ data: periodOrders }, { data: periodPatients }, { data: periodAppts }] = await Promise.all([
+    // Заказы за период (по issued_date или created_at)
+    db.from('orders').select('*').is('deleted_at', null)
+      .or(`issued_date.gte.${periodStart},created_at.gte.${periodStart}T00:00:00`)
+      .lt('issued_date', periodEnd),
+    // Пациенты, добавленные за период
+    db.from('patients').select('id,created_at').is('deleted_at', null)
+      .gte('created_at', periodStart + 'T00:00:00').lt('created_at', periodEnd + 'T00:00:00'),
+    // Только ЗАВЕРШЁННЫЕ приёмы с подтверждённой стоимостью (consultation_price > 0)
     db.from('appointments').select('consultation_price,status,date')
-      .gte('date', periodStart).lt('date', periodEnd).neq('status', 'отменён').is('deleted_at', null)
+      .gte('date', periodStart).lt('date', periodEnd)
+      .eq('status', 'завершён')
+      .gt('consultation_price', 0)
+      .is('deleted_at', null)
   ]);
 
-  const orders = allOrders || [];
-  const issued = orders.filter(o => o.status === 'выдан');
+  // Для карточки статусов нужны все заказы периода без доп. фильтра по статусу
+  const orders = periodOrders || [];
 
-  const periodRev = issued.filter(o => {
-    const d = o.issued_date || o.created_at?.split('T')[0] || '';
-    return d >= periodStart && d < periodEnd;
-  }).reduce((s, o) => s + orderTotal(o), 0);
+  // Выручка — только выданные заказы за период
+  const issuedPeriod = orders.filter(o => o.status === 'выдан');
+  const periodRev = issuedPeriod.reduce((s, o) => s + orderTotal(o), 0);
 
-  const salaryOrders = orders.filter(o => o.counts_for_salary && (() => {
-    const d = o.issued_date || o.order_date || o.created_at?.split('T')[0] || '';
-    return d >= periodStart && d < periodEnd;
-  })());
+  // Средний чек — по всем выданным за период
+  const avgCheck = issuedPeriod.length
+    ? Math.round(issuedPeriod.reduce((s, o) => s + orderTotal(o), 0) / issuedPeriod.length)
+    : 0;
+
+  // Зарплата: приёмы (завершённые, с ценой) + 10% от заказов counts_for_salary
+  const salaryOrders = orders.filter(o => o.counts_for_salary);
   const salaryFromOrders = salaryOrders.reduce((s, o) => s + orderTotal(o), 0) * 0.10;
   const salaryFromAppts = (periodAppts || []).reduce((s, a) => s + (+a.consultation_price || 0), 0);
   const totalSalary = Math.round(salaryFromOrders) + salaryFromAppts;
-  const avgCheck = issued.length ? Math.round(issued.reduce((s, o) => s + orderTotal(o), 0) / issued.length) : 0;
-  const apptCount = (periodAppts || []).length;
 
+  const apptCount = (periodAppts || []).length;
+  const patientCount = (periodPatients || []).length;
   const isCurrentPeriod = _analyticsOffset === 0;
-  const navLabel = isCurrentPeriod
-    ? (_analyticsPeriod === 'month' ? (t('revenue').split('/')[1] || 'месяц').trim() : '')
-    : '';
 
   document.querySelector('.content').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -110,8 +117,8 @@ async function renderAnalytics() {
     <div class="stats-grid">
       <div class="stat-card stat-green"><div class="stat-label">${t('revenue')}</div><div class="stat-value">${periodRev.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')} (${t('issued_orders')})</div></div>
       <div class="stat-card stat-accent"><div class="stat-label">${t('avg_check')}</div><div class="stat-value">${avgCheck.toLocaleString(loc)}</div><div class="stat-sub">${t('currency_din')}</div></div>
-      <div class="stat-card"><div class="stat-label">${t('total_patients')}</div><div class="stat-value">${(patients || []).length}</div><div class="stat-sub"></div></div>
-      <div class="stat-card"><div class="stat-label">${t('total_orders')}</div><div class="stat-value">${orders.length}</div><div class="stat-sub"></div></div>
+      <div class="stat-card"><div class="stat-label">${t('total_patients')}</div><div class="stat-value">${patientCount}</div><div class="stat-sub">${t('added_period')}</div></div>
+      <div class="stat-card"><div class="stat-label">${t('total_orders')}</div><div class="stat-value">${orders.length}</div><div class="stat-sub">${t('added_period')}</div></div>
       <div class="stat-card" style="background:var(--primary);color:#fff"><div class="stat-label" style="color:rgba(255,255,255,.6)">${t('my_salary')}</div><div class="stat-value" style="color:#fff">${totalSalary.toLocaleString(loc)}</div><div class="stat-sub" style="color:rgba(255,255,255,.5)">${t('currency_din')}</div></div>
     </div>
     <div class="two-col">

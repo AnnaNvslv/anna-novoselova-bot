@@ -24,8 +24,8 @@ const TRANSLATIONS = {
     patients: 'Пациенты', patient: 'Пациент', new_patient: 'Новый пациент', edit_patient: 'Редактировать пациента',
     full_name: 'ФИО', phone: 'Телефон', email: 'Email', age: 'Возраст',
     dob: 'Дата рождения', source: 'Откуда узнал', notes: 'Заметки',
-    card: 'Профиль',               // кнопка в таблице → Профиль пациента
-    patient_profile: 'Профиль пациента',  // заголовок попапа
+    card: 'Профиль',
+    patient_profile: 'Профиль пациента',
     no_patients: 'Нет пациентов', added: 'Добавлен', updated: 'Обновлено', deleted: 'Удалено',
     add_appt_short: '+ Приём', add_order_short: '+ Заказ', add_patient_short: '+ Пациент',
     confirm_delete_patient: 'Удалить пациента со всеми данными?', enter_name: 'Введите имя',
@@ -46,7 +46,6 @@ const TRANSLATIONS = {
     order_status_new: 'оформлен', order_status_work: 'в работе', order_status_ready: 'готов',
     order_status_issued: 'выдан', order_status_cancelled: 'отменен', order_status_return: 'возврат', order_status_redo: 'переделка',
     no_orders: 'Нет заказов', confirm_delete_order: 'Удалить заказ?', issue_confirm: 'Остаток %s. Выдать?',
-    // Типы заказов
     order_type_glasses: 'Очки', order_type_cl: 'Контактные линзы', order_type_repair: 'Ремонт',
     order_number: '№ заказа',
     // CALENDAR
@@ -59,11 +58,12 @@ const TRANSLATIONS = {
     booking_added: 'Запись добавлена', slot_added: 'Слот добавлен', schedule_settings: 'Настройки расписания',
     // ANALYTICS
     analytics: 'Аналитика', admin_only: 'Только для администратора',
-    revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
-    my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
+    revenue: 'Выручка / период', avg_check: 'Средний чек', total_orders: 'Всего заказов',
+    my_salary: 'Моя зарплата / период', salary_calc: 'Расчёт зарплаты',
     appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
     currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
+    period_month: 'Месяц', period_week: 'Неделя',
     // SETTINGS
     settings: 'Настройки', general: 'Основное', doctor_name: 'Имя врача', clinic_name: 'Название клиники',
     pin_codes: 'PIN-коды', admin_pin: 'PIN администратора', staff_pin: 'PIN сотрудника', ervin_pin: 'PIN Ervin',
@@ -76,7 +76,7 @@ const TRANSLATIONS = {
     tg_mychat: 'Мой Chat ID', tg_save: 'Сохранить', tg_test: 'Тест', tg_find_id: 'Найти Chat ID',
     tg_saved: 'Токен сохранён', tg_sent: '📨 Отправлено!', tg_error: 'Ошибка — проверь токен',
     // EXAM
-    exam_card: 'Карта обследования',   // карта оптометрического обследования
+    exam_card: 'Карта обследования',
     exam_card_short: 'Карта',
     visit: 'Визит №', exam_reason: 'Причина обращения',
     complaints: 'Жалобы', anamnesis: 'Анамнез (со слов пациента)', current_correction: 'Используемая коррекция',
@@ -85,12 +85,7 @@ const TRANSLATIONS = {
     recommendations: 'Рекомендации и заключение', control_visit: 'Контрольный визит',
     save_card: 'Карта сохранена ✓', card_created: 'Карта создана ✓', save_error: 'Ошибка сохранения',
     autosave: 'Автосохранение ✓',
-    // Кнопки в карте обследования
-    btn_print: 'Печать',
-    btn_save: 'Сохранить',
-    btn_email_patient: 'Пациенту',
-    btn_email_clinic: 'В оптику',
-    btn_close: 'Закрыть',
+    btn_print: 'Печать', btn_save: 'Сохранить', btn_email_patient: 'Пациенту', btn_email_clinic: 'В оптику', btn_close: 'Закрыть',
     // DAYS & MONTHS
     dow: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
     months: ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
@@ -124,8 +119,8 @@ const TRANSLATIONS = {
     patients: 'Pacijenti', patient: 'Pacijent', new_patient: 'Novi pacijent', edit_patient: 'Uredi pacijenta',
     full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Godine',
     dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Beleške',
-    card: 'Profil',                    // кнопка → Profil pacijenta
-    patient_profile: 'Profil pacijenta', // заголовок попапа
+    card: 'Profil',
+    patient_profile: 'Profil pacijenta',
     no_patients: 'Nema pacijenata', added: 'Dodat', updated: 'Ažurirano', deleted: 'Obrisano',
     add_appt_short: '+ Pregled', add_order_short: '+ Porudžbina', add_patient_short: '+ Pacijent',
     confirm_delete_patient: 'Obrisati pacijenta sa svim podacima?', enter_name: 'Unesite ime',
@@ -146,7 +141,6 @@ const TRANSLATIONS = {
     order_status_new: 'kreirana', order_status_work: 'u izradi', order_status_ready: 'spreman',
     order_status_issued: 'izdata', order_status_cancelled: 'otkazana', order_status_return: 'povrat', order_status_redo: 'prepravka',
     no_orders: 'Nema porudžbina', confirm_delete_order: 'Obrisati porudžbinu?', issue_confirm: 'Ostatak %s. Preuzeti?',
-    // Типы заказов
     order_type_glasses: 'Naočare', order_type_cl: 'Kontaktna sočiva', order_type_repair: 'Popravka',
     order_number: 'Br. porudžbine',
     // CALENDAR
@@ -159,11 +153,12 @@ const TRANSLATIONS = {
     booking_added: 'Termin dodat', slot_added: 'Termin dodat', schedule_settings: 'Podešavanja rasporeda',
     // ANALYTICS
     analytics: 'Analitika', admin_only: 'Samo za administratora',
-    revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
-    my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
+    revenue: 'Prihod / period', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
+    my_salary: 'Moja plata / period', salary_calc: 'Obračun plate',
     appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
     currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
+    period_month: 'Mesec', period_week: 'Nedelja',
     // SETTINGS
     settings: 'Podešavanja', general: 'Osnovno', doctor_name: 'Ime doktora', clinic_name: 'Naziv klinike',
     pin_codes: 'PIN-kodovi', admin_pin: 'PIN administratora', staff_pin: 'PIN zaposlenog', ervin_pin: 'PIN Ervin',
@@ -176,7 +171,7 @@ const TRANSLATIONS = {
     tg_mychat: 'Moj Chat ID', tg_save: 'Sačuvaj', tg_test: 'Test', tg_find_id: 'Pronađi Chat ID',
     tg_saved: 'Token sačuvan', tg_sent: '📨 Poslato!', tg_error: 'Greška — proveri token',
     // EXAM
-    exam_card: 'Optometrijska karta',   // карта обследования
+    exam_card: 'Optometrijska karta',
     exam_card_short: 'Karta',
     visit: 'Pregled br.', exam_reason: 'Razlog dolaska',
     complaints: 'Tegobe', anamnesis: 'Anamneza (po rečima pacijenta)', current_correction: 'Trenutna korekcija',
@@ -185,12 +180,7 @@ const TRANSLATIONS = {
     recommendations: 'Preporuke i zaključak', control_visit: 'Kontrolni pregled',
     save_card: 'Karta sačuvana ✓', card_created: 'Karta kreirana ✓', save_error: 'Greška pri čuvanju',
     autosave: 'Automatski sačuvano ✓',
-    // Кнопки в карте обследования
-    btn_print: 'Štampaj',
-    btn_save: 'Sačuvaj',
-    btn_email_patient: 'Pacijentu',
-    btn_email_clinic: 'Optici',
-    btn_close: 'Zatvori',
+    btn_print: 'Štampaj', btn_save: 'Sačuvaj', btn_email_patient: 'Pacijentu', btn_email_clinic: 'Optici', btn_close: 'Zatvori',
     // DAYS & MONTHS
     dow: ['Ned','Pon','Uto','Sre','Čet','Pet','Sub'],
     months: ['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],

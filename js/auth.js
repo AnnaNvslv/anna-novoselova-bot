@@ -1,4 +1,4 @@
-// ═══ AUTH ═══
+// === AUTH ===
 async function doLogin() {
   const pin = document.getElementById('pin-input').value.trim();
   const errEl = document.getElementById('login-err');
@@ -24,11 +24,10 @@ async function doLogin() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  var mn = document.getElementById('mobile-nav');
-  if (mn) mn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+  // mobile-nav управляется только CSS media query — не трогаем style.display
   const saved=localStorage.getItem('crm_section');
   if(saved&&saved!=='trash'){curSection=saved;}
-  document.getElementById('sb-role-label').textContent = t(`role_${role}`) || role;
+  document.getElementById('sb-role-label').textContent = t('role_'+role) || role;
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+curSection)?.classList.add('active');
   _refreshStaticUI();
@@ -36,6 +35,9 @@ function showApp() {
   ervinHide.forEach(s=>{
     const el=document.getElementById('nav-'+s);
     if(el) el.style.display=isErvin()?'none':'';
+    // скрыть и в мобильном навбаре
+    const mob=document.getElementById('mob-nav-'+s);
+    if(mob) mob.style.display=isErvin()?'none':'';
   });
   document.querySelectorAll('.lang-btn').forEach(b=>{
     b.style.fontWeight=b.dataset.lang===_lang?'800':'400';
@@ -43,12 +45,12 @@ function showApp() {
   });
   if(typeof _mobActive==='function') _mobActive();
 
-  // ═══ DEEPLINK: открыть профиль пациента по хэшу #patient=ID ═══
+  // === DEEPLINK: открыть профиль пациента по хэшу #patient=ID ===
   const hash = window.location.hash;
   if (hash && hash.startsWith('#patient=')) {
     const pid = hash.replace('#patient=', '');
     if (pid) {
-      history.replaceState(null, '', window.location.pathname); // убрать хэш из URL
+      history.replaceState(null, '', window.location.pathname);
       render();
       setTimeout(() => openPatientCard(pid), 300);
       return;

@@ -39,41 +39,140 @@
 .pc-footer{margin-top:10pt;padding-top:6pt;border-top:0.5pt solid #dde;display:flex;justify-content:space-between;align-items:flex-end}
 .pc-note{font-size:6.5pt;color:#999;max-width:130mm}
 .pc-control{font-size:8.5pt;font-weight:700;color:#1B4F72;text-align:right}
+
 @media(max-width:768px){
-  #mobile-nav{display:flex!important;position:fixed;bottom:0;left:0;right:0;height:var(--mobnav);background:var(--primary);z-index:9999;align-items:stretch;box-shadow:0 -2px 12px rgba(0,0,0,.18);overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .mob-nav-item{flex:1;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:rgba(255,255,255,.5);font-size:9px;font-weight:600;border:none;background:transparent;font-family:inherit;padding:4px 2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  /* ══ MOBILE NAV ══ */
+  #mobile-nav{
+    display:flex!important;
+    position:fixed;
+    bottom:0;left:0;right:0;
+    height:var(--mobnav);
+    background:var(--primary);
+    z-index:10000;
+    align-items:stretch;
+    box-shadow:0 -2px 12px rgba(0,0,0,.18);
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    /* safe area для телефонов с вырезом/жестами */
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .mob-nav-item{
+    flex:1;
+    min-width:40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    cursor:pointer;
+    color:rgba(255,255,255,.5);
+    font-size:9px;
+    font-weight:600;
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    padding:4px 2px;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
   .mob-nav-item.active{color:#fff}
   .mob-nav-item svg{width:19px;height:19px;flex-shrink:0}
+
+  /* ══ LAYOUT ══ */
   .sidebar{display:none!important}
-  #app{flex-direction:column!important;padding-bottom:var(--mobnav)}
+  #app{
+    flex-direction:column!important;
+    /* отступ снизу = навбар + safe area */
+    padding-bottom:calc(var(--mobnav) + env(safe-area-inset-bottom,0px));
+  }
   .main{width:100%}
+
+  /* ══ TOPBAR ══ */
   .topbar{padding:12px 14px 0;flex-wrap:wrap;gap:8px;align-items:flex-start}
   .topbar h1{font-size:17px;flex:1}
   .topbar-actions{flex-wrap:wrap;gap:6px;width:100%}
   .topbar-actions .btn{flex:1 1 auto;justify-content:center;min-height:44px}
   .content{padding:12px 12px 80px}
+
+  /* ══ SEARCH / FILTERS ══ */
   .search-wrap{width:100%}
   .search-wrap input{width:100%!important}
   .filter-bar{overflow-x:auto;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
   .filter-btn{white-space:nowrap;min-height:36px}
   .section-header{flex-direction:column;align-items:flex-start;gap:8px}
+
+  /* ══ GRIDS ══ */
   .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
   .two-col,.three-col,.info-grid{grid-template-columns:1fr!important}
   .form-grid,.form-grid-3,.form-grid-4{grid-template-columns:1fr!important;gap:10px!important}
   .form-group.full{grid-column:1!important}
   .discount-row{grid-template-columns:1fr 70px!important}
+
+  /* ══ INPUTS ══ */
   input,select,textarea{font-size:16px!important;min-height:44px!important;padding:10px 12px!important}
   input[type=checkbox],input[type=radio]{min-height:unset!important;width:18px!important;height:18px!important}
   textarea{min-height:80px!important}
   label{font-size:13px!important}
-  .overlay{padding:0!important;align-items:flex-end!important;z-index:500;inset:0 0 var(--mobnav) 0!important}
-  .modal,.modal-lg,.modal-xl,.modal-full{max-width:100%!important;width:100%!important;border-radius:18px 18px 0 0!important;max-height:100%!important;height:auto;display:flex;flex-direction:column;margin:0!important}
-  .modal-header{padding:14px 16px 12px!important;flex-wrap:wrap;gap:8px;flex-shrink:0}
+
+  /* ══ OVERLAY + MODAL ══
+     Overlay занимает весь экран ВКЛЮЧАЯ зону навбара.
+     Модалка снизу поднимается на высоту навбара через margin/padding.
+     z-index overlay ВЫШЕ навбара чтобы перекрывать его.
+  */
+  .overlay{
+    padding:0!important;
+    align-items:flex-end!important;
+    /* покрываем весь viewport включая навбар */
+    position:fixed;
+    inset:0!important;
+    z-index:10001!important; /* выше #mobile-nav (10000) */
+    overflow-y:auto;
+  }
+  #modal-container{
+    width:100%;
+    /* отступ снизу чтобы модалка не слиплась с навбаром */
+    padding-bottom:calc(var(--mobnav) + env(safe-area-inset-bottom,0px));
+    display:flex;
+    align-items:flex-end;
+    min-height:100%;
+    pointer-events:none;
+  }
+  .modal,.modal-lg,.modal-xl,.modal-full{
+    max-width:100%!important;
+    width:100%!important;
+    border-radius:18px 18px 0 0!important;
+    /* высота: весь экран минус навбар */
+    max-height:calc(100dvh - var(--mobnav) - env(safe-area-inset-bottom,0px))!important;
+    height:auto;
+    display:flex;
+    flex-direction:column;
+    margin:0!important;
+    pointer-events:auto;
+  }
+  .modal-header{
+    padding:14px 16px 12px!important;
+    flex-wrap:wrap;
+    gap:8px;
+    flex-shrink:0;
+  }
   .modal-title{font-size:16px!important}
-  .modal-body{overflow-y:auto!important;-webkit-overflow-scrolling:touch;flex:1;min-height:0!important;padding:14px 14px 24px!important}
-  .modal-footer{flex-wrap:wrap;gap:8px;padding:10px 14px!important;flex-shrink:0}
+  .modal-body{
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+    flex:1;
+    min-height:0!important;
+    padding:14px 14px 24px!important;
+  }
+  .modal-footer{
+    flex-wrap:wrap;
+    gap:8px;
+    padding:10px 14px!important;
+    flex-shrink:0;
+  }
   .modal-footer .btn{flex:1 1 auto;justify-content:center;min-height:44px}
   .modal-full .modal-header{flex-direction:column;align-items:stretch!important}
+
+  /* ══ PATIENT CARD ══ */
   .profile-actions{width:100%;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
   .profile-actions .btn{flex:1 1 auto;justify-content:center;min-height:40px}
   .history-item{flex-direction:column;gap:6px}
@@ -81,27 +180,59 @@
   .history-actions .btn{flex:1 1 auto;justify-content:center;min-height:40px}
   .card > .flex{flex-wrap:wrap!important;gap:8px!important}
   .card > .flex .btn{min-height:42px}
+
+  /* ══ RX TABLE ══ */
   .rx-section{padding:10px!important}
   .rx-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .rx-table table,.rx-table thead,.rx-table tbody,.rx-table tr,.rx-table th,.rx-table td{display:revert!important}
   .rx-shared-row{flex-wrap:wrap;gap:8px}
   .rx-shared-row .form-group{min-width:120px}
+
+  /* ══ TABS ══ */
   .tab-bar{-webkit-overflow-scrolling:touch}
   .tab{padding:8px 12px!important;font-size:13px!important}
-  #toast{bottom:calc(var(--mobnav) + 10px)!important;right:12px!important;left:12px!important}
+
+  /* ══ TOAST (выше навбара) ══ */
+  #toast{
+    bottom:calc(var(--mobnav) + env(safe-area-inset-bottom,0px) + 10px)!important;
+    right:12px!important;
+    left:12px!important;
+  }
+
+  /* ══ LOGIN ══ */
   .login-box{width:92vw!important;padding:28px 20px!important}
+
+  /* ══ ТАБЛИЦЫ → КАРТОЧКИ ══ */
   .table-wrap{overflow-x:visible!important}
-  table:not(.rx-table):not(.pc-table):not(.cal-grid),table:not(.rx-table):not(.pc-table):not(.cal-grid) thead,table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody,table:not(.rx-table):not(.pc-table):not(.cal-grid) th,table:not(.rx-table):not(.pc-table):not(.cal-grid) td,table:not(.rx-table):not(.pc-table):not(.cal-grid) tr{display:block!important}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid),
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) thead,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) th,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) td,
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tr{display:block!important}
   table:not(.rx-table):not(.pc-table):not(.cal-grid) thead{display:none!important}
-  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody tr{background:var(--surface);border-radius:10px;margin-bottom:10px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--border)}
+  table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody tr{
+    background:var(--surface);
+    border-radius:10px;
+    margin-bottom:10px;
+    padding:12px 14px;
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+  }
   table:not(.rx-table):not(.pc-table):not(.cal-grid) tbody tr:hover td{background:transparent!important}
   table:not(.rx-table):not(.pc-table):not(.cal-grid) td{padding:3px 0!important;border:none!important;font-size:14px;line-height:1.4}
   td .flex{flex-wrap:wrap!important;gap:6px!important;margin-top:8px}
   td .btn{min-height:38px}
+
+  /* ══ APPOINTMENTS ══ */
   .appt-actions{display:flex!important;flex-wrap:wrap!important;gap:6px!important;margin-top:10px!important}
   .appt-actions .btn{flex:1 1 calc(50% - 3px)!important;min-width:0!important;justify-content:center!important;min-height:42px!important;font-size:13px!important}
+
+  /* ══ MISC ══ */
   .corr-item > div[style*="grid-template-columns:50px"]{grid-template-columns:40px 1fr 1fr!important}
   .modal-header .patient-avatar{width:36px!important;height:36px!important;font-size:13px!important}
+
+  /* ══ CALENDAR ══ */
   .cal-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px}
   .cal-grid{min-width:640px}
   .cal-grid-cell{min-height:46px!important;padding:3px 2px!important}

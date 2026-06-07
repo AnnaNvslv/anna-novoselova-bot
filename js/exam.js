@@ -31,7 +31,6 @@ async function openExamView(examId,pid){
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span></span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
 }
-const OPT_VALIDATE = `oninput="_modalDirty=true;this.value=this.value.replace(/[^0-9+\\-/.,\\s]/g,'')"`;
 // ── RX SELECT HELPERS ──
 function _genOpts(vals, saved) {
   const s = String(saved||'');
@@ -41,16 +40,18 @@ function _genOpts(vals, saved) {
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
 }
+// Sph: 0 (plan) в центре, плюса вверх, минуса вниз
 function _sphVals() {
-  const v=['0.00'];
-  for(let i=25;i<=1300;i+=25) v.push('+'+(i/100).toFixed(2));
-  for(let i=25;i<=1300;i+=25) v.push('-'+(i/100).toFixed(2));
-  return v;
+  const plus=[];
+  for(let i=1300;i>=25;i-=25) plus.push('+'+(i/100).toFixed(2));
+  const minus=[];
+  for(let i=25;i<=1300;i+=25) minus.push('-'+(i/100).toFixed(2));
+  return [...plus,'0.00',...minus];
 }
+// Cyl: только минуса от -0.25 до -6.00
 function _cylVals() {
   const v=['0.00'];
   for(let i=25;i<=600;i+=25) v.push('-'+(i/100).toFixed(2));
-  for(let i=25;i<=600;i+=25) v.push('+'+(i/100).toFixed(2));
   return v;
 }
 function _axVals() { return Array.from({length:181},(_,i)=>i); }
@@ -85,8 +86,17 @@ function addCustomRx(id){
   const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;
   sel.appendChild(opt);sel.value=val;_modalDirty=true;
 }
-function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" ${OPT_VALIDATE} style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}" oninput="_modalDirty=true">`;}
+// Visus-поля: свободный ввод без ограничений символов
+function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}">`;}
 function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
+// Поле комментария (необязательное)
+function _comment(id,val,placeholder){
+  placeholder = placeholder || 'Комментарий (необязательно)';
+  return`<div class="form-group full" style="margin-top:8px">
+    <label style="font-size:11px;color:var(--text-muted,#64748b)">${placeholder}</label>
+    <input id="${id}" value="${val||''}" oninput="_modalDirty=true" placeholder="${placeholder}" style="width:100%;font-size:12.5px">
+  </div>`;
+}
 
 const DEFAULT_RECS = `Контроль остроты зрения через 1 год / 6 мес. / 3 мес.
 Плановый осмотр врача-офтальмолога 1 р/год.
@@ -193,6 +203,7 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="rx-shared-row" style="max-width:200px">
             <div class="form-group"><label>PD (оба глаза)</label>${_ri('r-pd',ge('refr_od_pd'))}</div>
           </div>
+          ${_comment('r-comment',ge('refr_comment'),'Комментарий к авторефрактометрии')}
         </div>
       </div>
 
@@ -204,6 +215,7 @@ function _drawExam(p,e,visitNum,apptId){
             <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'))}</td><td>${_rs('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rs('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rs('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'))}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'))}</td></tr>
             <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'))}</td><td>${_rs('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rs('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rs('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'))}</td></tr>
           </table>
+          ${_comment('x-comment',ge('exam_comment'),'Комментарий к обследованию')}
         </div>
       </div>
 
@@ -219,6 +231,7 @@ function _drawExam(p,e,visitNum,apptId){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
           </div>
+          ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к рецепту для дали')}
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для работы с компьютером</div>
@@ -231,6 +244,7 @@ function _drawExam(p,e,visitNum,apptId){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
           </div>
+          ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к рецепту для компьютера')}
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для близи / чтения</div>
@@ -243,6 +257,7 @@ function _drawExam(p,e,visitNum,apptId){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>Degr</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
           </div>
+          ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к рецепту для близи')}
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для назначения МКЛ</div>
@@ -256,6 +271,7 @@ function _drawExam(p,e,visitNum,apptId){
             <div class="form-group" style="max-width:80px"><label>DIA</label>${_rs('rcl-dia','dia',ge('rx_cl_od_dia'))}</div>
           </div>
           <div class="form-group mt-8"><label>Вид МКЛ</label><input id="rcl-type" value="${ge('rx_cl_od_type')}" placeholder="напр.: однодневные, ежемесячные, торические..." oninput="_modalDirty=true"></div>
+          ${_comment('rcl-comment',ge('rx_cl_comment'),'Комментарий к рецепту МКЛ')}
         </div>
       </div>
 
@@ -351,22 +367,28 @@ async function saveExam(id,apptId,patientId,visitNum){
     current_corrections:_examData.corrections,
     refr_od_sph:v('r-od-sph'),refr_od_cyl:v('r-od-cyl'),refr_od_ax:v('r-od-ax'),refr_od_pd:v('r-pd'),refr_od_ave:v('r-od-ave'),
     refr_os_sph:v('r-os-sph'),refr_os_cyl:v('r-os-cyl'),refr_os_ax:v('r-os-ax'),refr_os_pd:v('r-pd'),refr_os_ave:v('r-os-ave'),
+    refr_comment:v('r-comment'),
     exam_od_without:v('x-od-wo'),exam_od_cosph:v('x-od-cs'),exam_od_cyl:v('x-od-cyl'),exam_od_ax:v('x-od-ax'),exam_od_with:v('x-od-wi'),
     exam_os_without:v('x-os-wo'),exam_os_cosph:v('x-os-cs'),exam_os_cyl:v('x-os-cyl'),exam_os_ax:v('x-os-ax'),exam_os_with:v('x-os-wi'),
     exam_ou:v('x-ou'),
+    exam_comment:v('x-comment'),
     rx_far_enabled:true,
     rx_far_od_sph:v('rf-od-sph'),rx_far_od_cyl:v('rf-od-cyl'),rx_far_od_ax:v('rf-od-ax'),rx_far_od_pd:v('rf-pd'),
     rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),rx_far_os_pd:v('rf-add'),
+    rx_far_comment:v('rf-comment'),
     rx_comp_enabled:true,
     rx_comp_od_sph:v('rc-od-sph'),rx_comp_od_cyl:v('rc-od-cyl'),rx_comp_od_ax:v('rc-od-ax'),rx_comp_od_pd:v('rc-pd'),rx_comp_od_add:v('rc-add'),
     rx_comp_os_sph:v('rc-os-sph'),rx_comp_os_cyl:v('rc-os-cyl'),rx_comp_os_ax:v('rc-os-ax'),
+    rx_comp_comment:v('rc-comment'),
     rx_near_enabled:true,
     rx_near_od_sph:v('rn-od-sph'),rx_near_od_cyl:v('rn-od-cyl'),rx_near_od_ax:v('rn-od-ax'),rx_near_od_pd:v('rn-pd'),rx_near_od_add:v('rn-degr'),
     rx_near_os_sph:v('rn-os-sph'),rx_near_os_cyl:v('rn-os-cyl'),rx_near_os_ax:v('rn-os-ax'),
+    rx_near_comment:v('rn-comment'),
     rx_cl_enabled:true,
     rx_cl_od_sph:v('rcl-od-sph'),rx_cl_od_cyl:v('rcl-od-cyl'),rx_cl_od_ax:v('rcl-od-ax'),
     rx_cl_od_bc:v('rcl-bc'),rx_cl_od_dia:v('rcl-dia'),rx_cl_od_type:v('rcl-type'),
     rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),
+    rx_cl_comment:v('rcl-comment'),
     recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
   };
   try{
@@ -411,7 +433,7 @@ async function _buildPrintCard(examId) {
   const date=fmt((e?.created_at||today()).split('T')[0]);
   const doctor=s.doctor_name||'Ana Novoselova';
 
-  const rxBlock=(title,rows,shared)=>{
+  const rxBlock=(title,rows,shared,comment)=>{
     if(!rows.some(r=>r.v1||r.v2||r.v3)) return '';
     return`<div class="pc-rx-block" style="page-break-inside:avoid">
       <div class="pc-rx-title">${title}</div>
@@ -423,6 +445,7 @@ async function _buildPrintCard(examId) {
       <div style="display:flex;gap:16pt;margin-top:4pt;font-size:8pt">
         ${shared.filter(s=>s.val).map(s=>`<span><b>${s.label}:</b> ${s.val}</span>`).join('')}
       </div>
+      ${comment?`<div style="margin-top:4pt;font-size:8pt;color:#555;font-style:italic">${comment}</div>`:''}
     </div>`;
   };
 
@@ -467,6 +490,7 @@ async function _buildPrintCard(examId) {
         <tr><td class="eye">OS</td><td>${rx('refr_os_sph')}</td><td>${rx('refr_os_cyl')}</td><td>${rx('refr_os_ax')}</td><td>${rx('refr_os_ave')}</td></tr>
       </table>
       ${rx('refr_od_pd')?`<div style="font-size:8pt;margin-top:4pt"><b>PD:</b> ${rx('refr_od_pd')}</div>`:''}
+      ${rx('refr_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('refr_comment')}</div>`:''}
     </div>
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Rezultati pregleda</div>
@@ -476,16 +500,20 @@ async function _buildPrintCard(examId) {
         <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td></tr>
       </table>
       ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>OU sa korekcijom:</b> ${rx('exam_ou')}</div>`:''}
+      ${rx('exam_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('exam_comment')}</div>`:''}
     </div>
     ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock('Parametri za izradu naočara za daljinu',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax')}],
-      [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}]):''}
+      [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}],
+      rx('rx_far_comment')):''}
     ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock('Parametri za izradu naočara za rad za računarom',
       [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax')}],
-      [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}]):''}
+      [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}],
+      rx('rx_comp_comment')):''}
     ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock('Parametri za izradu naočara za blizinu',
       [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax')}],
-      [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}]):''}
+      [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}],
+      rx('rx_near_comment')):''}
     ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block" style="page-break-inside:avoid">
       <div class="pc-rx-title">Parametri za propisivanje KS</div>
       <table class="pc-table">
@@ -498,6 +526,7 @@ async function _buildPrintCard(examId) {
         ${rx('rx_cl_od_dia')?`<span><b>DIA:</b> ${rx('rx_cl_od_dia')}</span>`:''}
         ${rx('rx_cl_od_type')?`<span><b>Vrsta KS:</b> ${rx('rx_cl_od_type')}</span>`:''}
       </div>
+      ${rx('rx_cl_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('rx_cl_comment')}</div>`:''}
     </div>`:''}
     <div class="pc-sec" style="page-break-inside:avoid">
       <div class="pc-sec-label">Preporuke i zaključak</div>

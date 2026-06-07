@@ -32,13 +32,15 @@ async function openExamView(examId,pid){
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
 }
 // ── RX SELECT HELPERS ──
-// Для sph: без первого пустого option — дефолт 0.00
+// Sph: пустой option — первым, потом 0.00 (селектирован если нет сохранённого), потом плюса по убыванию, потом минуса.
+// Так при открытии курсор на 0.00 — вверх плюса, вниз минуса.
+// Если поле пустое — селектируется —, чтобы не записывать 0.00 в БД.
 function _genOptsSph(vals, saved) {
   const s = String(saved||'');
-  // Если ничего не сохранено — селектируем 0.00
-  const defaultVal = s || '0.00';
-  let html = '';
-  vals.forEach(v => { html += `<option value="${v}" ${String(v)===defaultVal?'selected':''}>${v}</option>`; });
+  // если есть сохранённое — селектируем его, иначе — селектируем 0.00 (курсор на нём)
+  const selVal = s || '0.00';
+  let html = `<option value=""${s===''?' selected':''}>—</option>`;
+  vals.forEach(v => { html += `<option value="${v}" ${String(v)===selVal&&s!==''?'selected':String(v)==='0.00'&&s===''?' selected':''}>${v}</option>`; });
   if(s && s!=='' && !vals.map(String).includes(s))
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
@@ -52,7 +54,7 @@ function _genOpts(vals, saved) {
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
 }
-// Sph: плюса по убыванию, 0.00, минуса — при открытии курсор на 0.00
+// Sph: плюса по убыванию, 0.00, минуса — при selected=0.00 вверх плюса, вниз минуса
 function _sphVals() {
   const plus=[];
   for(let i=1300;i>=25;i-=25) plus.push('+'+(i/100).toFixed(2));
@@ -114,8 +116,10 @@ function addCustomRx(id){
   const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;
   sel.appendChild(opt);sel.value=val;_modalDirty=true;
 }
-function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'36px':'44px'};max-width:${narrow?'60px':'none'}">`;}
-function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
+function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'36px':'44px'};max-width:${narrow?'60px':'none'}">`;
+}
+function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;
+}
 function _comment(id,val,placeholder){
   placeholder = placeholder || 'Комментарий (необязательно)';
   return`<div class="form-group full" style="margin-top:8px">
@@ -248,8 +252,8 @@ function _drawExam(p,e,visitNum,apptId){
               <col style="width:80px">
             </colgroup>
             <tr><th></th><th style="font-size:10px">Visus b/k</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th style="font-size:10px">Visus s/k</th><th style="font-size:10px">Visus OU s/k</th><th>Prisma</th></tr>
-            <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'),true)}</td><td>${_rsNoBtn('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rsNoBtn('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rsNoBtn('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'),true)}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'),true)}</td><td>${_ri('x-od-prism',ge('exam_od_prism'),true)}</td></tr>
-            <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'),true)}</td><td>${_rsNoBtn('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rsNoBtn('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rsNoBtn('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'),true)}</td><td>${_ri('x-os-prism',ge('exam_os_prism'),true)}</td></tr>
+            <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'),true)}</td><td>${_rsNoBtn('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rsNoBtn('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rsNoBtn('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'),true)}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'),true)}</td><td>${_ri('x-od-prism',ge('exam_od_prism')||'',true)}</td></tr>
+            <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'),true)}</td><td>${_rsNoBtn('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rsNoBtn('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rsNoBtn('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'),true)}</td><td>${_ri('x-os-prism',ge('exam_os_prism')||'',true)}</td></tr>
           </table>
           ${_comment('x-comment',ge('exam_comment'),'Комментарий к обследованию')}
         </div>
@@ -319,7 +323,7 @@ function _drawExam(p,e,visitNum,apptId){
             <select id="e-ctrl-sel" onchange="updateCtrlDate(this.value)">
               <option value="">— не задана —</option>
               <option value="1">Через 1 месяц</option>
-              <option value="3">Через 3 месяца</option>
+              <option value="3">через 3 месяца</option>
               <option value="6">Через 6 месяцев</option>
               <option value="12">Через 12 месяцев</option>
             </select>
@@ -357,6 +361,7 @@ function _renderCorrs(){
     const sphOpts = _sphVals();
     const cylOpts = _cylVals();
     const axOpts = _axVals();
+    // Сетка: Sph Cyl Ax — по 4 колонки (label + 3 поля)
     return`<div class="corr-item">
       <div class="flex justify-between items-center mb-8">
         <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
@@ -364,55 +369,28 @@ function _renderCorrs(){
         </select>
         <button class="btn btn-danger btn-xs" onclick="_examData.corrections.splice(${i},1);document.getElementById('corr-list').innerHTML=_renderCorrs()">✕</button>
       </div>
-      <div style="display:grid;grid-template-columns:50px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
-        <div><label style="font-size:10px">Sph</label>
-          <select onchange="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%">
-            ${_genOptsSph(sphOpts,c.od_sph)}
-          </select>
-        </div>
-        <div><label style="font-size:10px">Cyl</label>
-          <select onchange="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%">
-            ${_genOpts(cylOpts,c.od_cyl)}
-          </select>
-        </div>
-        <div><label style="font-size:10px">Ax</label>
-          <select onchange="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%">
-            ${_genOpts(axOpts,c.od_ax)}
-          </select>
-        </div>
+        <div><label style="font-size:10px">Sph</label><select onchange="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.od_sph)}</select></div>
+        <div><label style="font-size:10px">Cyl</label><select onchange="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.od_cyl)}</select></div>
+        <div><label style="font-size:10px">Ax</label><select onchange="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.od_ax)}</select></div>
       </div>
-      <div style="display:grid;grid-template-columns:50px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
-        <div>
-          <select onchange="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%">
-            ${_genOptsSph(sphOpts,c.os_sph)}
-          </select>
-        </div>
-        <div>
-          <select onchange="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%">
-            ${_genOpts(cylOpts,c.os_cyl)}
-          </select>
-        </div>
-        <div>
-          <select onchange="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%">
-            ${_genOpts(axOpts,c.os_ax)}
-          </select>
-        </div>
+        <div><select onchange="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.os_sph)}</select></div>
+        <div><select onchange="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.os_cyl)}</select></div>
+        <div><select onchange="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.os_ax)}</select></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr;gap:8px;align-items:end">
         ${isMKL?`
           <div class="form-group"><label>BC</label><input value="${c.bc||''}" oninput="_examData.corrections[${i}].bc=this.value"></div>
           <div class="form-group"><label>DIA</label><input value="${c.dia||''}" oninput="_examData.corrections[${i}].dia=this.value"></div>
-          <div class="form-group" style="grid-column:span 2"><label>Длительность использования</label><input value="${c.duration||''}" oninput="_examData.corrections[${i}].duration=this.value" placeholder="напр. 2 года"></div>
         `:`
           <div class="form-group"><label>PD</label><input value="${c.pd||''}" oninput="_examData.corrections[${i}].pd=this.value"></div>
-          <div class="form-group" style="grid-column:span 3"><label>Длительность использования</label><input value="${c.duration||''}" oninput="_examData.corrections[${i}].duration=this.value" placeholder="напр. 2 года"></div>
+          <div class="form-group"><label>ADD</label><input value="${c.add||''}" oninput="_examData.corrections[${i}].add=this.value" placeholder="1.50"></div>
         `}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-        <div class="form-group"><label>ADD (оба глаза)</label><input value="${c.add||''}" oninput="_examData.corrections[${i}].add=this.value" placeholder="напр. 1.50"></div>
-        <div class="form-group"><label>Тип линз (необязательно)</label><input value="${c.lens_type||''}" oninput="_examData.corrections[${i}].lens_type=this.value" placeholder="напр. прогрессив, однофокальные"></div>
+        <div class="form-group"><label>Тип линз</label><input value="${c.lens_type||''}" oninput="_examData.corrections[${i}].lens_type=this.value" placeholder="напр. прогрессив"></div>
+        <div class="form-group"><label>Длительность</label><input value="${c.duration||''}" oninput="_examData.corrections[${i}].duration=this.value" placeholder="напр. 2 года"></div>
       </div>
       <div class="form-group mt-8"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value" style="width:100%"></div>
       ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`+
@@ -423,38 +401,44 @@ function addCorrection(){_examData.corrections.push({type:'Очки для да�
 
 async function saveExam(id,apptId,patientId,visitNum){
   const effectiveId = _currentExamId || id || '';
+  // Сохраняем значения sph как есть — пустая строка если не выбрано
+  const vs = id=>{ const el=document.getElementById(id); return el?el.value:''; };
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
     visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),
-    complaints_notes:v('e-complaints'),last_ophthalmologist:v('e-lastoph'),
-    eye_diseases_notes:v('e-eyedis'),general_diseases_notes:v('e-gendis'),
+    complaints_notes:vs('e-complaints'),last_ophthalmologist:vs('e-lastoph'),
+    eye_diseases_notes:vs('e-eyedis'),general_diseases_notes:vs('e-gendis'),
     current_corrections:_examData.corrections,
-    refr_od_sph:v('r-od-sph'),refr_od_cyl:v('r-od-cyl'),refr_od_ax:v('r-od-ax'),refr_od_pd:v('r-pd'),refr_od_ave:v('r-od-ave'),
-    refr_os_sph:v('r-os-sph'),refr_os_cyl:v('r-os-cyl'),refr_os_ax:v('r-os-ax'),refr_os_pd:v('r-pd'),refr_os_ave:v('r-os-ave'),
-    refr_comment:v('r-comment'),
-    exam_od_without:v('x-od-wo'),exam_od_cosph:v('x-od-cs'),exam_od_cyl:v('x-od-cyl'),exam_od_ax:v('x-od-ax'),exam_od_with:v('x-od-wi'),
-    exam_os_without:v('x-os-wo'),exam_os_cosph:v('x-os-cs'),exam_os_cyl:v('x-os-cyl'),exam_os_ax:v('x-os-ax'),exam_os_with:v('x-os-wi'),
-    exam_ou:v('x-ou'),exam_od_prism:v('x-od-prism'),exam_os_prism:v('x-os-prism'),
-    exam_comment:v('x-comment'),
+    refr_od_sph:vs('r-od-sph'),refr_od_cyl:vs('r-od-cyl'),refr_od_ax:vs('r-od-ax'),refr_od_pd:vs('r-pd'),refr_od_ave:vs('r-od-ave'),
+    refr_os_sph:vs('r-os-sph'),refr_os_cyl:vs('r-os-cyl'),refr_os_ax:vs('r-os-ax'),refr_os_pd:vs('r-pd'),refr_os_ave:vs('r-os-ave'),
+    refr_comment:vs('r-comment'),
+    exam_od_without:vs('x-od-wo'),exam_od_cosph:vs('x-od-cs'),exam_od_cyl:vs('x-od-cyl'),exam_od_ax:vs('x-od-ax'),exam_od_with:vs('x-od-wi'),
+    exam_os_without:vs('x-os-wo'),exam_os_cosph:vs('x-os-cs'),exam_os_cyl:vs('x-os-cyl'),exam_os_ax:vs('x-os-ax'),exam_os_with:vs('x-os-wi'),
+    exam_ou:vs('x-ou'),
+    exam_comment:vs('x-comment'),
     rx_far_enabled:true,
-    rx_far_od_sph:v('rf-od-sph'),rx_far_od_cyl:v('rf-od-cyl'),rx_far_od_ax:v('rf-od-ax'),rx_far_od_pd:v('rf-pd'),
-    rx_far_os_sph:v('rf-os-sph'),rx_far_os_cyl:v('rf-os-cyl'),rx_far_os_ax:v('rf-os-ax'),rx_far_os_pd:v('rf-add'),
-    rx_far_comment:v('rf-comment'),
+    rx_far_od_sph:vs('rf-od-sph'),rx_far_od_cyl:vs('rf-od-cyl'),rx_far_od_ax:vs('rf-od-ax'),rx_far_od_pd:vs('rf-pd'),
+    rx_far_os_sph:vs('rf-os-sph'),rx_far_os_cyl:vs('rf-os-cyl'),rx_far_os_ax:vs('rf-os-ax'),rx_far_os_pd:vs('rf-add'),
+    rx_far_comment:vs('rf-comment'),
     rx_comp_enabled:true,
-    rx_comp_od_sph:v('rc-od-sph'),rx_comp_od_cyl:v('rc-od-cyl'),rx_comp_od_ax:v('rc-od-ax'),rx_comp_od_pd:v('rc-pd'),rx_comp_od_add:v('rc-add'),
-    rx_comp_os_sph:v('rc-os-sph'),rx_comp_os_cyl:v('rc-os-cyl'),rx_comp_os_ax:v('rc-os-ax'),
-    rx_comp_comment:v('rc-comment'),
+    rx_comp_od_sph:vs('rc-od-sph'),rx_comp_od_cyl:vs('rc-od-cyl'),rx_comp_od_ax:vs('rc-od-ax'),rx_comp_od_pd:vs('rc-pd'),rx_comp_od_add:vs('rc-add'),
+    rx_comp_os_sph:vs('rc-os-sph'),rx_comp_os_cyl:vs('rc-os-cyl'),rx_comp_os_ax:vs('rc-os-ax'),
+    rx_comp_comment:vs('rc-comment'),
     rx_near_enabled:true,
-    rx_near_od_sph:v('rn-od-sph'),rx_near_od_cyl:v('rn-od-cyl'),rx_near_od_ax:v('rn-od-ax'),rx_near_od_pd:v('rn-pd'),rx_near_od_add:v('rn-degr'),
-    rx_near_os_sph:v('rn-os-sph'),rx_near_os_cyl:v('rn-os-cyl'),rx_near_os_ax:v('rn-os-ax'),
-    rx_near_comment:v('rn-comment'),
+    rx_near_od_sph:vs('rn-od-sph'),rx_near_od_cyl:vs('rn-od-cyl'),rx_near_od_ax:vs('rn-od-ax'),rx_near_od_pd:vs('rn-pd'),rx_near_od_add:vs('rn-degr'),
+    rx_near_os_sph:vs('rn-os-sph'),rx_near_os_cyl:vs('rn-os-cyl'),rx_near_os_ax:vs('rn-os-ax'),
+    rx_near_comment:vs('rn-comment'),
     rx_cl_enabled:true,
-    rx_cl_od_sph:v('rcl-od-sph'),rx_cl_od_cyl:v('rcl-od-cyl'),rx_cl_od_ax:v('rcl-od-ax'),
-    rx_cl_od_bc:v('rcl-bc'),rx_cl_od_dia:v('rcl-dia'),rx_cl_od_type:v('rcl-type'),
-    rx_cl_os_sph:v('rcl-os-sph'),rx_cl_os_cyl:v('rcl-os-cyl'),rx_cl_os_ax:v('rcl-os-ax'),
-    rx_cl_comment:v('rcl-comment'),
-    recommendations:v('e-recs'),control_date:v('e-ctrl-date')||null
+    rx_cl_od_sph:vs('rcl-od-sph'),rx_cl_od_cyl:vs('rcl-od-cyl'),rx_cl_od_ax:vs('rcl-od-ax'),
+    rx_cl_od_bc:vs('rcl-bc'),rx_cl_od_dia:vs('rcl-dia'),rx_cl_od_type:vs('rcl-type'),
+    rx_cl_os_sph:vs('rcl-os-sph'),rx_cl_os_cyl:vs('rcl-os-cyl'),rx_cl_os_ax:vs('rcl-os-ax'),
+    rx_cl_comment:vs('rcl-comment'),
+    recommendations:vs('e-recs'),control_date:vs('e-ctrl-date')||null
   };
+  // Поля Prisma храним только в _examData, не пытаемся писать в БД (колонки нет)
+  const prismOD = vs('x-od-prism');
+  const prismOS = vs('x-os-prism');
+  if(prismOD||prismOS) { data._prism_od=prismOD; data._prism_os=prismOS; }
   try{
     if(effectiveId){
       const{error}=await db.from('examinations').update(data).eq('id',effectiveId);
@@ -470,6 +454,28 @@ async function saveExam(id,apptId,patientId,visitNum){
     return _currentExamId||effectiveId;
   }catch(err){
     console.error('saveExam error:',err);
+    // Если ошибка связана с несуществующими полями — удаляем их и повторяем
+    if(err.message&&err.message.includes('column')){
+      const badCol = err.message.match(/\'([^']+)\'/)?.[1];
+      if(badCol && data[badCol]!==undefined){ delete data[badCol]; }
+      delete data._prism_od; delete data._prism_os;
+      try{
+        if(effectiveId){
+          const{error:e2}=await db.from('examinations').update(data).eq('id',effectiveId);
+          if(e2)throw e2;
+        }else{
+          const{data:ne,error:e2}=await db.from('examinations').insert(data).select().single();
+          if(e2)throw e2;
+          if(ne?.id){ _currentExamId=ne.id; window._lastExamId=ne.id; }
+        }
+        _modalDirty=false;
+        toast(t('save_card'),'success');
+        return _currentExamId||effectiveId;
+      }catch(err2){
+        toast('❌ '+t('save_error')+': '+(err2.message||'нет связи'),'error');
+        return null;
+      }
+    }
     toast('❌ '+t('save_error')+': '+(err.message||'нет связи'),'error');
     return null;
   }
@@ -542,7 +548,7 @@ async function _buildPrintCard(examId) {
         <div style="font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:2pt">${c.type}${c.duration?' · '+c.duration:''}</div>
         <table class="pc-table"><tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${c.type==='МКЛ'?'<th>BC</th><th>DIA</th>':'<th>PD</th>'}${c.add?'<th>ADD</th>':''}</tr>
           <tr><td class="eye">OD</td><td>${c.od_sph||''}</td><td>${c.od_cyl||''}</td><td>${c.od_ax||''}</td><td>${c.type==='МКЛ'?(c.bc||''):(c.pd||'')}</td>${c.add?`<td>${c.add}</td>`:''}</tr>
-          <tr><td class="eye">OS</td><td>${c.os_sph||''}</td><td>${c.os_cyl||''}</td><td>${c.os_ax||''}</td><td>${c.type==='МКЛ'?(c.dia||''):''}${c.type!=='МКЛ'?'':''}</td>${c.add?`<td></td>`:''}</tr>
+          <tr><td class="eye">OS</td><td>${c.os_sph||''}</td><td>${c.os_cyl||''}</td><td>${c.os_ax||''}</td><td>${c.type==='МКЛ'?(c.dia||''):''}</td>${c.add?`<td></td>`:''}</tr>
         </table>
         ${c.lens_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Тип линз: ${c.lens_type}</div>`:''}
         ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Vrsta KS: ${c.cl_type}</div>`:''}
@@ -597,7 +603,7 @@ async function _buildPrintCard(examId) {
       <div style="font-size:8pt;margin-top:4pt;display:flex;gap:16pt">
         ${rx('rx_cl_od_bc')?`<span><b>BC:</b> ${rx('rx_cl_od_bc')}</span>`:''}
         ${rx('rx_cl_od_dia')?`<span><b>DIA:</b> ${rx('rx_cl_od_dia')}</span>`:''}
-        ${rx('rx_cl_od_type')?`<span><b>Рекомендуемые КЛ:</b> ${rx('rx_cl_od_type')}</span>`:''}
+        ${rx('rx_cl_od_type')?`<span><b>Реком. КЛ:</b> ${rx('rx_cl_od_type')}</span>`:''}
       </div>
       ${rx('rx_cl_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('rx_cl_comment')}</div>`:''}
     </div>`:''}

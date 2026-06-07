@@ -71,8 +71,8 @@ function _rs(id, type, val) {
   else if(type==='pd') { opts=_pdVals(); style=SN; }
   else if(type==='add'){ opts=_addVals(); style=SN; }
   else if(type==='degr'){opts=_addVals(); style=SN; }
-  else if(type==='bc') { const def=val||'8.6'; opts=_bcVals(); style=SN; val=def; }
-  else if(type==='dia'){ const def=val||'14.2'; opts=_diaVals(); style=SN; val=def; }
+  else if(type==='bc') { opts=_bcVals(); style=SN; }
+  else if(type==='dia'){ opts=_diaVals(); style=SN; }
   else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
   return`<div style="display:flex;gap:2px;align-items:center">
     <select id="${id}" style="${style}" onchange="_modalDirty=true">${_genOpts(opts,val)}</select>

@@ -32,15 +32,12 @@ async function openExamView(examId,pid){
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
 }
 // ── RX SELECT HELPERS ──
-// Sph: пустой option — первым, потом 0.00 (селектирован если нет сохранённого), потом плюса по убыванию, потом минуса.
-// Так при открытии курсор на 0.00 — вверх плюса, вниз минуса.
-// Если поле пустое — селектируется —, чтобы не записывать 0.00 в БД.
+// Sph: первым всегда — (пустое), потом 0.00 идёт сразу (без скролла).
+// Дефолтно в поле стоит —. При разкрытии видна 0.00 — вверх плюса, вниз минуса.
 function _genOptsSph(vals, saved) {
   const s = String(saved||'');
-  // если есть сохранённое — селектируем его, иначе — селектируем 0.00 (курсор на нём)
-  const selVal = s || '0.00';
   let html = `<option value=""${s===''?' selected':''}>—</option>`;
-  vals.forEach(v => { html += `<option value="${v}" ${String(v)===selVal&&s!==''?'selected':String(v)==='0.00'&&s===''?' selected':''}>${v}</option>`; });
+  vals.forEach(v => { html += `<option value="${v}" ${String(v)===s&&s!==''?'selected':''}>${v}</option>`; });
   if(s && s!=='' && !vals.map(String).includes(s))
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
@@ -54,7 +51,7 @@ function _genOpts(vals, saved) {
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
 }
-// Sph: плюса по убыванию, 0.00, минуса — при selected=0.00 вверх плюса, вниз минуса
+// Sph: плюса по убыванию, 0.00, минуса — при открытии видно сразу без скролла
 function _sphVals() {
   const plus=[];
   for(let i=1300;i>=25;i-=25) plus.push('+'+(i/100).toFixed(2));
@@ -361,7 +358,6 @@ function _renderCorrs(){
     const sphOpts = _sphVals();
     const cylOpts = _cylVals();
     const axOpts = _axVals();
-    // Сетка: Sph Cyl Ax — по 4 колонки (label + 3 поля)
     return`<div class="corr-item">
       <div class="flex justify-between items-center mb-8">
         <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
@@ -401,7 +397,6 @@ function addCorrection(){_examData.corrections.push({type:'Очки для да�
 
 async function saveExam(id,apptId,patientId,visitNum){
   const effectiveId = _currentExamId || id || '';
-  // Сохраняем значения sph как есть — пустая строка если не выбрано
   const vs = id=>{ const el=document.getElementById(id); return el?el.value:''; };
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
@@ -435,10 +430,6 @@ async function saveExam(id,apptId,patientId,visitNum){
     rx_cl_comment:vs('rcl-comment'),
     recommendations:vs('e-recs'),control_date:vs('e-ctrl-date')||null
   };
-  // Поля Prisma храним только в _examData, не пытаемся писать в БД (колонки нет)
-  const prismOD = vs('x-od-prism');
-  const prismOS = vs('x-os-prism');
-  if(prismOD||prismOS) { data._prism_od=prismOD; data._prism_os=prismOS; }
   try{
     if(effectiveId){
       const{error}=await db.from('examinations').update(data).eq('id',effectiveId);
@@ -454,11 +445,9 @@ async function saveExam(id,apptId,patientId,visitNum){
     return _currentExamId||effectiveId;
   }catch(err){
     console.error('saveExam error:',err);
-    // Если ошибка связана с несуществующими полями — удаляем их и повторяем
     if(err.message&&err.message.includes('column')){
       const badCol = err.message.match(/\'([^']+)\'/)?.[1];
       if(badCol && data[badCol]!==undefined){ delete data[badCol]; }
-      delete data._prism_od; delete data._prism_os;
       try{
         if(effectiveId){
           const{error:e2}=await db.from('examinations').update(data).eq('id',effectiveId);
@@ -568,9 +557,9 @@ async function _buildPrintCard(examId) {
     <div class="pc-sec" style="page-break-inside:avoid">
       ${secLabel('Rezultati pregleda','Результаты обследования')}
       <table class="pc-table">
-        <tr><th></th><th>Visus bez kor.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th>${(rx('exam_od_prism')||rx('exam_os_prism'))?'<th>Prisma</th>':''}</tr>
-        <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td>${(rx('exam_od_prism')||rx('exam_os_prism'))?`<td>${rx('exam_od_prism')}</td>`:''}</tr>
-        <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td>${(rx('exam_od_prism')||rx('exam_os_prism'))?`<td>${rx('exam_os_prism')}</td>`:''}</tr>
+        <tr><th></th><th>Visus bez kor.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th></tr>
+        <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td></tr>
+        <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td></tr>
       </table>
       ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>Visus OU sa korekcijom:</b> ${rx('exam_ou')}</div>`:''}
       ${rx('exam_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('exam_comment')}</div>`:''}

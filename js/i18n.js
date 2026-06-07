@@ -29,6 +29,13 @@ const TRANSLATIONS = {
     no_patients: 'Нет пациентов', added: 'Добавлен', updated: 'Обновлено', deleted: 'Удалено',
     add_appt_short: '+ Приём', add_order_short: '+ Заказ', add_patient_short: '+ Пациент',
     confirm_delete_patient: 'Удалить пациента со всеми данными?', enter_name: 'Введите имя',
+    // Сортировка
+    sort_name_az: 'Имя А→Я', sort_name_za: 'Имя Я→А',
+    sort_date_new: 'Новее', sort_date_old: 'Старше',
+    sort_dob: 'По возрасту',
+    sort_total_desc: 'Сумма ↓', sort_total_asc: 'Сумма ↑',
+    sort_promised: 'По сроку',
+    sort_label: 'Сортировка',
     // APPOINTMENTS
     appointments: 'Приёмы', new_appt: 'Новый приём', edit_appt: 'Редактировать приём',
     appt_type: 'Вид приёма', date_time: 'Дата / Время', date: 'Дата', time: 'Время',
@@ -43,11 +50,23 @@ const TRANSLATIONS = {
     orders: 'Заказы', new_order: 'Новый заказ', edit_order: 'Редактировать заказ',
     frame: 'Оправа', lenses: 'Линзы', work: 'Работа', total: 'Итого', prepayment: 'Предоплата',
     balance: 'Остаток', promised_date: 'Обещано', frame_code: 'Код оправы', lens_name: 'Линзы',
+    order_type: 'Тип заказа', order_date_label: 'Дата оформления', order_num_label: '№ заказа (пакет)',
+    frame_price_label: 'Цена оправы', lens_price_label: 'Цена линз', work_price_label: 'Стоимость работы',
+    prepayment_label: 'Предоплата', extra_payment: 'Доплата',
+    issued_label: 'Выдан', order_updated: 'Заказ обновлён', order_created: 'Заказ оформлен',
+    status_updated: 'Статус', select_patient: 'Выберите пациента',
+    issue_btn: 'Выдать', mark_ready_btn: 'Готов',
     order_status_new: 'оформлен', order_status_work: 'в работе', order_status_ready: 'готов',
     order_status_issued: 'выдан', order_status_cancelled: 'отменен', order_status_return: 'возврат', order_status_redo: 'переделка',
     no_orders: 'Нет заказов', confirm_delete_order: 'Удалить заказ?', issue_confirm: 'Остаток %s. Выдать?',
     order_type_glasses: 'Очки', order_type_cl: 'Контактные линзы', order_type_repair: 'Ремонт',
     order_number: '№ заказа',
+    // examTab
+    exam_no_data: 'Параметры не заполнены',
+    exam_far_short: 'Даль', exam_comp_short: 'Компьютер', exam_near_short: 'Близь', exam_cl_short: 'МКЛ',
+    exam_control: 'Контроль',
+    exam_open_btn: 'Открыть',
+    exam_none: 'Нет обследований',
     // CALENDAR
     schedule: 'Расписание', open_day: 'День', open_week: 'Неделя', my_slot: 'Моя запись',
     custom_slot: 'Свой слот', add_slot: 'Добавить слот', slot_open: 'Свободно', slot_remove: 'убрать',
@@ -58,13 +77,11 @@ const TRANSLATIONS = {
     booking_added: 'Запись добавлена', slot_added: 'Слот добавлен', schedule_settings: 'Настройки расписания',
     // ANALYTICS
     analytics: 'Аналитика', admin_only: 'Только для администратора',
-    revenue: 'Выручка / период', avg_check: 'Средний чек', total_orders: 'Всего заказов',
-    my_salary: 'Моя зарплата / период', salary_calc: 'Расчёт зарплаты',
+    revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
+    my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
     appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
     currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
-    period_month: 'Месяц', period_week: 'Неделя', added_period: 'за период',
-    all_orders_period: 'все заказы периода',
     // SETTINGS
     settings: 'Настройки', general: 'Основное', doctor_name: 'Имя врача', clinic_name: 'Название клиники',
     pin_codes: 'PIN-коды', admin_pin: 'PIN администратора', staff_pin: 'PIN сотрудника', ervin_pin: 'PIN Ervin',
@@ -86,7 +103,8 @@ const TRANSLATIONS = {
     recommendations: 'Рекомендации и заключение', control_visit: 'Контрольный визит',
     save_card: 'Карта сохранена ✓', card_created: 'Карта создана ✓', save_error: 'Ошибка сохранения',
     autosave: 'Автосохранение ✓',
-    btn_print: 'Печать', btn_save: 'Сохранить', btn_email_patient: 'Пациенту', btn_email_clinic: 'В оптику', btn_close: 'Закрыть',
+    btn_print: 'Печать', btn_save: 'Сохранить', btn_email_patient: 'Пациенту',
+    btn_email_clinic: 'В оптику', btn_close: 'Закрыть',
     // DAYS & MONTHS
     dow: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
     months: ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
@@ -118,13 +136,20 @@ const TRANSLATIONS = {
     done: 'Završen', issue: 'Preuzmi', notify: 'Obavesti',
     // PATIENTS
     patients: 'Pacijenti', patient: 'Pacijent', new_patient: 'Novi pacijent', edit_patient: 'Uredi pacijenta',
-    full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Godine',
-    dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Beleške',
+    full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Starost',
+    dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Napomene',
     card: 'Profil',
     patient_profile: 'Profil pacijenta',
     no_patients: 'Nema pacijenata', added: 'Dodat', updated: 'Ažurirano', deleted: 'Obrisano',
     add_appt_short: '+ Pregled', add_order_short: '+ Porudžbina', add_patient_short: '+ Pacijent',
     confirm_delete_patient: 'Obrisati pacijenta sa svim podacima?', enter_name: 'Unesite ime',
+    // Сортировка
+    sort_name_az: 'Ime A→Z', sort_name_za: 'Ime Z→A',
+    sort_date_new: 'Noviji', sort_date_old: 'Stariji',
+    sort_dob: 'Po starosti',
+    sort_total_desc: 'Iznos ↓', sort_total_asc: 'Iznos ↑',
+    sort_promised: 'Po roku',
+    sort_label: 'Sortiranje',
     // APPOINTMENTS
     appointments: 'Pregledi', new_appt: 'Novi pregled', edit_appt: 'Uredi pregled',
     appt_type: 'Vrsta pregleda', date_time: 'Datum / Vreme', date: 'Datum', time: 'Vreme',
@@ -138,12 +163,24 @@ const TRANSLATIONS = {
     // ORDERS
     orders: 'Porudžbine', new_order: 'Nova porudžbina', edit_order: 'Uredi porudžbinu',
     frame: 'Okvir', lenses: 'Sočiva', work: 'Obrada', total: 'Ukupno', prepayment: 'Avans',
-    balance: 'Ostatak', promised_date: 'Obećano', frame_code: 'Šifra okvira', lens_name: 'Sočiva',
+    balance: 'Ostatak', promised_date: 'Rok', frame_code: 'Šifra okvira', lens_name: 'Sočiva',
+    order_type: 'Vrsta porudžbine', order_date_label: 'Datum kreiranja', order_num_label: 'Br. porudžbine (paket)',
+    frame_price_label: 'Cena okvira', lens_price_label: 'Cena sočiva', work_price_label: 'Cena obrade',
+    prepayment_label: 'Avans', extra_payment: 'Ostatak za uplatu',
+    issued_label: 'Izdata', order_updated: 'Porudžbina ažurirana', order_created: 'Porudžbina kreirana',
+    status_updated: 'Status', select_patient: 'Izaberite pacijenta',
+    issue_btn: 'Preuzmi', mark_ready_btn: 'Spreman',
     order_status_new: 'kreirana', order_status_work: 'u izradi', order_status_ready: 'spreman',
     order_status_issued: 'izdata', order_status_cancelled: 'otkazana', order_status_return: 'povrat', order_status_redo: 'prepravka',
     no_orders: 'Nema porudžbina', confirm_delete_order: 'Obrisati porudžbinu?', issue_confirm: 'Ostatak %s. Preuzeti?',
     order_type_glasses: 'Naočare', order_type_cl: 'Kontaktna sočiva', order_type_repair: 'Popravka',
     order_number: 'Br. porudžbine',
+    // examTab
+    exam_no_data: 'Parametri nisu uneseni',
+    exam_far_short: 'Daljina', exam_comp_short: 'Računar', exam_near_short: 'Blizina', exam_cl_short: 'KSL',
+    exam_control: 'Kontrola',
+    exam_open_btn: 'Otvori',
+    exam_none: 'Nema pregleda',
     // CALENDAR
     schedule: 'Raspored', open_day: 'Dan', open_week: 'Nedelja', my_slot: 'Moj termin',
     custom_slot: 'Moj termin', add_slot: 'Dodaj termin', slot_open: 'Slobodan', slot_remove: 'ukloni',
@@ -154,13 +191,11 @@ const TRANSLATIONS = {
     booking_added: 'Termin dodat', slot_added: 'Termin dodat', schedule_settings: 'Podešavanja rasporeda',
     // ANALYTICS
     analytics: 'Analitika', admin_only: 'Samo za administratora',
-    revenue: 'Prihod / period', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
-    my_salary: 'Moja plata / period', salary_calc: 'Obračun plate',
+    revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
+    my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
     appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
     currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
-    period_month: 'Mesec', period_week: 'Nedelja', added_period: 'za period',
-    all_orders_period: 'sve porudžbine perioda',
     // SETTINGS
     settings: 'Podešavanja', general: 'Osnovno', doctor_name: 'Ime doktora', clinic_name: 'Naziv klinike',
     pin_codes: 'PIN-kodovi', admin_pin: 'PIN administratora', staff_pin: 'PIN zaposlenog', ervin_pin: 'PIN Ervin',
@@ -182,7 +217,8 @@ const TRANSLATIONS = {
     recommendations: 'Preporuke i zaključak', control_visit: 'Kontrolni pregled',
     save_card: 'Karta sačuvana ✓', card_created: 'Karta kreirana ✓', save_error: 'Greška pri čuvanju',
     autosave: 'Automatski sačuvano ✓',
-    btn_print: 'Štampaj', btn_save: 'Sačuvaj', btn_email_patient: 'Pacijentu', btn_email_clinic: 'Optici', btn_close: 'Zatvori',
+    btn_print: 'Štampaj', btn_save: 'Sačuvaj', btn_email_patient: 'Pacijentu',
+    btn_email_clinic: 'Optici', btn_close: 'Zatvori',
     // DAYS & MONTHS
     dow: ['Ned','Pon','Uto','Sre','Čet','Pet','Sub'],
     months: ['januar','februar','mart','april','maj','jun','jul','avgust','septembar','oktobar','novembar','decembar'],
@@ -195,7 +231,6 @@ const TRANSLATIONS = {
     trash_emptied: 'Korpa ispraznjena',
   }
 };
-
 
 // Status label maps (DB value → display)
 const STATUS_SR = {
@@ -228,14 +263,12 @@ function switchLang(lang) {
 }
 
 function _refreshStaticUI() {
-  // Sidebar nav labels
   const navMap = {dashboard:'nav_dashboard',patients:'nav_patients',appointments:'nav_appointments',
     orders:'nav_orders',analytics:'nav_analytics',slots:'nav_slots',settings:'nav_settings',trash:'nav_trash'};
   Object.entries(navMap).forEach(([section, key]) => {
-    const el = document.querySelector(`#nav-${section} .sb-label`);
+    const el = document.querySelector('#nav-'+section+' .sb-label');
     if (el) el.textContent = t(key);
   });
-  // Role label
   const roleEl = document.getElementById('sb-role-label');
-  if (roleEl) roleEl.textContent = t(`role_${role}`) || role;
+  if (roleEl) roleEl.textContent = t('role_'+role) || role;
 }

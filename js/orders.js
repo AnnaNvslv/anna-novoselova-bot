@@ -158,7 +158,7 @@ function _renderOrdersTable(list) {
       '<tr style="cursor:pointer" onclick="openOrderCard(\''+o.id+'\')" onmouseenter="this.style.background=\'var(--surface2)\'" onmouseleave="this.style.background=\'\'">'+
         '<td class="text-m" onclick="event.stopPropagation()">'+fmt(o.order_date||( o.created_at||'').split('T')[0])+'</td>'+
         '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span></td>'+
-        '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span></td>'+
+        '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span>'+(o.is_redo ? ' <span class="badge badge-warn" style="font-size:10px">&#8635;</span>' : '')+'</td>'+
         '<td><div class="fw-6" style="font-size:13.5px">'+(o.frame_code||'—')+'</div><div class="text-sm text-m">'+(o.lens_name||'—')+'</div></td>'+
         '<td style="color:var(--text-l);font-size:12px">'+(o.prescription_label||'—')+'</td>'+
         '<td class="money">'+fmtMoney(orderTotal(o))+'</td>'+
@@ -193,7 +193,7 @@ async function openOrderCard(id) {
       '<div class="modal-header">'+
         '<div style="flex:1;min-width:0">'+
           '<span class="modal-title">'+t('orders')+' · '+(o.patients&&o.patients.name||'—')+'</span>'+
-          '<div class="text-sm text-m mt-4">'+displayDate+' · <span class="badge '+(STATUS_BADGE[o.status]||'badge-gray')+'">'+statusLabel(o.status)+'</span>'+(o.counts_for_salary ? ' · <span class="salary-badge">💰 10%</span>' : '')+'</div>'+
+          '<div class="text-sm text-m mt-4">'+displayDate+' · <span class="badge '+(STATUS_BADGE[o.status]||'badge-gray')+'">'+statusLabel(o.status)+'</span>'+(o.is_redo ? ' · <span class="badge badge-warn">&#8635; Переделка</span>' : '')+(o.counts_for_salary ? ' · <span class="salary-badge">💰 10%</span>' : '')+'</div>'+
         '</div>'+
         '<div class="profile-actions">'+
           (o.status==='готов' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady(\''+o.id+'\')">📨</button>' : '')+
@@ -263,6 +263,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
   const orderDate = (o && (o.order_date || (o.created_at||'').split('T')[0])) || today();
   const lensQty = (o && o.lens_qty != null) ? o.lens_qty : 2;
   const isCL = o && o.type === 'МКЛ';
+  const isRedo = o && !!o.is_redo;
 
   let selVal = '';
   if (o && o.examination_id && o.prescription_label) {
@@ -356,6 +357,14 @@ function _drawOrderForm(o, prePatient, patients, exams) {
               '<option value="Другое" '+(o&&o.type==='Другое'?'selected':'')+'>'+t('no_data')+'</option>'+
             '</select>'+
           '</div>'+
+
+          '<div class="form-group" style="align-self:flex-end">'+
+            '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;padding:10px 0">'+
+              '<input type="checkbox" id="o-is-redo" style="width:auto;width:16px;height:16px;cursor:pointer"'+(isRedo?' checked':'')+'>'+
+              ' &#8635; Переделка'+
+            '</label>'+
+          '</div>'+
+
           (isEdit ?
             '<div class="form-group"><label>'+t('status')+'</label>'+
               '<select id="o-status">'+ORDER_STATUSES_ALL.map(s => '<option '+(o&&o.status===s?'selected':'')+' value="'+s+'">'+statusLabel(s)+'</option>').join('')+'</select>'+
@@ -560,6 +569,7 @@ async function saveOrder(id) {
   const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
   const lPerPiece = qty > 0 ? Math.round(lPriceFinal/qty) : lPriceFinal;
   const orderDate = v('o-orderdate') || today();
+  const isRedo = !!(document.getElementById('o-is-redo') && document.getElementById('o-is-redo').checked);
   const data = {
     patient_id, type:orderType,
     prescription_label: rxType ? rxLabels[rxType] : null,
@@ -571,7 +581,8 @@ async function saveOrder(id) {
     work_price: v('o-wprice') ? Math.max(+v('o-wprice'),0) : null,
     prepayment: Math.max(+v('o-prepay')||0, 0),
     promised_date: v('o-pdate') || null,
-    notes: v('o-notes')
+    notes: v('o-notes'),
+    is_redo: isRedo
   };
   try {
     if (id) {

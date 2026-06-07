@@ -32,8 +32,9 @@ async function openExamView(examId,pid){
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
 }
 // ── RX SELECT HELPERS ──
-// Sph: первым всегда — (пустое), потом 0.00 идёт сразу (без скролла).
-// Дефолтно в поле стоит —. При разкрытии видна 0.00 — вверх плюса, вниз минуса.
+// Sph: первым — (пустой, selected по дефолту).
+// Порядок списка: минуса (-0.25..-13), 0.00, плюса (+0.25..+13).
+// При открытии JS скроллит к 0.00 — так он оказывается посередине.
 function _genOptsSph(vals, saved) {
   const s = String(saved||'');
   let html = `<option value=""${s===''?' selected':''}>—</option>`;
@@ -51,13 +52,15 @@ function _genOpts(vals, saved) {
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
 }
-// Sph: плюса по убыванию, 0.00, минуса — при открытии видно сразу без скролла
+// Sph: минуса (-0.25..-13), 0.00, плюса (+0.25..+13)
+// При открытии JS скроллит к 0.00 — он в центре видимой области
 function _sphVals() {
-  const plus=[];
-  for(let i=1300;i>=25;i-=25) plus.push('+'+(i/100).toFixed(2));
   const minus=[];
   for(let i=25;i<=1300;i+=25) minus.push('-'+(i/100).toFixed(2));
-  return [...plus,'0.00',...minus];
+  const plus=[];
+  for(let i=25;i<=1300;i+=25) plus.push('+'+(i/100).toFixed(2));
+  // порядок: минуса по убыванию (-0.25 сверху, -13 внизу)... нет, по возрастанию (-13 сверху, -0.25 перед 0)
+  return [...minus.slice().reverse(),'0.00',...plus];
 }
 // Cyl: только минуса, без 0.00, дефолт —
 function _cylVals() {
@@ -79,6 +82,15 @@ function _diaVals() { const v=[]; for(let i=140;i<=150;i++) v.push((i/10).toFixe
 const SS = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:100%;background:#fff;color:var(--t)';
 const SN = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:72px;background:#fff;color:var(--t)';
 
+// Скролл к 0.00 при открытии списка sph (через mousedown/focus)
+function _sphScroll(sel) {
+  if(!sel) return;
+  // Если есть сохранённое значение — не скроллим, браузер сам покажет его
+  if(sel.value && sel.value!=='') return;
+  // Находим индекс 0.00
+  const idx = Array.from(sel.options).findIndex(o=>o.value==='0.00');
+  if(idx>=0) sel.selectedIndex = idx;
+}
 function _rs(id, type, val) {
   let opts, style=SS, isSph=false;
   if(type==='sph')    { opts=_sphVals(); isSph=true; }
@@ -91,8 +103,9 @@ function _rs(id, type, val) {
   else if(type==='dia'){ opts=_diaVals(); style=SN; }
   else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
   const optHtml = isSph ? _genOptsSph(opts,val) : _genOpts(opts,val);
+  const onmousedown = isSph ? `onmousedown="_sphScroll(this)"` : '';
   return`<div style="display:flex;gap:2px;align-items:center">
-    <select id="${id}" style="${style}" onchange="_modalDirty=true">${optHtml}</select>
+    <select id="${id}" style="${style}" onchange="if(this.value===''){_sphScroll(this);}_modalDirty=true" ${onmousedown}>${optHtml}</select>
     <button type="button" title="+" onclick="addCustomRx('${id}')" style="padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;background:white;cursor:pointer;font-size:13px;color:var(--accent);flex-shrink:0;line-height:1">+</button>
   </div>`;
 }
@@ -104,7 +117,8 @@ function _rsNoBtn(id, type, val) {
   else if(type==='ax') { opts=_axVals(); style=SN; }
   else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
   const optHtml = isSph ? _genOptsSph(opts,val) : _genOpts(opts,val);
-  return`<select id="${id}" style="${style}" onchange="_modalDirty=true">${optHtml}</select>`;
+  const onmousedown = isSph ? `onmousedown="_sphScroll(this)"` : '';
+  return`<select id="${id}" style="${style}" onchange="_modalDirty=true" ${onmousedown}>${optHtml}</select>`;
 }
 function addCustomRx(id){
   const val=prompt('Введите значение:');
@@ -367,13 +381,13 @@ function _renderCorrs(){
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
-        <div><label style="font-size:10px">Sph</label><select onchange="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.od_sph)}</select></div>
+        <div><label style="font-size:10px">Sph</label><select onmousedown="_sphScroll(this)" onchange="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.od_sph)}</select></div>
         <div><label style="font-size:10px">Cyl</label><select onchange="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.od_cyl)}</select></div>
         <div><label style="font-size:10px">Ax</label><select onchange="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.od_ax)}</select></div>
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
-        <div><select onchange="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.os_sph)}</select></div>
+        <div><select onmousedown="_sphScroll(this)" onchange="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.os_sph)}</select></div>
         <div><select onchange="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.os_cyl)}</select></div>
         <div><select onchange="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.os_ax)}</select></div>
       </div>

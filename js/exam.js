@@ -40,22 +40,28 @@ function _genOpts(vals, saved) {
     html += `<option value="${s}" selected>${s}</option>`;
   return html;
 }
-// Sph: 0 (plan) в центре, плюса вверх, минуса вниз
+// Sph: 0.00 первым (курсор на нём при открытии), потом плюса, потом минуса
 function _sphVals() {
   const plus=[];
-  for(let i=1300;i>=25;i-=25) plus.push('+'+(i/100).toFixed(2));
+  for(let i=25;i<=1300;i+=25) plus.push('+'+(i/100).toFixed(2));
   const minus=[];
   for(let i=25;i<=1300;i+=25) minus.push('-'+(i/100).toFixed(2));
-  return [...plus,'0.00',...minus];
+  return ['0.00',...plus,...minus];
 }
-// Cyl: только минуса от -0.25 до -6.00
+// Cyl: начинается с -0.25, 0.00 убран
 function _cylVals() {
-  const v=['0.00'];
+  const v=[];
   for(let i=25;i<=600;i+=25) v.push('-'+(i/100).toFixed(2));
+  for(let i=25;i<=600;i+=25) v.push('+'+(i/100).toFixed(2));
   return v;
 }
 function _axVals() { return Array.from({length:181},(_,i)=>i); }
-function _pdVals() { return Array.from({length:31},(_,i)=>i+50); }
+// PD: default 62 (первый в списке)
+function _pdVals() {
+  const vals=Array.from({length:31},(_,i)=>i+50);
+  const idx=vals.indexOf(62);
+  return [vals[idx],...vals.slice(0,idx),...vals.slice(idx+1)];
+}
 function _addVals() { const v=[]; for(let i=25;i<=400;i+=25) v.push((i/100).toFixed(2)); return v; }
 function _bcVals() { const v=[]; for(let i=83;i<=90;i++) v.push((i/10).toFixed(1)); return v; }
 function _diaVals() { const v=[]; for(let i=140;i<=150;i++) v.push((i/10).toFixed(1)); return v; }
@@ -87,8 +93,10 @@ function addCustomRx(id){
   sel.appendChild(opt);sel.value=val;_modalDirty=true;
 }
 // Visus-поля: свободный ввод без ограничений символов
-function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}">`;}
-function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;}
+function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'44px':'52px'};max-width:${narrow?'70px':'none'}">`;
+}
+function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;
+}
 // Поле комментария (необязательное)
 function _comment(id,val,placeholder){
   placeholder = placeholder || 'Комментарий (необязательно)';
@@ -211,7 +219,7 @@ function _drawExam(p,e,visitNum,apptId){
         <div class="rx-section">
           <div class="rx-section-title">Результаты обследования</div>
           <table class="rx-table">
-            <tr><th></th><th>Visus без корр.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus с корр.</th><th>OU с корр.</th></tr>
+            <tr><th></th><th>Visus без корр.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus с корр.</th><th>OU с корр.</th></tr>
             <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'))}</td><td>${_rs('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rs('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rs('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'))}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'))}</td></tr>
             <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'))}</td><td>${_rs('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rs('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rs('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'))}</td></tr>
           </table>
@@ -318,6 +326,8 @@ function _renderCorrs(){
   if(!_examData.corrections.length)return`<p class="text-sm text-m">Нет используемой коррекции</p>`;
   return _examData.corrections.map((c,i)=>{
     const isMKL=c.type==='МКЛ';
+    const sphOpts = _sphVals();
+    const cylOpts = _cylVals();
     return`<div class="corr-item">
       <div class="flex justify-between items-center mb-8">
         <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
@@ -327,15 +337,31 @@ function _renderCorrs(){
       </div>
       <div style="display:grid;grid-template-columns:50px 1fr 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px">
         <span class="text-sm fw-6 text-m">OD</span>
-        <div><label style="font-size:10px">Sph</label><input value="${c.od_sph||''}" oninput="_examData.corrections[${i}].od_sph=this.value" style="text-align:center"></div>
-        <div><label style="font-size:10px">Cyl</label><input value="${c.od_cyl||''}" oninput="_examData.corrections[${i}].od_cyl=this.value" style="text-align:center"></div>
+        <div><label style="font-size:10px">Sph</label>
+          <select oninput="_examData.corrections[${i}].od_sph=this.value" style="text-align:center;width:100%">
+            ${_genOpts(sphOpts,c.od_sph)}
+          </select>
+        </div>
+        <div><label style="font-size:10px">Cyl</label>
+          <select oninput="_examData.corrections[${i}].od_cyl=this.value" style="text-align:center;width:100%">
+            <option value="">—</option>${_genOpts(cylOpts,c.od_cyl)}
+          </select>
+        </div>
         <div><label style="font-size:10px">Ax</label><input value="${c.od_ax||''}" oninput="_examData.corrections[${i}].od_ax=this.value" style="text-align:center"></div>
         <div><label style="font-size:10px">ADD</label><input value="${c.od_add||''}" oninput="_examData.corrections[${i}].od_add=this.value" style="text-align:center"></div>
       </div>
       <div style="display:grid;grid-template-columns:50px 1fr 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
-        <div><input value="${c.os_sph||''}" oninput="_examData.corrections[${i}].os_sph=this.value" style="text-align:center"></div>
-        <div><input value="${c.os_cyl||''}" oninput="_examData.corrections[${i}].os_cyl=this.value" style="text-align:center"></div>
+        <div>
+          <select oninput="_examData.corrections[${i}].os_sph=this.value" style="text-align:center;width:100%">
+            ${_genOpts(sphOpts,c.os_sph)}
+          </select>
+        </div>
+        <div>
+          <select oninput="_examData.corrections[${i}].os_cyl=this.value" style="text-align:center;width:100%">
+            <option value="">—</option>${_genOpts(cylOpts,c.os_cyl)}
+          </select>
+        </div>
         <div><input value="${c.os_ax||''}" oninput="_examData.corrections[${i}].os_ax=this.value" style="text-align:center"></div>
         <div><input value="${c.os_add||''}" oninput="_examData.corrections[${i}].os_add=this.value" style="text-align:center"></div>
       </div>
@@ -351,7 +377,7 @@ function _renderCorrs(){
           <div class="form-group full" style="grid-column:span 2"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value"></div>
         `}
       </div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}` +
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value" placeholder="тип линз"></div>`:''}`+
     `</div>`;
   }).join('');
 }
@@ -433,10 +459,10 @@ async function _buildPrintCard(examId) {
   const date=fmt((e?.created_at||today()).split('T')[0]);
   const doctor=s.doctor_name||'Ana Novoselova';
 
-  const rxBlock=(title,rows,shared,comment)=>{
+  const rxBlock=(title,titleRu,rows,shared,comment)=>{
     if(!rows.some(r=>r.v1||r.v2||r.v3)) return '';
     return`<div class="pc-rx-block" style="page-break-inside:avoid">
-      <div class="pc-rx-title">${title}</div>
+      <div class="pc-rx-title">${title} <span style="font-weight:400;font-size:7pt;color:#777">(${titleRu})</span></div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${rows[0].v1}</td><td>${rows[0].v2}</td><td>${rows[0].v3}</td></tr>
@@ -454,7 +480,7 @@ async function _buildPrintCard(examId) {
     <div class="pc-header">
       <div>
         <div style="font-size:9pt;color:#555">${doctor}</div>
-        <div class="pc-doctor-sub">Optometrista · Novi Sad, Srbija</div>
+        <div class="pc-doctor-sub">Optometrista · Novi Sad, Srbija · Optika Ginter</div>
       </div>
       <div class="pc-meta">
         <div style="font-size:11pt;font-weight:800;color:#1B4F72">${e?.appointment_number||('Poseta br.'+(e?.visit_number||1))}</div>
@@ -466,12 +492,12 @@ async function _buildPrintCard(examId) {
       <div style="font-size:14pt;font-weight:800;color:#1a1a2e">${p?.name||''}</div>
       <div style="font-size:10pt;color:#555;margin-top:2pt">${age?age+' god.':''}${p?.patient_code?' · ID: '+p.patient_code:''}</div>
     </div>
-    ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Razlog dolaska</div><div class="pc-text">${rx('visit_reason')}</div></div>`:''}
-    ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Tegobe</div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
-    ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Bolesti oka</div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
-    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Anamneza (prema rečima pacijenta)</div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}
-    ${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Korekcija u upotrebi</div>
+    ${rx('visit_reason')?`<div class="pc-sec"><div class="pc-sec-label">Razlog dolaska <span style="font-weight:400;color:#777">(Причина обращения)</span></div><div class="pc-text">${rx('visit_reason')}</div></div>`:''}
+    ${rx('complaints_notes')?`<div class="pc-sec"><div class="pc-sec-label">Tegobe <span style="font-weight:400;color:#777">(Жалобы)</span></div><div class="pc-text">${rx('complaints_notes')}</div></div>`:''}
+    ${rx('eye_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Bolesti oka <span style="font-weight:400;color:#777">(Глазные заболевания)</span></div><div class="pc-text">${rx('eye_diseases_notes')}</div></div>`:''}
+    ${rx('general_diseases_notes')?`<div class="pc-sec"><div class="pc-sec-label">Anamneza <span style="font-weight:400;color:#777">(Анамнез)</span></div><div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}`+
+    `${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
+      <div class="pc-sec-label">Korekcija u upotrebi <span style="font-weight:400;color:#777">(Используемая коррекция)</span></div>
       ${e.current_corrections.map(c=>`<div style="margin-bottom:5pt">
         <div style="font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:2pt">${c.type}${c.duration?' · '+c.duration:''}</div>
         <table class="pc-table"><tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${c.type==='МКЛ'?'<th>BC</th><th>DIA</th>':'<th>PD</th>'}${c.od_add?'<th>ADD</th>':''}</tr>
@@ -483,7 +509,7 @@ async function _buildPrintCard(examId) {
       </div>`).join('')}
     </div>`:''}`+
     `<div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Autorefraktometrija</div>
+      <div class="pc-sec-label">Autorefraktometrija <span style="font-weight:400;color:#777">(Авторефрактометрия)</span></div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>R AVE</th></tr>
         <tr><td class="eye">OD</td><td>${rx('refr_od_sph')}</td><td>${rx('refr_od_cyl')}</td><td>${rx('refr_od_ax')}</td><td>${rx('refr_od_ave')}</td></tr>
@@ -493,29 +519,35 @@ async function _buildPrintCard(examId) {
       ${rx('refr_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('refr_comment')}</div>`:''}
     </div>
     <div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Rezultati pregleda</div>
+      <div class="pc-sec-label">Rezultati pregleda <span style="font-weight:400;color:#777">(Результаты обследования)</span></div>
       <table class="pc-table">
-        <tr><th></th><th>Visus bez kor.</th><th>co Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th></tr>
+        <tr><th></th><th>Visus bez kor.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th></tr>
         <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td></tr>
         <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td></tr>
       </table>
       ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>OU sa korekcijom:</b> ${rx('exam_ou')}</div>`:''}
       ${rx('exam_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('exam_comment')}</div>`:''}
     </div>
-    ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock('Parametri za izradu naočara za daljinu',
+    ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock(
+      'Parametri za izradu naocara za daljinu',
+      'Параметры для очков для дали',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax')}],
       [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}],
       rx('rx_far_comment')):''}
-    ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock('Parametri za izradu naočara za rad za računarom',
+    ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock(
+      'Parametri za izradu naocara za rad za racunarom',
+      'Параметры для очков для компьютера',
       [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax')}],
       [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}],
       rx('rx_comp_comment')):''}
-    ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock('Parametri za izradu naočara za blizinu',
+    ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock(
+      'Parametri za izradu naocara za blizinu',
+      'Параметры для очков для близи',
       [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax')}],
       [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}],
       rx('rx_near_comment')):''}
     ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block" style="page-break-inside:avoid">
-      <div class="pc-rx-title">Parametri za propisivanje KS</div>
+      <div class="pc-rx-title">Parametri za propisivanje KS <span style="font-weight:400;font-size:7pt;color:#777">(Параметры МКЛ)</span></div>
       <table class="pc-table">
         <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
         <tr><td class="eye">OD</td><td>${rx('rx_cl_od_sph')}</td><td>${rx('rx_cl_od_cyl')}</td><td>${rx('rx_cl_od_ax')}</td></tr>
@@ -529,11 +561,11 @@ async function _buildPrintCard(examId) {
       ${rx('rx_cl_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('rx_cl_comment')}</div>`:''}
     </div>`:''}
     <div class="pc-sec" style="page-break-inside:avoid">
-      <div class="pc-sec-label">Preporuke i zaključak</div>
+      <div class="pc-sec-label">Preporuke i zakljucak <span style="font-weight:400;color:#777">(Рекомендации и заключение)</span></div>
       <div class="pc-recs">${rx('recommendations')||'—'}</div>
     </div>
     <div class="pc-footer">
-      <div class="pc-note">Dokument je namenjen za izbor i izradu optičke korekcije (naočare / KS). U slučaju bolesti oka, bolova ili naglog pogoršanja vida, obratite se lekaru oftalmologu.</div>
+      <div class="pc-note">Dokument je namenjen za izbor i izradu opticke korekcije (naocare / KS). U slucaju bolesti oka, bolova ili naglog pogorsanja vida, obratite se lekaru oftalmologu.</div>
       ${e?.control_date?`<div class="pc-control">Kontrolna poseta:<br>${fmt(e.control_date)}</div>`:''}
     </div>
   </div>`;
@@ -565,7 +597,7 @@ async function emailExam(examId,target){
     subj=`${p?.name||''}`;
     body=`Здравствуйте!\n\nПрикрепляю вашу карту оптометрического обследования.\nДата приёма: ${date}, Визит №${e?.visit_number||1}\n\nС уважением,\n${s.doctor_name||'Ana Novoselova'}`;
   }
-  toast('Sačuvajte PDF i priložite uz pismo','info');
+  toast('Sacuvajte PDF i prilozite uz pismo','info');
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1500);
 }
 
@@ -609,7 +641,7 @@ async function _buildPatientPrintCard(pid) {
       <td>${o.type||'—'}</td>
       <td>${o.status||'—'}</td>
       <td>${o.order_total?fmtMoney(o.order_total):'—'}</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="color:#999;text-align:center">Nema porudžbina</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="4" style="color:#999;text-align:center">Nema porudzbina</td></tr>';
 
   const html = `<div class="print-card">
     <div class="pc-bar"></div>
@@ -648,7 +680,7 @@ async function _buildPatientPrintCard(pid) {
       </table>
     </div>
     <div class="pc-sec">
-      <div class="pc-sec-label">Porudžbine</div>
+      <div class="pc-sec-label">Porudzbine</div>
       <table class="pc-table" style="font-size:8pt">
         <tr><th>Datum</th><th>Vrsta</th><th>Status</th><th>Iznos</th></tr>
         ${orderRows}
@@ -718,7 +750,7 @@ async function emailPatientPDF(pid, target) {
   if(target==='patient' && !toEmail) { toast('Email pacijenta nije naveden u kartonu','error'); return; }
   const subj = `Karton pacijenta — ${p.name||''} — ${date_str}`;
   const body = target==='clinic'
-    ? `Kartica pacijenta ${p.name||''} formirana ${date_str}.\n\nPriložite sačuvani PDF uz pismo.\n\nS poštovanjem,\nAna Novoselova`
-    : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Оптики Ginter.\n\nС уважением,\nАна Новосёлова\nОптометрист · Нови-Сад`;
+    ? `Kartica pacijenta ${p.name||''} formirana ${date_str}.\n\nPrilozite sacuvani PDF uz pismo.\n\nS postovanjem,\nAna Novoselova`
+    : `Здравствуйте, ${(p.name||'').split(' ')[0]}!\n\nПрикрепляю вашу карточку пациента из Optike Ginter.\n\nС уважением,\nАна Новосёлова\nОптометрист · Нови-Сад`;
   setTimeout(()=>{ const ml=document.createElement('a');ml.href=`mailto:${toEmail}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;ml.target='_blank';document.body.appendChild(ml);ml.click();document.body.removeChild(ml); },1200);
 }

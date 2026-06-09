@@ -3,15 +3,22 @@ let _calWeekOffset2 = 0;
 let _calSettings = null;
 
 // Цвета слотов по slot_type
-// primary = основной приём (синий)
-// short   = короткий 15-мин визит (оранжевый)
 const SLOT_TYPE_COLORS = {
   primary: { bg: '#d1fae5', text: '#065f46', label: 'Основной приём' },
   short:   { bg: '#fef3c7', text: '#92400e', label: '15 мин (контроль/помощь)' },
 };
+function slotTypeColor(type){return SLOT_TYPE_COLORS[type]||SLOT_TYPE_COLORS.primary;}
 
-function slotTypeColor(type) {
-  return SLOT_TYPE_COLORS[type] || SLOT_TYPE_COLORS.primary;
+// Фиксированная сетка: шаг 15 мин, 09:00–19:45
+const GRID_START = 9 * 60;   // 09:00
+const GRID_END   = 20 * 60;  // 20:00 exclusive
+const GRID_STEP  = 15;       // 15 минут
+
+function gridTimes() {
+  const times = [];
+  for (let m = GRID_START; m < GRID_END; m += GRID_STEP)
+    times.push(String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'));
+  return times;
 }
 
 function generateSlotTimes(s) {
@@ -48,63 +55,111 @@ async function renderSlots() {
     db.from('available_slots').select('*').in('date',weekDays).order('start_time'),
     db.from('appointments').select('date,time,type,patient_id,patients(name),appointment_number').in('date',weekDays).neq('status','отменён').is('deleted_at',null)
   ]);
-  const defaultTimes=generateSlotTimes(s);
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
   const slotMap={};(slots||[]).forEach(sl=>{slotMap[`${sl.date}|${sl.start_time?.substr(0,5)}`]=sl;});
   const apptMap={};(appts||[]).forEach(a=>{apptMap[`${a.date}|${a.time?.substr(0,5)}`]=a;});
-  const extraTimes=new Set();
-  (slots||[]).forEach(sl=>{const tt=sl.start_time?.substr(0,5);if(tt&&!defaultTimes.includes(tt))extraTimes.add(tt);});
-  const allTimes=[...new Set([...defaultTimes,...extraTimes])].sort();
+
+  // Фиксированная сетка + внештатные слоты за пределами сетки
+  const baseGrid = new Set(gridTimes());
+  (slots||[]).forEach(sl=>{const tt=sl.start_time?.substr(0,5);if(tt&&!baseGrid.has(tt))baseGrid.add(tt);});
+  const allTimes=[...baseGrid].sort();
+
+  // Цвет строки: часовые (на :00) немного темнее
+  const isHour = tm => tm.endsWith(':00');
 
   const renderCell=(d,tm)=>{
     const k=`${d}|${tm}`, appt=apptMap[k], slot=slotMap[k];
     const isPast=d<todayStr||(d===todayStr&&tm<new Date().toTimeString().substr(0,5));
+
+    // Записанный пациент
     if(appt) return`<div class="cal-pill cal-pill-patient" onclick="openPatientCard('${appt.patient_id}')">
       <div class="cal-pill-name">${appt.patients?.name?.split(' ')[0]||'—'}</div>
-      <div class="cal-pill-sub" style="font-size:10px;opacity:.8">${(apptTypeName(appt.type||'')||appt.type||''||appt.appointment_number||'').substr(0,12)+((apptTypeName(appt.type||'')||appt.appointment_number||''||'').length>12?'…':'')}</div></div>`;
+      <div class="cal-pill-sub">${(apptTypeName(appt.type||'')||appt.type||appt.appointment_number||'').substr(0,14)}</div>
+    </div>`;
+
+    // Ervin
     if(slot&&slot.booked_by==='ervin'){
       const can=isErvin()||isAdmin();
-      const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')"` : '';
-      return`<div class="cal-pill cal-pill-ervin" style="display:flex;align-items:center;justify-content:space-between;gap:4px" ${ervinAttrs}>
-        <div><div class="cal-pill-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div></div>
-        ${can?`<span style="font-size:11px;padding:2px 7px;background:rgba(0,0,0,.18);border-radius:4px;flex-shrink:0">Otkaži</span>`:''}
+      return`<div class="cal-pill cal-pill-ervin" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <div style="min-width:0"><div class="cal-pill-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div></div>
+        ${can?`<button class="cal-act-btn cal-del-btn" onclick="event.stopPropagation();unbookErvin('${slot.id}')" title="Отменить">🗑</button>`:''}
       </div>`;}
+
+    // Свободный слот — кнопки прямо на бабле
     if(slot&&!slot.is_booked){
-      // Цвет зависит от slot_type
       const sc=slotTypeColor(slot.slot_type||'primary');
       const typeLabel=slot.slot_type==='short'?'15 мин':'Приём';
-      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${typeLabel} · Zauzimi</div></div>`;
-      if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">${typeLabel} · + ${t('appointments')||'Pregled'}</div></div>`;
-      return`<div class="cal-pill cal-pill-free" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${typeLabel}</div></div>`;}
-    if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
-    if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${tm}')">+</div>`;
-    if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${tm}','')">+</div>`;
-    return`<div class="cal-pill-empty">—</div>`;
+      const adminBtns=isAdmin()?`
+        <div style="display:flex;gap:3px;margin-top:4px">
+          <button class="cal-act-btn cal-add-btn" onclick="event.stopPropagation();openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" title="+ Pregled">+ Pregled</button>
+          <button class="cal-act-btn cal-del-btn" onclick="event.stopPropagation();removeSlotDirect('${slot.id}')" title="Удалить">🗑</button>
+        </div>`:'';
+      const ervinBtns=isErvin()&&!isAdmin()?`
+        <div style="display:flex;gap:3px;margin-top:4px">
+          <button class="cal-act-btn cal-add-btn" onclick="event.stopPropagation();bookErvinAt('${d}','${tm}','${slot.id}')" title="Zauzimi">Zauzimi</button>
+          <button class="cal-act-btn cal-del-btn" onclick="event.stopPropagation();removeSlotDirect('${slot.id}')" title="Отменить">🗑</button>
+        </div>`:'';
+      return`<div class="cal-pill" style="background:${sc.bg};color:${sc.text}">
+        <div class="cal-pill-name">✓ ${typeLabel}</div>
+        ${adminBtns}${ervinBtns}
+      </div>`;}
+
+    // Пустая ячейка
+    if(isPast) return`<div class="cal-cell-empty cal-pill-past">—</div>`;
+    if(isAdmin()) return`<div class="cal-cell-empty cal-cell-add" onclick="addSlotAt('${d}','${tm}')" title="Добавить слот">+</div>`;
+    if(isErvin()) return`<div class="cal-cell-empty cal-cell-add cal-cell-ervin-add" onclick="bookErvinAt('${d}','${tm}','')" title="Занять">+</div>`;
+    return`<div class="cal-cell-empty">—</div>`;
   };
 
   document.querySelector('.content').innerHTML=`
   <style>
-    .cal-grid{display:grid;grid-template-columns:60px repeat(7,1fr);background:white;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden}
+    .cal-wrap{overflow-x:auto;}
+    .cal-grid{
+      display:grid;
+      grid-template-columns:52px repeat(7,minmax(90px,1fr));
+      background:white;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);overflow:hidden;
+      min-width:740px;
+    }
     .cal-grid-head{padding:10px 6px;text-align:center;background:var(--surface2);border-bottom:2px solid var(--border);font-size:12px;font-weight:700;color:var(--text-m)}
     .cal-grid-head.today{background:var(--accent-l);color:var(--accent-h)}
     .cal-date{font-size:22px;font-weight:800;color:var(--text);line-height:1.1}
     .cal-grid-head.today .cal-date{color:var(--accent)}
-    .cal-grid-time{padding:8px 6px 8px 2px;text-align:right;font-size:11px;font-weight:700;color:var(--text-l);background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end}
-    .cal-grid-cell{padding:5px 4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;min-height:52px}
+    .cal-grid-time{
+      padding:0 4px 0 2px;text-align:right;font-size:10px;font-weight:600;
+      color:var(--text-l);background:var(--surface2);
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:flex-end;
+      min-height:32px;
+    }
+    .cal-grid-time.hour{color:var(--text-m);font-weight:700;background:#f1f5f9;}
+    .cal-grid-cell{
+      padding:2px 3px;
+      border-bottom:1px solid var(--border);
+      border-left:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;
+      min-height:32px;
+    }
+    .cal-grid-cell.hour{background:#f8fafc;}
     .cal-nonwork{background:#fafafa}
-    .cal-pill{border-radius:8px;padding:5px 7px;font-size:11px;width:100%;cursor:pointer;transition:filter .15s}
-    .cal-pill:hover{filter:brightness(.93)}
-    .cal-pill-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cal-pill-sub{font-size:10px;opacity:.7}
-    .cal-pill-free{background:#d1fae5;color:#065f46}
-    .cal-pill-patient{background:#dbeafe;color:#1e3a8a;cursor:pointer}
-    .cal-pill-ervin{background:#fde68a;color:#92400e;cursor:pointer}
-    .cal-pill-empty{font-size:12px;color:var(--text-l);text-align:center;width:100%}
-    .cal-pill-add{color:var(--accent);font-size:22px;font-weight:700;cursor:pointer;border-radius:6px;padding:0 8px}
-    .cal-pill-add:hover{background:var(--accent-l)}
-    .cal-pill-ervin-add{color:#d97706;font-size:22px;font-weight:700;cursor:pointer;border-radius:6px;padding:0 8px}
-    .cal-pill-ervin-add:hover{background:#fef3c7}
-    .cal-pill-past{opacity:.25}
+    .cal-nonwork.hour{background:#f3f3f3}
+    .cal-pill{border-radius:7px;padding:4px 6px;font-size:11px;width:100%;box-sizing:border-box;}
+    .cal-pill-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+    .cal-pill-sub{font-size:10px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cal-pill-patient{background:#dbeafe;color:#1e3a8a;cursor:pointer;}
+    .cal-pill-patient:hover{filter:brightness(.95)}
+    .cal-pill-ervin{background:#fde68a;color:#92400e;}
+    .cal-cell-empty{font-size:11px;color:var(--text-l);text-align:center;width:100%;padding:4px 0;}
+    .cal-cell-add{color:var(--accent);font-size:18px;font-weight:700;cursor:pointer;border-radius:5px;transition:background .1s;}
+    .cal-cell-add:hover{background:var(--accent-l);}
+    .cal-cell-ervin-add{color:#d97706;}
+    .cal-cell-ervin-add:hover{background:#fef3c7;}
+    .cal-pill-past{opacity:.2}
+    /* Кнопки на бабле */
+    .cal-act-btn{border:none;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:inherit;font-weight:600;line-height:1.4;flex-shrink:0;}
+    .cal-add-btn{background:rgba(0,0,0,.12);color:inherit;}
+    .cal-add-btn:hover{background:rgba(0,0,0,.22);}
+    .cal-del-btn{background:rgba(220,38,38,.15);color:#b91c1c;}
+    .cal-del-btn:hover{background:rgba(220,38,38,.3);}
   </style>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div class="flex gap-8 items-center">
@@ -114,40 +169,46 @@ async function renderSlots() {
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2++;renderSlots()">${t('forward')}</button>
     </div>
     <div class="flex gap-8 items-center">
-      ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">${t('custom_slot')}</button>
-        <button class="btn btn-ghost btn-sm" onclick="openRemoveSlotDialog()" title="Удалить слот">🗑 ${t('slot_remove')||'Ukloni slot'}</button>
-        <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">${`📅 ${t('open_day')}`}</button>
-        <button class="btn btn-accent btn-sm" onclick="openWeekSlots('${weekDays[0]}','${weekDays[4]}')">${`📅 ${t('open_week')}`}</button>`:''}
-      ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">${`+ ${t('my_slot')}`}</button>`:''}
+      ${isAdmin()?`<button class="btn btn-accent btn-sm" onclick="openWeekSlots('${weekDays[0]}','${weekDays[4]}')">📅 ${t('open_week')}</button>`:''}
+      ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">+ ${t('my_slot')}</button>`:''}
     </div>
   </div>
+  <div class="cal-wrap">
   <div class="cal-grid">
-    <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)">${s.cal_duration||60}м +${s.cal_break||15}м</div>
+    <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)"></div>
     ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isToday=d===todayStr;const isWork=workDays.includes(dt.getDay());
       return`<div class="cal-grid-head${isToday?' today':''}" style="${!isWork?'opacity:.45':''}">
         <div style="font-size:11px">${DOW[dt.getDay()]}</div>
         <div class="cal-date">${dt.getDate()}</div>
-        ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
       </div>`;}).join('')}
-    ${allTimes.map(tm=>`
-      <div class="cal-grid-time">${tm}</div>
+    ${allTimes.map(tm=>{
+      const hourClass=isHour(tm)?' hour':'';
+      return`<div class="cal-grid-time${hourClass}">${tm}</div>
       ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
-        return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">  ${renderCell(d,tm)}</div>`;}).join('')}
-    `).join('')}
+        return`<div class="cal-grid-cell${hourClass}${!isWork?' cal-nonwork':''}">${renderCell(d,tm)}</div>`;}).join('')}`;
+    }).join('')}
+  </div>
   </div>
   <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap;align-items:center">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>Основной приём (свободно)</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fef3c7;display:inline-block"></span>15 мин (контроль/помощь)</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#dbeafe;display:inline-block"></span>${t('patient')}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fde68a;display:inline-block"></span>${t('slot_ervin')}</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:var(--surface2);border:1px dashed var(--border);display:inline-block"></span>+ пустая ячейка → добавить слот</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:var(--surface2);border:1px dashed var(--border);display:inline-block"></span>+ клик по ячейке → добавить слот</span>
     ${isAdmin()?`· <a href="#" onclick="nav('settings')" style="color:var(--accent);font-size:12px">${t('schedule_settings')}</a>`:''}
   </div>`;
 }
 
+// Удаление слота напрямую без модального диалога
+async function removeSlotDirect(id){
+  if(!confirm('Удалить слот?'))return;
+  await db.from('available_slots').delete().eq('id',id);
+  renderSlots();
+}
+
+// Добавление слота кликом по ячейке
 async function addSlotAt(date,time){
-  // При добавлении одиночного слота кликом — спрашиваем тип
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить слот ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить слот — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Тип слота</label>
         <select id="as-type">
@@ -156,59 +217,18 @@ async function addSlotAt(date,time){
         </select>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="_saveSlotAt('${date}','${time}')">Добавить</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="_saveSlotAt('${date}','${time}')">+ Слот</button></div>
   </div>`);
 }
-
 async function _saveSlotAt(date,time){
   const slotType=document.getElementById('as-type')?.value||'primary';
   await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
   closeModal();renderSlots();
 }
 
-// Dialog to remove a specific free slot (admin only, via separate UI — not by clicking a booked slot)
-async function openRemoveSlotDialog(){
-  const toD=new Date();toD.setDate(toD.getDate()+21);
-  const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
-  if(!freeSlots?.length){toast('Нет свободных слотов','error');return;}
-  const opts=(freeSlots||[]).map(s=>`<option value="${s.id}">${fmt(s.date)} ${s.start_time?.substr(0,5)} [${s.slot_type==='short'?'15 мин':'основной'}]</option>`).join('');
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Удалить слот</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body"><div class="form-group"><label>Выберите слот для удаления</label><select id="del-slot-id">${opts}</select></div></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-danger" onclick="removeSlot(document.getElementById('del-slot-id').value)">Удалить</button></div>
-  </div>`);
-}
+async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);if(typeof closeModal==='function')closeModal();renderSlots();}
 
-async function openDaySlots(date){
-  const s=_calSettings||await loadCalSettings();
-  const times=generateSlotTimes(s);
-  const targetDate=date||today();
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('open_slots_day')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label>Дата</label><input type="date" id="ds-date" value="${targetDate}"></div>
-      <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
-        <select id="ds-type">
-          <option value="primary">Основной приём (60–120 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке — можно редактировать)</label>
-        <textarea id="ds-times" style="min-height:200px;font-family:monospace;font-size:14px">${times.join('\n')}</textarea>
-      </div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveDaySlots()">Otvori</button></div>
-  </div>`);
-}
-
-async function saveDaySlots(){
-  const date=document.getElementById('ds-date').value;
-  const slotType=document.getElementById('ds-type')?.value||'primary';
-  const times=document.getElementById('ds-times').value.split('\n').map(t=>t.trim()).filter(t=>/^\d{2}:\d{2}$/.test(t));
-  if(!date||!times.length){toast('Проверь дату и время','error');return;}
-  const rows=times.map(t=>({date,start_time:t,is_booked:false,booked_by:null,slot_type:slotType}));
-  await db.from('available_slots').upsert(rows,{onConflict:'date,start_time',ignoreDuplicates:true});
-  toast(t('slots_opened').replace('%s',rows.length));closeModal();renderSlots();
-}
-
+// Открытие слотов на неделю
 async function openWeekSlots(from,to){
   const s=_calSettings||await loadCalSettings();
   const times=generateSlotTimes(s);
@@ -237,7 +257,6 @@ async function openWeekSlots(from,to){
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveWeekSlots()">Otvori</button></div>
   </div>`);
 }
-
 async function saveWeekSlots(){
   const from=new Date(document.getElementById('ws-from').value+'T12:00:00');
   const to=new Date(document.getElementById('ws-to').value+'T12:00:00');
@@ -256,6 +275,38 @@ async function saveWeekSlots(){
   toast(t('slots_opened').replace('%s',rows.length));closeModal();renderSlots();
 }
 
+// Открытие слотов на один день (fallback)
+async function openDaySlots(date){
+  const s=_calSettings||await loadCalSettings();
+  const times=generateSlotTimes(s);
+  const targetDate=date||today();
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('open_slots_day')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Дата</label><input type="date" id="ds-date" value="${targetDate}"></div>
+      <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
+        <select id="ds-type">
+          <option value="primary">Основной приём (60–120 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке)</label>
+        <textarea id="ds-times" style="min-height:200px;font-family:monospace;font-size:14px">${times.join('\n')}</textarea>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveDaySlots()">Otvori</button></div>
+  </div>`);
+}
+async function saveDaySlots(){
+  const date=document.getElementById('ds-date').value;
+  const slotType=document.getElementById('ds-type')?.value||'primary';
+  const times=document.getElementById('ds-times').value.split('\n').map(t=>t.trim()).filter(t=>/^\d{2}:\d{2}$/.test(t));
+  if(!date||!times.length){toast('Проверь дату и время','error');return;}
+  const rows=times.map(t=>({date,start_time:t,is_booked:false,booked_by:null,slot_type:slotType}));
+  await db.from('available_slots').upsert(rows,{onConflict:'date,start_time',ignoreDuplicates:true});
+  toast(t('slots_opened').replace('%s',rows.length));closeModal();renderSlots();
+}
+
+// Кастомный слот (fallback)
 function openAddCustomSlot(){
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('add_slot')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
@@ -273,32 +324,27 @@ function openAddCustomSlot(){
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveCustomSlot()">Добавить</button></div>
   </div>`);
 }
-
 async function saveCustomSlot(){
-  const date=document.getElementById('cs-date').value, time=document.getElementById('cs-time').value;
+  const date=document.getElementById('cs-date').value,time=document.getElementById('cs-time').value;
   const slotType=document.getElementById('cs-type')?.value||'primary';
   if(!date||!time)return;
   await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
   toast(t('slot_added'));closeModal();renderSlots();
 }
 
-async function removeSlot(id){await db.from('available_slots').delete().eq('id',id);closeModal();renderSlots();}
-
 async function bookErvinAt(date,time,slotId){
-  const sid = slotId || '';
+  const sid=slotId||'';
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('ervin_booking')} — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Пациент (необязательно)</label><input id="erv-note" placeholder="Имя пациента" autofocus></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_confirmErvinBook('${date}','${time}','${sid}')" style="text-transform:none">Zauzimi</button></div>
   </div>`);
 }
-
 async function _confirmErvinBook(date,time,slotId){
   const note=document.getElementById('erv-note').value.trim();
   if(slotId){await db.from('available_slots').update({is_booked:true,booked_by:'ervin',ervin_note:note}).eq('id',slotId);}
   else{await db.from('available_slots').upsert({date,start_time:time,is_booked:true,booked_by:'ervin',ervin_note:note},{onConflict:'date,start_time'});}
   closeModal();renderSlots();
 }
-
 async function unbookErvin(id){if(!confirm(t('unbook_ervin')))return;await db.from('available_slots').delete().eq('id',id);renderSlots();}
 
 async function openAddErvinBooking(){
@@ -313,9 +359,8 @@ async function openAddErvinBooking(){
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="_saveErvinBooking()">Zauzimi</button></div>
   </div>`);
 }
-
 async function _saveErvinBooking(){
-  const date=document.getElementById('erv-date').value, time=document.getElementById('erv-time').value;
+  const date=document.getElementById('erv-date').value,time=document.getElementById('erv-time').value;
   const note=document.getElementById('erv-note2').value.trim();
   if(!date||!time)return;
   await db.from('available_slots').upsert({date,start_time:time,is_booked:true,booked_by:'ervin',ervin_note:note},{onConflict:'date,start_time'});
@@ -323,3 +368,5 @@ async function _saveErvinBooking(){
 }
 
 async function delSlot(id){await removeSlot(id);}
+// openRemoveSlotDialog оставляем для обратной совместимости с другими местами
+function openRemoveSlotDialog(){}

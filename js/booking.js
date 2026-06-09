@@ -41,12 +41,13 @@ const REASONS={primary:[{t:'Плановая проверка зрения',s:'P
 
 const BK={ru:{hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',hdrWriteLabel:'Написать Анне',hdrChannel:'Канал',hdrMap:'Карта',step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',reason:'Причина обращения',contacts:'Контактные данные',complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',diop:'Диоптрии',diopHint:'(если знаете, примерно)',eye:'Заболевания глаз',general:'Общие заболевания',loads:'Зрительные нагрузки',notes:'Что хотели бы сообщить перед приёмом?',source:'Откуда вы узнали о нас?',promo:'Промокод',promoHint:'(если есть)',lblTg:'Telegram',lblLastname:'Фамилия (латиницей)',lblFirstname:'Имя (латиницей)',lblDob:'Дата рождения',lblPhone:'Телефон',hintLastname:'Пример: Ivanova',hintFirstname:'Пример: Maria',dobDay:'ДД',dobMonth:'Месяц',dobYear:'Год',submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',back:'← Назад',nextForm:'Далее — заполнить анкету →',confTitle:'Последний шаг!',confSub:'Напишите боту в Telegram — это подтвердит вашу запись и вы получите напоминания о приёме.',tgPrompt:'Напишите боту, чтобы подтвердить запись и получать напоминания:',tgBtn:'Написать боту в Telegram',tgFallback:'По вопросам пишите: @AnnaNvslv',addrLabel:'Адрес:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Открыть на карте',againBtn:'⊕ Ещё одна запись',ad10t:'⛔ Приём детей до 10 лет не проводится',ad10:'Оптометрист не осматривает детей младше 10 лет.',ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев).',ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',srcPlaceholder:'— выберите —',srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],consent:'Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',selType:'Выбранный вид приёма',selSlot:'Ваша запись',months:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],monthsG:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],chooseTime:'Выберите время — ',phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация...',phPromo:'Введите промокод',errReason:'Пожалуйста, укажите причину обращения',errTg:'Пожалуйста, укажите Telegram username',errLastname:'Пожалуйста, введите фамилию',errFirstname:'Пожалуйста, введите имя',errDob:'Пожалуйста, укажите дату рождения',errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',errSlot:'Слот уже занят. Выберите другое время.',errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv'},sr:{hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',hdrWriteLabel:'Pisati Ani',hdrChannel:'Kanal',hdrMap:'Mapa',step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',reason:'Razlog dolaska',contacts:'Kontaktni podaci',complaints:'Tegobe',correction:'Da li koristite korekciju vida?',diop:'Dioptrija',diopHint:'(ako znate, otprilike)',eye:'Bolesti oka',general:'Opšte bolesti',loads:'Vizuelna opterećenja',notes:'Šta biste voleli da nam saopštite pre pregleda?',source:'Kako ste saznali za nas?',promo:'Promo kod',promoHint:'(ako imate)',lblTg:'Telegram',lblLastname:'Prezime (latinicom)',lblFirstname:'Ime (latinicom)',lblDob:'Datum rođenja',lblPhone:'Telefon',hintLastname:'Primer: Ivanova',hintFirstname:'Primer: Maria',dobDay:'DD',dobMonth:'Mesec',dobYear:'Godina',submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',back:'← Nazad',nextForm:'Dalje — popunite anketu →',confTitle:'Poslednji korak!',confSub:'Pišite botu na Telegram — to će potvrditi vaš termin i dobićete podsetnik pre pregleda.',tgPrompt:'Pišite botu da biste potvrdili termin i primali podsetnik:',tgBtn:'Pisati botu na Telegram',tgFallback:'Za pitanja pišite: @AnnaNvslv',addrLabel:'Adresa:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Otvori na mapi',againBtn:'⊕ Još jedno zakazivanje',ad10t:'⛔ Pregled dece do 10 godina nije dostupan',ad10:'Optometrista ne pregleda decu mlađu od 10 godina.',ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',ad17:'Pregled je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci).',ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',srcPlaceholder:'— izaberite —',srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],consent:'Klikom na "Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram bota.',selType:'Izabrana vrsta pregleda',selSlot:'Vaš termin',months:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],monthsG:['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],days:['Ne','Po','Ut','Sr','Če','Pe','Su'],daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],chooseTime:'Izaberite vreme — ',phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija...',phPromo:'Unesite promo kod',errReason:'Molimo navedite razlog dolaska',errTg:'Molimo navedite Telegram korisničko ime',errLastname:'Molimo unesite prezime',errFirstname:'Molimo unesite ime',errDob:'Molimo navedite datum rođenja',errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',errCorrection:'Molimo navedite da li koristite korekciju vida',errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv'}};
 
+// slotType: 'primary' = основные приёмы 60–120 мин; 'short' = 15-минутные визиты
 const TYPES_DATA=[
-  {id:'primary',icon:'👁',health:true,ru:{name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},sr:{name:'Provera vida, izbor naočara / KS',sub:'Primarni pregled',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},consult:3000},
-  {id:'repeat',icon:'🔄',health:true,ru:{name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём'},sr:{name:'Ponovni pregled',sub:'U roku od 6 meseci od primarnog',dur:'60 minuta',price:'2000 din.',apptName:'Ponovni pregled'},consult:2000},
-  {id:'cl',icon:'🔬',health:true,ru:{name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением'},sr:{name:'Provera vida, izbor i obuka KS',sub:'Uključuje obuku za nošenje sočiva',dur:'90–120 minuta',price:'3500 din.',apptName:'Izbor KS s obukom'},consult:3500},
-  {id:'control',icon:'✅',health:false,ru:{name:'Контрольный визит',sub:'30 минут · Бесплатно',dur:'30 минут',price:'Бесплатно',apptName:'Контрольный визит'},sr:{name:'Kontrolni pregled',sub:'30 minuta · Besplatno',dur:'30 minuta',price:'Besplatno',apptName:'Kontrolni pregled'},consult:0},
-  {id:'help',icon:'🛍',health:false,ru:{name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике'},sr:{name:'Pomoć pri formiranju porudžbine',sub:'Uz dostupnost slobodnog termina',dur:'15 minuta',price:'Besplatno',apptName:'Pomoć u optici'},consult:0}
+  {id:'primary',icon:'👁',health:true,slotType:'primary',ru:{name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},sr:{name:'Provera vida, izbor naočara / KS',sub:'Primarni pregled',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},consult:3000},
+  {id:'repeat',icon:'🔄',health:true,slotType:'primary',ru:{name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём'},sr:{name:'Ponovni pregled',sub:'U roku od 6 meseci od primarnog',dur:'60 minuta',price:'2000 din.',apptName:'Ponovni pregled'},consult:2000},
+  {id:'cl',icon:'🔬',health:true,slotType:'primary',ru:{name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением'},sr:{name:'Provera vida, izbor i obuka KS',sub:'Uključuje obuku za nošenje sočiva',dur:'90–120 minuta',price:'3500 din.',apptName:'Izbor KS s obukom'},consult:3500},
+  {id:'control',icon:'✅',health:false,slotType:'short',ru:{name:'Контрольный визит',sub:'Контрольный визит после получения очков',dur:'15 минут',price:'Бесплатно',apptName:'Контрольный визит'},sr:{name:'Kontrolni pregled',sub:'Kontrolni pregled nakon preuzimanja naočara',dur:'15 minuta',price:'Besplatno',apptName:'Kontrolni pregled'},consult:0},
+  {id:'help',icon:'🛍',health:false,slotType:'short',ru:{name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике'},sr:{name:'Pomoć pri formiranju porudžbine',sub:'Uz dostupnost slobodnog termina',dur:'15 minuta',price:'Besplatno',apptName:'Pomoć u optici'},consult:0}
 ];
 
 function T(k){return BK[_lang]?.[k]??BK.ru[k]??k;}
@@ -106,6 +107,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');if(r&&r[0])botUsername=r[0].value;}catch(e){}
   const today=now.toISOString().split('T')[0];const future=new Date(now);future.setDate(future.getDate()+60);
+  // Загружаем все свободные слоты с полем slot_type
   const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
   allSlots=slots||[];
 });
@@ -120,8 +122,56 @@ function selectType(id){
   updateTypeSumLang();renderReasons();renderCalendar();goPage('cal');
 }
 function calMove(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();document.getElementById('times-section').style.display='none';selectedDateStr=null;selectedSlot=null;document.getElementById('btn-to-form').disabled=true;}
-function renderCalendar(){const today=new Date();today.setHours(0,0,0,0);document.getElementById('cal-label').textContent=T('months')[calMonth]+' '+calYear;const firstDay=new Date(calYear,calMonth,1);let startDow=firstDay.getDay();if(startDow===0)startDow=7;const daysInMonth=new Date(calYear,calMonth+1,0).getDate();const availDates=new Set();allSlots.forEach(s=>{const d=new Date(s.date+'T12:00:00');if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);});let html='';for(let i=1;i<startDow;i++)html+='<div class="cal-cell empty"></div>';for(let d=1;d<=daysInMonth;d++){const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');const dt=new Date(calYear,calMonth,d);const isPast=dt<today,isAvail=availDates.has(ds)&&!isPast,isSel=ds===selectedDateStr;let cls='cal-cell';if(isPast)cls+=' past';else if(isSel)cls+=' sel-day';else if(isAvail)cls+=' avail';html+='<div class="'+cls+'"'+(isAvail&&!isSel?' onclick="selectDate(\''+ds+'\')"':'')+'>'+d+'</div>';}document.getElementById('cal-grid').innerHTML=html;}
-function selectDate(dateStr){selectedDateStr=dateStr;selectedSlot=null;document.getElementById('btn-to-form').disabled=true;renderCalendar();const dt=new Date(dateStr+'T12:00:00');const mG=T('monthsG'),dF=T('daysFull');document.getElementById('times-title').textContent=T('chooseTime')+dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()];const daySlots=allSlots.filter(s=>s.date===dateStr);document.getElementById('times-grid').innerHTML=daySlots.map(s=>'<button class="time-btn" onclick="selectTime(this,\''+s.id+'\',\''+dateStr+'\',\''+s.start_time.substr(0,5)+'\')">'+s.start_time.substr(0,5)+'</button>').join('');document.getElementById('times-section').style.display='block';setTimeout(()=>document.getElementById('times-section').scrollIntoView({behavior:'smooth',block:'nearest'}),100);}
+
+// Возвращает только слоты подходящего типа для выбранного приёма
+function getSlotsForType(){
+  if(!selectedType)return allSlots;
+  const st=selectedType.slotType||'primary';
+  return allSlots.filter(s=>{
+    // slot_type может быть null/undefined для старых слотов — считаем их 'primary'
+    const t=s.slot_type||'primary';
+    return t===st;
+  });
+}
+
+function renderCalendar(){
+  const today=new Date();today.setHours(0,0,0,0);
+  document.getElementById('cal-label').textContent=T('months')[calMonth]+' '+calYear;
+  const firstDay=new Date(calYear,calMonth,1);
+  let startDow=firstDay.getDay();if(startDow===0)startDow=7;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const visibleSlots=getSlotsForType();
+  const availDates=new Set();
+  visibleSlots.forEach(s=>{const d=new Date(s.date+'T12:00:00');if(d.getFullYear()===calYear&&d.getMonth()===calMonth)availDates.add(s.date);});
+  let html='';
+  for(let i=1;i<startDow;i++)html+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dt=new Date(calYear,calMonth,d);
+    const isPast=dt<today,isAvail=availDates.has(ds)&&!isPast,isSel=ds===selectedDateStr;
+    let cls='cal-cell';
+    if(isPast)cls+=' past';
+    else if(isSel)cls+=' sel-day';
+    else if(isAvail)cls+=' avail';
+    html+='<div class="'+cls+'"'+(isAvail&&!isSel?' onclick="selectDate(\''+ds+'\')"':'')+'>'+d+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+function selectDate(dateStr){
+  selectedDateStr=dateStr;selectedSlot=null;
+  document.getElementById('btn-to-form').disabled=true;
+  renderCalendar();
+  const dt=new Date(dateStr+'T12:00:00');
+  const mG=T('monthsG'),dF=T('daysFull');
+  document.getElementById('times-title').textContent=T('chooseTime')+dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()];
+  // Показываем только слоты нужного типа для этого дня
+  const visibleSlots=getSlotsForType();
+  const daySlots=visibleSlots.filter(s=>s.date===dateStr);
+  document.getElementById('times-grid').innerHTML=daySlots.map(s=>'<button class="time-btn" onclick="selectTime(this,\''+s.id+'\',\''+dateStr+'\',\''+s.start_time.substr(0,5)+'\')">'+s.start_time.substr(0,5)+'</button>').join('');
+  document.getElementById('times-section').style.display='block';
+  setTimeout(()=>document.getElementById('times-section').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+}
 function selectTime(btn,id,date,time){document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selectedSlot={id,date,time};updateSlotSumLang();document.getElementById('btn-to-form').disabled=false;document.getElementById('btn-to-form').textContent=T('nextForm');}
 function tog(el){el.classList.toggle('on');}
 function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.dataset.ru||e.textContent);}

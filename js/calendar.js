@@ -2,6 +2,18 @@
 let _calWeekOffset2 = 0;
 let _calSettings = null;
 
+// Цвета слотов по slot_type
+// primary = основной приём (синий)
+// short   = короткий 15-мин визит (оранжевый)
+const SLOT_TYPE_COLORS = {
+  primary: { bg: '#d1fae5', text: '#065f46', label: 'Основной приём' },
+  short:   { bg: '#fef3c7', text: '#92400e', label: '15 мин (контроль/помощь)' },
+};
+
+function slotTypeColor(type) {
+  return SLOT_TYPE_COLORS[type] || SLOT_TYPE_COLORS.primary;
+}
+
 function generateSlotTimes(s) {
   const start = s.cal_start || '09:00';
   const end   = s.cal_end   || '18:00';
@@ -41,7 +53,7 @@ async function renderSlots() {
   const slotMap={};(slots||[]).forEach(sl=>{slotMap[`${sl.date}|${sl.start_time?.substr(0,5)}`]=sl;});
   const apptMap={};(appts||[]).forEach(a=>{apptMap[`${a.date}|${a.time?.substr(0,5)}`]=a;});
   const extraTimes=new Set();
-  (slots||[]).forEach(sl=>{const t=sl.start_time?.substr(0,5);if(t&&!defaultTimes.includes(t))extraTimes.add(t);});
+  (slots||[]).forEach(sl=>{const tt=sl.start_time?.substr(0,5);if(tt&&!defaultTimes.includes(tt))extraTimes.add(tt);});
   const allTimes=[...new Set([...defaultTimes,...extraTimes])].sort();
 
   const renderCell=(d,tm)=>{
@@ -49,7 +61,7 @@ async function renderSlots() {
     const isPast=d<todayStr||(d===todayStr&&tm<new Date().toTimeString().substr(0,5));
     if(appt) return`<div class="cal-pill cal-pill-patient" onclick="openPatientCard('${appt.patient_id}')">
       <div class="cal-pill-name">${appt.patients?.name?.split(' ')[0]||'—'}</div>
-      <div class="cal-pill-sub" style="font-size:10px;opacity:.8">${(apptTypeName(appt.type||'')||appt.type||''||appt.appointment_number||'').substr(0,12)+((apptTypeName(appt.type||'')||appt.appointment_number||''||"").length>12?"…":"")}</div></div>`;
+      <div class="cal-pill-sub" style="font-size:10px;opacity:.8">${(apptTypeName(appt.type||'')||appt.type||''||appt.appointment_number||'').substr(0,12)+((apptTypeName(appt.type||'')||appt.appointment_number||''||'').length>12?'…':'')}</div></div>`;
     if(slot&&slot.booked_by==='ervin'){
       const can=isErvin()||isAdmin();
       const ervinAttrs = can ? `onclick="unbookErvin('${slot.id}')"` : '';
@@ -58,9 +70,12 @@ async function renderSlots() {
         ${can?`<span style="font-size:11px;padding:2px 7px;background:rgba(0,0,0,.18);border-radius:4px;flex-shrink:0">Otkaži</span>`:''}
       </div>`;}
     if(slot&&!slot.is_booked){
-      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">Zauzimi</div></div>`;
-      if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">+ ${t('appointments')||'Pregled'}</div></div>`;
-      return`<div class="cal-pill cal-pill-free"><div class="cal-pill-name">✓ ${t('slot_open')}</div></div>`;}
+      // Цвет зависит от slot_type
+      const sc=slotTypeColor(slot.slot_type||'primary');
+      const typeLabel=slot.slot_type==='short'?'15 мин':'Приём';
+      if(isErvin()) return`<div class="cal-pill cal-pill-free" onclick="bookErvinAt('${d}','${tm}','${slot.id||''}')" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">${t('slot_open')}</div><div class="cal-pill-sub">${typeLabel} · Zauzimi</div></div>`;
+      if(isAdmin()) return`<div class="cal-pill cal-pill-free" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub" style="font-size:10px">${typeLabel} · + ${t('appointments')||'Pregled'}</div></div>`;
+      return`<div class="cal-pill cal-pill-free" style="background:${sc.bg};color:${sc.text}"><div class="cal-pill-name">✓ ${t('slot_open')}</div><div class="cal-pill-sub">${typeLabel}</div></div>`;}
     if(isPast) return`<div class="cal-pill-empty cal-pill-past">—</div>`;
     if(isAdmin()) return`<div class="cal-pill-empty cal-pill-add" onclick="addSlotAt('${d}','${tm}')">+</div>`;
     if(isErvin()) return`<div class="cal-pill-empty cal-pill-ervin-add" onclick="bookErvinAt('${d}','${tm}','')">+</div>`;
@@ -91,14 +106,14 @@ async function renderSlots() {
     .cal-pill-ervin-add:hover{background:#fef3c7}
     .cal-pill-past{opacity:.25}
   </style>
-  <div class="cal-controls-top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div class="flex gap-8 items-center">
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2--;renderSlots()">${t('back')}</button>
       <b style="font-size:15px;min-width:160px;text-align:center">${monthLabel}</b>
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2=0;renderSlots()">${t('today')}</button>
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2++;renderSlots()">${t('forward')}</button>
     </div>
-    <div class="flex gap-8 items-center" style="flex-wrap:wrap">
+    <div class="flex gap-8 items-center">
       ${isAdmin()?`<button class="btn btn-ghost btn-sm" onclick="openAddCustomSlot()">${t('custom_slot')}</button>
         <button class="btn btn-ghost btn-sm" onclick="openRemoveSlotDialog()" title="Удалить слот">🗑 ${t('slot_remove')||'Ukloni slot'}</button>
         <button class="btn btn-accent btn-sm" onclick="openDaySlots(null)">${`📅 ${t('open_day')}`}</button>
@@ -106,41 +121,57 @@ async function renderSlots() {
       ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">${`+ ${t('my_slot')}`}</button>`:''}
     </div>
   </div>
-  <div class="cal-grid-wrap">
-    <div class="cal-grid">
-      <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)">${s.cal_duration||60}м +${s.cal_break||15}м</div>
-      ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isToday=d===todayStr;const isWork=workDays.includes(dt.getDay());
-        return`<div class="cal-grid-head${isToday?' today':''}" style="${!isWork?'opacity:.45':''}">
-          <div style="font-size:11px">${DOW[dt.getDay()]}</div>
-          <div class="cal-date">${dt.getDate()}</div>
-          ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
-        </div>`;}).join('')}
-      ${allTimes.map(tm=>`
-        <div class="cal-grid-time">${tm}</div>
-        ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
-          return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">${renderCell(d,tm)}</div>`;}).join('')}
-      `).join('')}
-    </div>
+  <div class="cal-grid">
+    <div class="cal-grid-head" style="font-size:10px;color:var(--text-l)">${s.cal_duration||60}м +${s.cal_break||15}м</div>
+    ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isToday=d===todayStr;const isWork=workDays.includes(dt.getDay());
+      return`<div class="cal-grid-head${isToday?' today':''}" style="${!isWork?'opacity:.45':''}">
+        <div style="font-size:11px">${DOW[dt.getDay()]}</div>
+        <div class="cal-date">${dt.getDate()}</div>
+        ${isAdmin()?`<button style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;color:var(--text-m);margin-top:3px" onclick="openDaySlots('${d}')">${t('open_day')}</button>`:''}
+      </div>`;}).join('')}
+    ${allTimes.map(tm=>`
+      <div class="cal-grid-time">${tm}</div>
+      ${weekDays.map(d=>{const dt=new Date(d+'T12:00:00');const isWork=workDays.includes(dt.getDay());
+        return`<div class="cal-grid-cell${!isWork?' cal-nonwork':''}">  ${renderCell(d,tm)}</div>`;}).join('')}
+    `).join('')}
   </div>
-  <div class="cal-legend" style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap">
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>${t("slot_open")} (клик → записать)</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#dbeafe;display:inline-block"></span>${t("patient")}</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fde68a;display:inline-block"></span>${t("slot_ervin")}</span>
+  <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-m);flex-wrap:wrap;align-items:center">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#d1fae5;display:inline-block"></span>Основной приём (свободно)</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fef3c7;display:inline-block"></span>15 мин (контроль/помощь)</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#dbeafe;display:inline-block"></span>${t('patient')}</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:#fde68a;display:inline-block"></span>${t('slot_ervin')}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:3px;background:var(--surface2);border:1px dashed var(--border);display:inline-block"></span>+ пустая ячейка → добавить слот</span>
     ${isAdmin()?`· <a href="#" onclick="nav('settings')" style="color:var(--accent);font-size:12px">${t('schedule_settings')}</a>`:''}
   </div>`;
 }
 
 async function addSlotAt(date,time){
-  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null},{onConflict:'date,start_time'});
-  renderSlots();
+  // При добавлении одиночного слота кликом — спрашиваем тип
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить слот ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Тип слота</label>
+        <select id="as-type">
+          <option value="primary">Основной приём (60–120 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="_saveSlotAt('${date}','${time}')">Добавить</button></div>
+  </div>`);
 }
 
+async function _saveSlotAt(date,time){
+  const slotType=document.getElementById('as-type')?.value||'primary';
+  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
+  closeModal();renderSlots();
+}
+
+// Dialog to remove a specific free slot (admin only, via separate UI — not by clicking a booked slot)
 async function openRemoveSlotDialog(){
   const toD=new Date();toD.setDate(toD.getDate()+21);
   const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
   if(!freeSlots?.length){toast('Нет свободных слотов','error');return;}
-  const opts=(freeSlots||[]).map(s=>`<option value="${s.id}">${fmt(s.date)} ${s.start_time?.substr(0,5)}</option>`).join('');
+  const opts=(freeSlots||[]).map(s=>`<option value="${s.id}">${fmt(s.date)} ${s.start_time?.substr(0,5)} [${s.slot_type==='short'?'15 мин':'основной'}]</option>`).join('');
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Удалить слот</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-group"><label>Выберите слот для удаления</label><select id="del-slot-id">${opts}</select></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-danger" onclick="removeSlot(document.getElementById('del-slot-id').value)">Удалить</button></div>
@@ -154,6 +185,12 @@ async function openDaySlots(date){
   openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('open_slots_day')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Дата</label><input type="date" id="ds-date" value="${targetDate}"></div>
+      <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
+        <select id="ds-type">
+          <option value="primary">Основной приём (60–120 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+        </select>
+      </div>
       <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке — можно редактировать)</label>
         <textarea id="ds-times" style="min-height:200px;font-family:monospace;font-size:14px">${times.join('\n')}</textarea>
       </div>
@@ -164,9 +201,10 @@ async function openDaySlots(date){
 
 async function saveDaySlots(){
   const date=document.getElementById('ds-date').value;
+  const slotType=document.getElementById('ds-type')?.value||'primary';
   const times=document.getElementById('ds-times').value.split('\n').map(t=>t.trim()).filter(t=>/^\d{2}:\d{2}$/.test(t));
   if(!date||!times.length){toast('Проверь дату и время','error');return;}
-  const rows=times.map(t=>({date,start_time:t,is_booked:false,booked_by:null}));
+  const rows=times.map(t=>({date,start_time:t,is_booked:false,booked_by:null,slot_type:slotType}));
   await db.from('available_slots').upsert(rows,{onConflict:'date,start_time',ignoreDuplicates:true});
   toast(t('slots_opened').replace('%s',rows.length));closeModal();renderSlots();
 }
@@ -180,6 +218,12 @@ async function openWeekSlots(from,to){
       <div class="form-grid">
         <div class="form-group"><label>С даты</label><input type="date" id="ws-from" value="${from}"></div>
         <div class="form-group"><label>По дату</label><input type="date" id="ws-to" value="${to}"></div>
+      </div>
+      <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
+        <select id="ws-type">
+          <option value="primary">Основной приём (60–120 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+        </select>
       </div>
       <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
         <div class="flex gap-8" style="flex-wrap:wrap;margin-top:6px">
@@ -197,13 +241,14 @@ async function openWeekSlots(from,to){
 async function saveWeekSlots(){
   const from=new Date(document.getElementById('ws-from').value+'T12:00:00');
   const to=new Date(document.getElementById('ws-to').value+'T12:00:00');
+  const slotType=document.getElementById('ws-type')?.value||'primary';
   const days=[0,1,2,3,4,5,6].filter(i=>document.getElementById('ws-d'+i)?.checked);
   const times=document.getElementById('ws-times').value.split('\n').map(t=>t.trim()).filter(t=>/^\d{2}:\d{2}$/.test(t));
   const rows=[];
   for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1)){
     if(days.includes(d.getDay())){
       const ds=d.toISOString().split('T')[0];
-      times.forEach(t=>rows.push({date:ds,start_time:t,is_booked:false,booked_by:null}));
+      times.forEach(t=>rows.push({date:ds,start_time:t,is_booked:false,booked_by:null,slot_type:slotType}));
     }
   }
   if(!rows.length){toast('Нет слотов','error');return;}
@@ -218,6 +263,12 @@ function openAddCustomSlot(){
         <div class="form-group"><label>Дата</label><input type="date" id="cs-date" value="${today()}"></div>
         <div class="form-group"><label>Время</label><input type="time" id="cs-time" value="09:00"></div>
       </div>
+      <div class="form-group" style="margin-top:10px"><label>Тип слота</label>
+        <select id="cs-type">
+          <option value="primary">Основной приём (60–120 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+        </select>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveCustomSlot()">Добавить</button></div>
   </div>`);
@@ -225,8 +276,9 @@ function openAddCustomSlot(){
 
 async function saveCustomSlot(){
   const date=document.getElementById('cs-date').value, time=document.getElementById('cs-time').value;
+  const slotType=document.getElementById('cs-type')?.value||'primary';
   if(!date||!time)return;
-  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null},{onConflict:'date,start_time'});
+  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
   toast(t('slot_added'));closeModal();renderSlots();
 }
 

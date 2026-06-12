@@ -5,6 +5,7 @@ let _calSettings = null;
 const SLOT_TYPE_COLORS = {
   primary: { bg: '#d1fae5', text: '#065f46' },
   short:   { bg: '#fef3c7', text: '#92400e' },
+  express: { bg: '#fce7f3', text: '#9d174d' },
 };
 function slotTypeColor(type){return SLOT_TYPE_COLORS[type]||SLOT_TYPE_COLORS.primary;}
 
@@ -71,9 +72,11 @@ async function renderSlots(){
       const isPast=isPastDay||(d===todayStr&&tm<nowTime);
       let span=1;
       if(appt){
-        span=(slotMap[k]?.slot_type==='short')?1:4;
+        const st=slotMap[k]?.slot_type||'primary';
+        span=(st==='short'||st==='express')?1:4;
       } else if(slot&&!slot.is_booked){
-        span=slot.slot_type==='short'?1:4;
+        const st=slot.slot_type||'primary';
+        span=(st==='short'||st==='express')?1:4;
       }
       span=Math.min(span,ALL_TIMES.length-idx);
       for(let i=1;i<span;i++)skip.add(idx+i);
@@ -91,7 +94,6 @@ async function renderSlots(){
         </div>`;
       } else if(slot&&!slot.is_booked){
         const sc=slotTypeColor(slot.slot_type||'primary');
-        // t('slot_open') = 'Свободно' / 'Slobodan'
         const freeLabel=t('slot_open');
         const adminBtns=isAdmin()?`
           <div class="cal-pill-actions">
@@ -110,7 +112,6 @@ async function renderSlots(){
       } else if(isPast){
         html=`<div class="cal-cell-empty cal-pill-past"></div>`;
       } else if(isAdmin()){
-        // Пустая ячейка: подсветка при наведении, клик → добавить слот
         html=`<div class="cal-cell-hover" onclick="addSlotAt('${d}','${tm}')" title="Добавить слот"></div>`;
       } else if(isErvin()){
         html=`<div class="cal-cell-hover cal-cell-hover-ervin" onclick="bookErvinAt('${d}','${tm}','')" title="Занять"></div>`;
@@ -122,7 +123,6 @@ async function renderSlots(){
     return cells;
   }
 
-  // Высоты строк: :00 = 26px, :15/:30/:45 = 12px
   const hourRows=ALL_TIMES.map(tm=>tm.endsWith(':00')?'26px':'12px').join(' ');
 
   let gridHTML='';
@@ -170,7 +170,7 @@ async function renderSlots(){
       background:#f1f5f9;
       display:flex;align-items:flex-start;justify-content:flex-end;
       padding:1px 4px 0 0;
-      font-size:8.5px;font-weight:600;color:transparent; /* подпись только у часовых */
+      font-size:8.5px;font-weight:600;color:transparent;
     }
     .cg-time-hour{
       background:#e4eaf1;
@@ -181,10 +181,8 @@ async function renderSlots(){
     .cg-bg{background:#fff;}
     .cg-bg-hour{background:#f7f9fc;}
     .cg-nonwork{background:#f5f5f5!important;}
-    /* Поверх фона */
     .cg-cell{z-index:2;pointer-events:none;padding:1px 2px;box-sizing:border-box;}
     .cg-cell>*{pointer-events:auto;}
-    /* Пустая ячейка: подсветка при наведении */
     .cal-cell-hover{
       width:100%;height:100%;border-radius:4px;
       cursor:pointer;
@@ -194,7 +192,6 @@ async function renderSlots(){
     .cal-cell-hover-ervin:hover{background:rgba(217,119,6,.12);}
     .cal-cell-empty{width:100%;height:100%;}
     .cal-pill-past{opacity:.15;}
-    /* Плашки */
     .cal-pill{
       border-radius:5px;padding:3px 5px;
       width:100%;box-sizing:border-box;overflow:hidden;
@@ -204,7 +201,6 @@ async function renderSlots(){
     .cal-pill-patient{background:#dbeafe;color:#1e3a8a;cursor:pointer;}
     .cal-pill-patient:hover{filter:brightness(.95);}
     .cal-pill-ervin{background:#fde68a;color:#92400e;}
-    /* Кнопки на плашке */
     .cal-pill-actions{
       display:flex;flex-direction:column;align-items:flex-end;
       gap:3px;margin-top:4px;
@@ -245,6 +241,7 @@ async function renderSlots(){
   <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-m);flex-wrap:wrap;align-items:center">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d1fae5;display:inline-block"></span>Основной приём</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;display:inline-block"></span>15 мин</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fce7f3;display:inline-block"></span>Экспресс-диагностика</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#dbeafe;display:inline-block"></span>${t('patient')}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fde68a;display:inline-block"></span>${t('slot_ervin')}</span>
     ${isAdmin()?`· <a href="#" onclick="nav('settings')" style="color:var(--accent);font-size:11px">${t('schedule_settings')}</a>`:''}
@@ -264,6 +261,7 @@ async function addSlotAt(date,time){
         <select id="as-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
+          <option value="express">Экспресс-диагностика (акция)</option>
         </select>
       </div>
     </div>
@@ -292,6 +290,7 @@ async function openWeekSlots(from,to){
         <select id="ws-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
+          <option value="express">Экспресс-диагностика (акция)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
@@ -335,6 +334,7 @@ async function openDaySlots(date){
         <select id="ds-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
+          <option value="express">Экспресс-диагностика (акция)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке)</label>
@@ -365,6 +365,7 @@ function openAddCustomSlot(){
         <select id="cs-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
+          <option value="express">Экспресс-диагностика (акция)</option>
         </select>
       </div>
     </div>

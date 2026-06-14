@@ -15,7 +15,6 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Nunito',sans-serif;background:var(--cream);min-height:100vh;
     display:flex;flex-direction:column;align-items:center;padding:12px 12px 32px;color:var(--text);}
-
   .header{text-align:center;margin-bottom:10px;position:relative;width:100%;max-width:480px;}
   .header h1{font-size:1.7rem;font-weight:900;color:var(--grey-dark);}
   .header h1 span{color:var(--cheese-dark);}
@@ -26,14 +25,14 @@
   .sound-btn:hover{background:var(--grey-light);}
   .sound-btn.muted{opacity:.45;}
 
-  .bubble-wrap{position:relative;margin-bottom:10px;}
+  .bubble-wrap{margin-bottom:12px;}
   .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
     padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
     max-width:300px;text-align:center;line-height:1.45;min-height:58px;
     display:flex;align-items:center;justify-content:center;transition:background .3s,color .3s;}
   .bubble.happy-bubble{background:#D4F5DC;color:#2A7A40;}
   .bubble.sad-bubble{background:#FFE5E5;color:#B03030;}
-  .speaking-dots{display:none;justify-content:center;gap:4px;margin-top:6px;}
+  .speaking-dots{display:none;justify-content:center;gap:4px;margin-top:5px;}
   .speaking-dots.active{display:flex;}
   .speaking-dots span{width:7px;height:7px;background:var(--purple);border-radius:50%;
     animation:dotBounce .7s ease infinite;}
@@ -64,7 +63,6 @@
 
   .card{background:white;border-radius:28px;padding:20px 16px;width:100%;max-width:480px;
     box-shadow:0 4px 24px rgba(0,0,0,.07);}
-
   .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
   .mouse-svg{width:130px;height:130px;}
   .mouse-svg.happy{animation:wiggle .5s ease;}
@@ -74,7 +72,7 @@
   @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.05);}75%{transform:rotate(8deg) scale(1.05);}}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
   @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
-  @keyframes mousePulse{from{transform:scale(1);}to{transform:scale(1.07) rotate(2deg);}}
+  @keyframes mousePulse{from{transform:scale(1);}to{transform:scale(1.08) rotate(2deg);}}
 
   .task-area{text-align:center;margin-bottom:14px;}
   .task-label{font-size:.78rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
@@ -101,12 +99,12 @@
   .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
   .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
 
-  /* next-btn: always in flow, just invisible when not needed */
+  /* NEXT BTN — always in DOM flow, toggled via visibility so layout stays stable */
   .next-btn{display:block;width:100%;background:var(--green);border:none;border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;color:white;
-    cursor:pointer;padding:14px 0;transition:opacity .2s;
-    opacity:0;pointer-events:none;margin-bottom:14px;}
-  .next-btn.visible{opacity:1;pointer-events:auto;animation:popIn .3s;}
+    cursor:pointer;padding:14px 0;margin-bottom:14px;
+    visibility:hidden;opacity:0;transition:opacity .25s;}
+  .next-btn.visible{visibility:visible;opacity:1;}
   .next-btn:hover{background:var(--green-dark);}
 
   .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
@@ -115,7 +113,7 @@
     border-radius:8px;transition:width .4s ease;}
   .progress-text{font-size:.8rem;font-weight:800;color:var(--grey);min-width:36px;text-align:right;}
   .score-row{display:flex;gap:16px;justify-content:center;font-size:.85rem;font-weight:700;color:var(--grey);}
-  .correct-count{color:var(--green-dark);} .wrong-count{color:var(--red);}
+  .correct-count{color:var(--green-dark);}.wrong-count{color:var(--red);}
 
   .win-overlay{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0;}
   .win-overlay.visible{display:flex;animation:popIn .5s;}
@@ -204,7 +202,10 @@
       <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
     </div>
     <div class="answers-grid" id="answersGrid"></div>
+
+    <!-- visibility:hidden keeps layout space, button never "disappears" from flow -->
     <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Дальше! →</button>
+
     <div class="progress-row">
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-text" id="progressText">0/10</div>
@@ -227,97 +228,78 @@
 </div>
 
 <script>
-// ─── VOICE ENGINE ────────────────────────────────────────
-// Squeaky mouse voice: SpeechSynthesis at rate=1.6 + pitch=2.0
-// This is the most reliable cross-browser approach.
-// rate>1 speeds up speech (higher perceived pitch);
-// pitch=2.0 is max allowed by spec and raises formants.
-// Together they give a convincing chipmunk/mouse sound.
-
+// ═══ VOICE: simple, bulletproof ═══════════════════════════
+// No queue, no callbacks — just fire-and-forget with a cancel guard.
+// Squeaky effect: rate 1.5 + pitch 2.0 (chipmunk/mouse)
 const synth = window.speechSynthesis;
 let ruVoice = null;
 let soundOn = true;
-let speakTimer = null;
 let currentTaskText = '';
+let voiceTimer = null;
 
 function loadVoices() {
   const vs = synth.getVoices();
   ruVoice = vs.find(v => v.lang === 'ru-RU') ||
             vs.find(v => v.lang.startsWith('ru')) ||
-            vs.find(v => v.lang.startsWith('uk')) ||
             vs[0] || null;
 }
 loadVoices();
-if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = loadVoices;
+if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
 
-// Queue so phrases don't overlap
-let queue = [];
-let busy = false;
-
-function speak(text, delay = 0, onDone) {
-  if (!soundOn) { onDone && onDone(); return; }
-  queue.push({ text, delay, onDone });
-  if (!busy) runQueue();
-}
-
-function runQueue() {
-  if (!queue.length) { busy = false; return; }
-  busy = true;
-  const { text, delay, onDone } = queue.shift();
-  speakTimer = setTimeout(() => _utter(text, onDone), delay);
-}
-
-function _utter(text, onDone) {
+function speakNow(text) {
+  if (!soundOn || !text) return;
+  clearTimeout(voiceTimer);
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang   = 'ru-RU';
-  u.rate   = 1.55;   // fast → raises pitch perception
-  u.pitch  = 2.0;    // max → squeaky
-  u.volume = 1.0;
+  u.lang = 'ru-RU';
+  u.rate = 1.5;
+  u.pitch = 2.0;
+  u.volume = 1;
   if (ruVoice) u.voice = ruVoice;
-
-  setUI(true);
-  u.onend   = () => { setUI(false); onDone && onDone(); runQueue(); };
-  u.onerror = () => { setUI(false); onDone && onDone(); runQueue(); };
+  u.onstart = () => setSpeakUI(true);
+  u.onend = u.onerror = () => setSpeakUI(false);
   synth.speak(u);
-
-  // Safety: if browser never fires onend, move on after 8s
-  speakTimer = setTimeout(() => { setUI(false); runQueue(); }, 8000);
+  // fallback clear if onend never fires
+  clearTimeout(voiceTimer);
+  voiceTimer = setTimeout(() => setSpeakUI(false), 10000);
 }
 
-function stopAll() {
-  clearTimeout(speakTimer);
-  queue = [];
-  busy = false;
+function speakAfter(text, ms) {
+  clearTimeout(voiceTimer);
+  voiceTimer = setTimeout(() => speakNow(text), ms);
+}
+
+function stopVoice() {
+  clearTimeout(voiceTimer);
   synth.cancel();
-  setUI(false);
+  setSpeakUI(false);
 }
 
-function setUI(on) {
+function setSpeakUI(on) {
   document.getElementById('speakingDots').classList.toggle('active', on);
   const svg = document.getElementById('mouseSvg');
   if (on) {
-    if (!svg.dataset.pre) svg.dataset.pre = svg.className;
+    svg._savedClass = svg.className;
     svg.className = 'mouse-svg speaking';
-  } else {
-    if (svg.dataset.pre) { svg.className = svg.dataset.pre; delete svg.dataset.pre; }
+  } else if (svg._savedClass) {
+    svg.className = svg._savedClass;
+    svg._savedClass = null;
   }
 }
 
 function toggleSound() {
   soundOn = !soundOn;
-  if (!soundOn) stopAll();
+  if (!soundOn) stopVoice();
   document.getElementById('soundBtn').textContent = soundOn ? '🔊' : '🔇';
   document.getElementById('soundBtn').classList.toggle('muted', !soundOn);
-  if (soundOn) speak('Звук включён!');
+  if (soundOn) speakNow('Звук включён!');
 }
 
 function readTaskAloud() {
-  if (!currentTaskText) return;
-  stopAll();
-  speak(currentTaskText);
+  stopVoice();
+  speakNow(currentTaskText);
 }
-// ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
 
 const TOTAL = 10;
 const LEVELS = {
@@ -326,23 +308,25 @@ const LEVELS = {
   3:{max:50, label:'Ур. 3', name:'до 50',  crossTen:true},
   4:{max:100,label:'Ур. 4', name:'до 100', crossTen:true},
 };
-
 let level=1, op='add';
 let questionIndex=0, correctCount=0, wrongCount=0;
 let answered=false, correctAnswer=0, cheesePieces=0;
 
 const phrases = {
   ask:['Помоги мне! Дам тебе сыр!','Думай, Иван! Ты умный!',
-    'Хочется сыра... помоги!','Нюсик ждёт! Какой ответ?',
-    'Как пахнет сыром! Скорее!','Считай! Ты справишься!','Ну-ка, посчитаем!'],
+       'Хочется сыра! Помоги!','Нюсик ждёт! Какой ответ?',
+       'Как пахнет сыром! Скорее!','Считай! Ты справишься!','Ну-ка, посчитаем!'],
   correct:['Ура! Правильно! Вот тебе сыр!','Молодец! Ты самый умный!',
-    'Да-да! Именно! Кушаем сыр!','Ты суперзвезда, Иван!',
-    'Правильно! Нюсик счастлив!','Вот это да! Умный Иван!','Нюсик танцует от радости!'],
+           'Да! Именно! Кушаем сыр!','Ты суперзвезда, Иван!',
+           'Правильно! Нюсик счастлив!','Вот это да! Умный Иван!','Нюсик танцует!'],
   wrong:['Ой, не то! Не расстраивайся!','Нет... но ты можешь!',
-    'Ошибочка! Нюсик верит в тебя!','Не расстраивайся! Смотри ответ.',
-    'Почти! В следующий раз!'],
+         'Ошибочка! Нюсик верит в тебя!','Не расстраивайся! Смотри ответ.',
+         'Почти! В следующий раз!'],
 };
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function showNextBtn()  { document.getElementById('nextBtn').classList.add('visible'); }
+function hideNextBtn()  { document.getElementById('nextBtn').classList.remove('visible'); }
 
 function setLevel(l) {
   level = l;
@@ -359,8 +343,7 @@ function nextLevel() { if(level<4) setLevel(level+1); else restartGame(); }
 
 function generateQuestion() {
   const cfg = LEVELS[level];
-  let a, b, useAdd, hintText = '';
-
+  let a, b, useAdd, hintText='';
   if (op==='add') useAdd=true;
   else if (op==='sub') useAdd=false;
   else useAdd = Math.random()>.5;
@@ -369,9 +352,8 @@ function generateQuestion() {
     if (cfg.crossTen && Math.random()>.4) {
       const dec = Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;
       const rem = Math.floor(Math.random()*8)+1;
-      a = dec+rem;
-      const cross = 10-rem;
-      b = cross + Math.floor(Math.random()*Math.min(9, cfg.max-a-cross));
+      a = dec+rem; const cross=10-rem;
+      b = cross+Math.floor(Math.random()*Math.min(9, cfg.max-a-cross));
       if (b<=0) b=cross;
     } else {
       a = Math.floor(Math.random()*(cfg.max-1))+1;
@@ -383,122 +365,117 @@ function generateQuestion() {
       hintText = '💡 Сначала доберись до круглого числа!';
   } else {
     if (cfg.crossTen && Math.random()>.4) {
-      const dec = (Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
-      a = dec + Math.floor(Math.random()*Math.min(9, cfg.max-dec));
-      b = Math.floor(Math.random()*(dec%10===0 ? Math.min(9,a-dec+1) : a-(dec-10)))+1;
-      if (a<=0||b<=0||b>=a) { a=15; b=7; }
+      const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
+      a=dec+Math.floor(Math.random()*Math.min(9, cfg.max-dec));
+      b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;
+      if (a<=0||b<=0||b>=a){a=15;b=7;}
     } else {
-      a = Math.floor(Math.random()*(cfg.max-1))+2;
-      b = Math.floor(Math.random()*(a-1))+1;
+      a=Math.floor(Math.random()*(cfg.max-1))+2;
+      b=Math.floor(Math.random()*(a-1))+1;
     }
-    correctAnswer = a-b;
-    if (correctAnswer<0) { a=10; b=3; correctAnswer=7; }
+    correctAnswer=a-b;
+    if (correctAnswer<0){a=10;b=3;correctAnswer=7;}
   }
 
   document.getElementById('hint').textContent = hintText;
-  const opSign = useAdd ? '+' : '−';
-  const opWord  = useAdd ? 'плюс' : 'минус';
+  const opSign = useAdd?'+':'−';
+  const opWord  = useAdd?'плюс':'минус';
   currentTaskText = `${a} ${opWord} ${b} — сколько будет?`;
-
   document.getElementById('taskExpr').innerHTML =
     `<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
 
-  // Choices
-  const spread = cfg.max<=10 ? 3 : cfg.max<=20 ? 5 : 10;
+  const spread = cfg.max<=10?3:cfg.max<=20?5:10;
   const choices = new Set([correctAnswer]);
-  let tries = 0;
+  let tries=0;
   while (choices.size<4 && tries<100) {
     tries++;
-    const d = Math.floor(Math.random()*spread)+1;
-    const w = correctAnswer + (Math.random()>.5 ? d : -d);
+    const d=Math.floor(Math.random()*spread)+1;
+    const w=correctAnswer+(Math.random()>.5?d:-d);
     if (w>=0 && w<=cfg.max+5 && w!==correctAnswer) choices.add(w);
   }
   while (choices.size<4) choices.add(correctAnswer+choices.size);
-  const shuffled = [...choices].sort(()=>Math.random()-.5);
 
-  const grid = document.getElementById('answersGrid');
-  grid.innerHTML = '';
-  shuffled.forEach(n => {
-    const btn = document.createElement('button');
-    btn.className = 'answer-btn';
-    btn.textContent = n;
-    btn.onclick = () => checkAnswer(n, btn);
+  const grid=document.getElementById('answersGrid');
+  grid.innerHTML='';
+  [...choices].sort(()=>Math.random()-.5).forEach(n=>{
+    const btn=document.createElement('button');
+    btn.className='answer-btn'; btn.textContent=n;
+    btn.onclick=()=>checkAnswer(n,btn);
     grid.appendChild(btn);
   });
 
   setMouseMood('thinking');
-  const phrase = rnd(phrases.ask);
-  setBubble(phrase + ' 🤔', '');
-  document.getElementById('nextBtn').classList.remove('visible');
-  answered = false;
+  const phrase=rnd(phrases.ask);
+  setBubble(phrase+' 🤔','');
+  hideNextBtn();
+  answered=false;
 
-  // Voice: phrase → small pause → task
-  stopAll();
-  speak(phrase, 0, () => speak(currentTaskText, 400));
+  stopVoice();
+  speakNow(phrase);
+  speakAfter(currentTaskText, 2200);
 }
 
 function checkAnswer(chosen, btn) {
   if (answered) return;
   answered = true;
-  document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
-  stopAll();
+  stopVoice();
+  document.querySelectorAll('.answer-btn').forEach(b => b.disabled=true);
 
-  if (chosen === correctAnswer) {
+  if (chosen===correctAnswer) {
     btn.classList.add('correct');
     correctCount++; cheesePieces++;
-    document.getElementById('correctCount').textContent = correctCount;
+    document.getElementById('correctCount').textContent=correctCount;
     addCheese();
     setMouseMood('happy');
-    const phrase = rnd(phrases.correct);
-    setBubble(phrase + ' 🎉', 'happy-bubble');
-    speak(phrase);
+    const phrase=rnd(phrases.correct);
+    setBubble(phrase+' 🎉','happy-bubble');
+    speakNow(phrase);
   } else {
     btn.classList.add('wrong');
-    document.querySelectorAll('.answer-btn').forEach(b => {
-      if (parseInt(b.textContent)===correctAnswer) b.classList.add('correct');
+    document.querySelectorAll('.answer-btn').forEach(b=>{
+      if(parseInt(b.textContent)===correctAnswer) b.classList.add('correct');
     });
     wrongCount++;
-    document.getElementById('wrongCount').textContent = wrongCount;
+    document.getElementById('wrongCount').textContent=wrongCount;
     setMouseMood('sad');
-    const phrase = rnd(phrases.wrong);
-    setBubble(phrase + ' 💛', 'sad-bubble');
-    speak(phrase, 0, () => speak(`Правильный ответ: ${correctAnswer}.`, 300));
+    const phrase=rnd(phrases.wrong);
+    setBubble(phrase+' 💛','sad-bubble');
+    speakNow(phrase);
+    speakAfter(`Правильный ответ: ${correctAnswer}.`, 2500);
   }
 
   questionIndex++;
   updateProgress();
 
-  if (questionIndex >= TOTAL) {
+  if (questionIndex>=TOTAL) {
     setTimeout(showWin, 1400);
   } else {
-    // Show next button after a short delay so it doesn't appear before animation
-    setTimeout(() => document.getElementById('nextBtn').classList.add('visible'), 300);
+    showNextBtn();   // show immediately — layout is stable via visibility:hidden
   }
 }
 
 function nextQuestion() { generateQuestion(); }
 
 function updateProgress() {
-  document.getElementById('progressFill').style.width = (questionIndex/TOTAL*100) + '%';
-  document.getElementById('progressText').textContent = questionIndex + '/' + TOTAL;
+  document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';
+  document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;
 }
 
 function addCheese() {
-  const span = document.createElement('span');
-  span.className = 'cheese-piece';
-  span.textContent = '🧀';
-  document.getElementById('cheeseRow').appendChild(span);
+  const s=document.createElement('span');
+  s.className='cheese-piece'; s.textContent='🧀';
+  document.getElementById('cheeseRow').appendChild(s);
 }
 
 function setMouseMood(mood) {
-  const svg = document.getElementById('mouseSvg');
-  // Preserve speaking class if active
-  const isSpeaking = svg.className.includes('speaking');
-  if (!isSpeaking) { svg.className = 'mouse-svg ' + mood; void svg.offsetWidth; }
-  else svg.dataset.pre = 'mouse-svg ' + mood;
-
-  const pL=document.getElementById('pupilL'), pR=document.getElementById('pupilR');
-  const gL=document.getElementById('glintL'), gR=document.getElementById('glintR');
+  const svg=document.getElementById('mouseSvg');
+  if (!svg.className.includes('speaking')) {
+    svg.className='mouse-svg '+mood; void svg.offsetWidth;
+  } else {
+    svg._savedClass='mouse-svg '+mood;
+  }
+  const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
+  const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
   const mouth=document.getElementById('mouthPath');
   const cheese=document.getElementById('cheeseInPaw');
   if (mood==='happy') {
@@ -519,20 +496,18 @@ function setMouseMood(mood) {
   }
 }
 
-function setBubble(text, cls) {
-  const b = document.getElementById('bubble');
-  b.textContent = text;
-  b.className = 'bubble ' + cls;
+function setBubble(text,cls) {
+  const b=document.getElementById('bubble');
+  b.textContent=text; b.className='bubble '+cls;
 }
 
 function showWin() {
-  stopAll();
-  document.getElementById('taskSection').style.display = 'none';
+  stopVoice();
+  document.getElementById('taskSection').style.display='none';
   document.getElementById('winOverlay').classList.add('visible');
   setMouseMood('happy');
-  const cfg = LEVELS[level];
-  const pct = correctCount/TOTAL;
-  let stars, title, sub, speech;
+  const cfg=LEVELS[level]; const pct=correctCount/TOTAL;
+  let stars,title,sub,speech;
   if (pct>=.9) {
     stars='⭐⭐⭐'; title='Кладовочка полная!';
     sub=`Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён! 🏆`;
@@ -546,15 +521,15 @@ function showWin() {
     sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;
     speech=`Нюсик верит в тебя! ${correctCount} из ${TOTAL}. В следующий раз лучше!`;
   }
-  document.getElementById('winStars').textContent = stars;
-  document.getElementById('winTitle').textContent = title;
-  document.getElementById('winSubtitle').textContent = sub;
-  document.querySelector('.restart-btn.secondary').style.display = level>=4 ? 'none' : '';
-  speak(speech, 300);
+  document.getElementById('winStars').textContent=stars;
+  document.getElementById('winTitle').textContent=title;
+  document.getElementById('winSubtitle').textContent=sub;
+  document.querySelector('.restart-btn.secondary').style.display=level>=4?'none':'';
+  speakAfter(speech, 400);
 }
 
 function restartGame() {
-  stopAll();
+  stopVoice();
   questionIndex=0; correctCount=0; wrongCount=0; cheesePieces=0;
   document.getElementById('cheeseRow').innerHTML='';
   document.getElementById('correctCount').textContent='0';
@@ -564,12 +539,6 @@ function restartGame() {
   updateProgress();
   generateQuestion();
 }
-
-// Greet on first interaction (browsers block audio before gesture)
-let greeted = false;
-document.addEventListener('pointerdown', () => {
-  if (!greeted) { greeted=true; speak('Привет, Иван! Я Нюсик! Помоги найти сыр!', 100); }
-}, { passive:true });
 
 generateQuestion();
 </script>

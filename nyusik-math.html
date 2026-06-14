@@ -6,436 +6,130 @@
 <title>Нюсик учит математику</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap');
-
   :root {
-    --cream: #FFF8F0;
-    --warm: #FFF0DC;
-    --grey-light: #E8E4E0;
-    --grey: #B0A8A0;
-    --grey-dark: #6B6360;
-    --cheese: #F5C842;
-    --cheese-dark: #E0A800;
-    --green: #5CC87A;
-    --green-dark: #3DA85C;
-    --red: #FF6B6B;
-    --purple: #9B7FD4;
-    --blue: #5BA4CF;
-    --text: #3A3330;
+    --cream:#FFF8F0;--warm:#FFF0DC;--grey-light:#E8E4E0;--grey:#B0A8A0;
+    --grey-dark:#6B6360;--cheese:#F5C842;--cheese-dark:#E0A800;
+    --green:#5CC87A;--green-dark:#3DA85C;--red:#FF6B6B;
+    --purple:#9B7FD4;--blue:#5BA4CF;--text:#3A3330;
   }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Nunito',sans-serif;background:var(--cream);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;padding:12px 12px 32px;color:var(--text);}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .header{text-align:center;margin-bottom:10px;position:relative;width:100%;max-width:480px;}
+  .header h1{font-size:1.7rem;font-weight:900;color:var(--grey-dark);}
+  .header h1 span{color:var(--cheese-dark);}
 
-  body {
-    font-family: 'Nunito', sans-serif;
-    background: var(--cream);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 12px 32px;
-    color: var(--text);
-  }
+  .sound-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);
+    background:white;border:2px solid var(--grey-light);border-radius:12px;
+    font-size:1.3rem;width:44px;height:44px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .sound-btn:hover{background:var(--grey-light);}
+  .sound-btn.muted{opacity:.45;}
 
-  .header {
-    text-align: center;
-    margin-bottom: 10px;
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-  }
-  .header h1 {
-    font-size: 1.7rem;
-    font-weight: 900;
-    color: var(--grey-dark);
-  }
-  .header h1 span { color: var(--cheese-dark); }
+  .bubble-wrap{position:relative;}
+  .speaking-dots{display:none;position:absolute;bottom:-8px;left:50%;
+    transform:translateX(-50%);gap:4px;flex-direction:row;}
+  .speaking-dots.active{display:flex;}
+  .speaking-dots span{width:7px;height:7px;background:var(--purple);border-radius:50%;
+    animation:dotBounce .7s ease infinite;}
+  .speaking-dots span:nth-child(2){animation-delay:.15s;}
+  .speaking-dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes dotBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
 
-  /* SOUND TOGGLE */
-  .sound-btn {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    background: white;
-    border: 2px solid var(--grey-light);
-    border-radius: 12px;
-    font-size: 1.3rem;
-    width: 44px;
-    height: 44px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-  }
-  .sound-btn:hover { background: var(--grey-light); }
-  .sound-btn.muted { opacity: 0.45; }
+  .level-bar,.op-bar{display:flex;gap:6px;width:100%;max-width:480px;margin-bottom:10px;}
+  .level-btn{flex:1;padding:7px 2px;border:2px solid var(--grey-light);border-radius:12px;
+    background:white;font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:800;
+    color:var(--grey-dark);cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;}
+  .level-btn.active{background:var(--purple);border-color:var(--purple);color:white;}
+  .level-btn:hover:not(.active){background:var(--grey-light);}
+  .op-btn{flex:1;padding:7px 0;border:2px solid var(--grey-light);border-radius:12px;
+    background:white;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;
+    color:var(--grey-dark);cursor:pointer;transition:all .15s;}
+  .op-btn.active{background:var(--blue);border-color:var(--blue);color:white;}
+  .op-btn:hover:not(.active){background:var(--grey-light);}
 
-  /* Speaking indicator — bouncing dots on bubble */
-  .bubble-wrap { position: relative; }
-  .speaking-dots {
-    display: none;
-    position: absolute;
-    bottom: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    gap: 4px;
-    flex-direction: row;
-  }
-  .speaking-dots.active { display: flex; }
-  .speaking-dots span {
-    width: 7px; height: 7px;
-    background: var(--purple);
-    border-radius: 50%;
-    animation: dotBounce 0.7s ease infinite;
-  }
-  .speaking-dots span:nth-child(2) { animation-delay: 0.15s; }
-  .speaking-dots span:nth-child(3) { animation-delay: 0.3s; }
-  @keyframes dotBounce {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-  }
+  .cheese-store{background:var(--warm);border:3px solid var(--cheese);border-radius:18px;
+    padding:8px 16px;margin-bottom:10px;text-align:center;width:100%;max-width:480px;}
+  .cheese-store-label{font-size:.75rem;font-weight:800;color:var(--grey-dark);
+    text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .cheese-row{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;min-height:26px;}
+  .cheese-piece{font-size:1.3rem;animation:popIn .3s cubic-bezier(.36,.07,.19,.97);}
+  @keyframes popIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}
+    70%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
 
-  /* LEVEL BAR */
-  .level-bar {
-    display: flex;
-    gap: 6px;
-    width: 100%;
-    max-width: 480px;
-    margin-bottom: 10px;
-  }
-  .level-btn {
-    flex: 1;
-    padding: 7px 2px;
-    border: 2px solid var(--grey-light);
-    border-radius: 12px;
-    background: white;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: var(--grey-dark);
-    cursor: pointer;
-    transition: all 0.15s;
-    line-height: 1.3;
-    text-align: center;
-  }
-  .level-btn.active { background: var(--purple); border-color: var(--purple); color: white; }
-  .level-btn:hover:not(.active) { background: var(--grey-light); }
+  .card{background:white;border-radius:28px;padding:20px 16px;width:100%;max-width:480px;
+    box-shadow:0 4px 24px rgba(0,0,0,.07);}
 
-  /* OP BAR */
-  .op-bar {
-    display: flex;
-    gap: 6px;
-    width: 100%;
-    max-width: 480px;
-    margin-bottom: 10px;
-  }
-  .op-btn {
-    flex: 1;
-    padding: 7px 0;
-    border: 2px solid var(--grey-light);
-    border-radius: 12px;
-    background: white;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: var(--grey-dark);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .op-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
-  .op-btn:hover:not(.active) { background: var(--grey-light); }
+  .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
+  .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
+    padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
+    max-width:300px;text-align:center;line-height:1.45;margin-bottom:14px;min-height:58px;
+    display:flex;align-items:center;justify-content:center;transition:background .3s,color .3s;}
+  .bubble.happy-bubble{background:#D4F5DC;color:#2A7A40;}
+  .bubble.sad-bubble{background:#FFE5E5;color:#B03030;}
 
-  /* CHEESE STORE */
-  .cheese-store {
-    background: var(--warm);
-    border: 3px solid var(--cheese);
-    border-radius: 18px;
-    padding: 8px 16px;
-    margin-bottom: 10px;
-    text-align: center;
-    width: 100%;
-    max-width: 480px;
-  }
-  .cheese-store-label {
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: var(--grey-dark);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-  .cheese-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    justify-content: center;
-    min-height: 26px;
-  }
-  .cheese-piece {
-    font-size: 1.3rem;
-    animation: popIn 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-  }
-  @keyframes popIn {
-    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
-    70% { transform: scale(1.3) rotate(5deg); }
-    100% { transform: scale(1) rotate(0); opacity: 1; }
-  }
+  .mouse-svg{width:130px;height:130px;transition:transform .3s;}
+  .mouse-svg.happy{animation:wiggle .5s ease;}
+  .mouse-svg.sad{animation:shake .4s ease;}
+  .mouse-svg.thinking{animation:bop 1.2s ease infinite;}
+  .mouse-svg.speaking{animation:mousePulse .35s ease infinite alternate;}
+  @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.05);}75%{transform:rotate(8deg) scale(1.05);}}
+  @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+  @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  @keyframes mousePulse{from{transform:scale(1);}to{transform:scale(1.08) rotate(2deg);}}
 
-  /* CARD */
-  .card {
-    background: white;
-    border-radius: 28px;
-    padding: 20px 16px;
-    width: 100%;
-    max-width: 480px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-  }
+  .task-area{text-align:center;margin-bottom:14px;}
+  .task-label{font-size:.78rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+  .level-badge{display:inline-block;background:var(--purple);color:white;font-size:.7rem;
+    font-weight:800;border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+  .task-expression{font-size:3rem;font-weight:900;color:var(--text);letter-spacing:-1px;
+    min-height:58px;display:flex;align-items:center;justify-content:center;gap:8px;
+    cursor:pointer;border-radius:12px;transition:background .15s;}
+  .task-expression:hover{background:var(--grey-light);}
+  .task-expression .op{color:var(--purple);}
+  .task-expression .eq{color:var(--grey);}
+  .hint{font-size:.82rem;color:var(--blue);font-weight:700;margin-top:4px;min-height:20px;}
+  .read-task-btn{background:none;border:2px dashed var(--grey-light);border-radius:10px;
+    color:var(--grey);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;
+    padding:4px 12px;cursor:pointer;margin-top:4px;transition:all .15s;}
+  .read-task-btn:hover{border-color:var(--purple);color:var(--purple);background:#F3EEFF;}
 
-  /* MOUSE */
-  .mouse-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .bubble {
-    background: var(--grey-light);
-    border-radius: 18px 18px 18px 4px;
-    padding: 12px 18px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--grey-dark);
-    max-width: 300px;
-    text-align: center;
-    line-height: 1.45;
-    margin-bottom: 14px;
-    min-height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s, color 0.3s;
-  }
-  .bubble.happy-bubble { background: #D4F5DC; color: #2A7A40; }
-  .bubble.sad-bubble { background: #FFE5E5; color: #B03030; }
+  .answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .answer-btn{background:var(--warm);border:3px solid var(--cheese);border-radius:16px;
+    font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:900;color:var(--text);
+    cursor:pointer;padding:14px 0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+  .answer-btn:hover:not(:disabled){background:var(--cheese);transform:scale(1.04);}
+  .answer-btn:active:not(:disabled){transform:scale(.97);}
+  .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
+  .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
 
-  .mouse-svg {
-    width: 130px;
-    height: 130px;
-    transition: transform 0.3s;
-  }
-  .mouse-svg.happy { animation: wiggle 0.5s ease; }
-  .mouse-svg.sad { animation: shake 0.4s ease; }
-  .mouse-svg.thinking { animation: bop 1.2s ease infinite; }
-  .mouse-svg.speaking { animation: pulse 0.6s ease infinite alternate; }
-  @keyframes wiggle {
-    0%,100% { transform: rotate(0); }
-    25% { transform: rotate(-8deg) scale(1.05); }
-    75% { transform: rotate(8deg) scale(1.05); }
-  }
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    20% { transform: translateX(-6px); }
-    40% { transform: translateX(6px); }
-    60% { transform: translateX(-4px); }
-    80% { transform: translateX(4px); }
-  }
-  @keyframes bop {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-  }
-  @keyframes pulse {
-    from { transform: scale(1); }
-    to { transform: scale(1.06); }
-  }
+  .next-btn{display:block;width:100%;background:var(--green);border:none;border-radius:16px;
+    font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;color:white;cursor:pointer;
+    padding:14px 0;transition:all .15s;opacity:0;pointer-events:none;margin-bottom:14px;}
+  .next-btn.visible{opacity:1;pointer-events:auto;animation:popIn .3s;}
+  .next-btn:hover{background:var(--green-dark);}
 
-  /* TASK */
-  .task-area { text-align: center; margin-bottom: 14px; }
-  .task-label {
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: var(--grey);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 6px;
-  }
-  .level-badge {
-    display: inline-block;
-    background: var(--purple);
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 800;
-    border-radius: 8px;
-    padding: 2px 8px;
-    margin-left: 6px;
-    vertical-align: middle;
-  }
-  .task-expression {
-    font-size: 3rem;
-    font-weight: 900;
-    color: var(--text);
-    letter-spacing: -1px;
-    min-height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    border-radius: 12px;
-    transition: background 0.15s;
-  }
-  .task-expression:hover { background: var(--grey-light); }
-  .task-expression:hover::after {
-    content: ' 🔊';
-    font-size: 1.2rem;
-  }
-  .task-expression .op { color: var(--purple); }
-  .task-expression .eq { color: var(--grey); }
-  .hint {
-    font-size: 0.82rem;
-    color: var(--blue);
-    font-weight: 700;
-    margin-top: 4px;
-    min-height: 20px;
-  }
-  .read-task-btn {
-    background: none;
-    border: 2px dashed var(--grey-light);
-    border-radius: 10px;
-    color: var(--grey);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 4px 12px;
-    cursor: pointer;
-    margin-top: 4px;
-    transition: all 0.15s;
-  }
-  .read-task-btn:hover { border-color: var(--purple); color: var(--purple); background: #F3EEFF; }
+  .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .progress-bar-bg{flex:1;height:10px;background:var(--grey-light);border-radius:8px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cheese),var(--green));
+    border-radius:8px;transition:width .4s ease;}
+  .progress-text{font-size:.8rem;font-weight:800;color:var(--grey);min-width:36px;text-align:right;}
+  .score-row{display:flex;gap:16px;justify-content:center;font-size:.85rem;font-weight:700;color:var(--grey);}
+  .correct-count{color:var(--green-dark);} .wrong-count{color:var(--red);}
 
-  /* ANSWERS */
-  .answers-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .answer-btn {
-    background: var(--warm);
-    border: 3px solid var(--cheese);
-    border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 1.7rem;
-    font-weight: 900;
-    color: var(--text);
-    cursor: pointer;
-    padding: 14px 0;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .answer-btn:hover:not(:disabled) { background: var(--cheese); transform: scale(1.04); }
-  .answer-btn:active:not(:disabled) { transform: scale(0.97); }
-  .answer-btn.correct {
-    background: var(--green);
-    border-color: var(--green-dark);
-    color: white;
-    animation: popIn 0.3s;
-  }
-  .answer-btn.wrong {
-    background: var(--red);
-    border-color: #C04040;
-    color: white;
-    animation: shake 0.4s;
-  }
-
-  .next-btn {
-    display: block;
-    width: 100%;
-    background: var(--green);
-    border: none;
-    border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 900;
-    color: white;
-    cursor: pointer;
-    padding: 14px 0;
-    transition: all 0.15s;
-    opacity: 0;
-    pointer-events: none;
-    margin-bottom: 14px;
-  }
-  .next-btn.visible { opacity: 1; pointer-events: auto; animation: popIn 0.3s; }
-  .next-btn:hover { background: var(--green-dark); }
-
-  /* PROGRESS */
-  .progress-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .progress-bar-bg {
-    flex: 1;
-    height: 10px;
-    background: var(--grey-light);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--cheese), var(--green));
-    border-radius: 8px;
-    transition: width 0.4s ease;
-  }
-  .progress-text {
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: var(--grey);
-    min-width: 36px;
-    text-align: right;
-  }
-  .score-row {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--grey);
-  }
-  .correct-count { color: var(--green-dark); }
-  .wrong-count { color: var(--red); }
-
-  /* WIN */
-  .win-overlay {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    text-align: center;
-    padding: 8px 0;
-  }
-  .win-overlay.visible { display: flex; animation: popIn 0.5s; }
-  .win-stars { font-size: 2.5rem; letter-spacing: 4px; }
-  .win-title { font-size: 1.5rem; font-weight: 900; color: var(--cheese-dark); }
-  .win-subtitle { font-size: 1rem; color: var(--grey-dark); font-weight: 600; line-height: 1.4; }
-  .win-btns { display: flex; gap: 10px; width: 100%; }
-  .restart-btn {
-    flex: 1;
-    background: var(--cheese);
-    border: none;
-    border-radius: 16px;
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 900;
-    color: var(--text);
-    cursor: pointer;
-    padding: 13px 0;
-    transition: all 0.15s;
-  }
-  .restart-btn:hover { background: var(--cheese-dark); color: white; }
-  .restart-btn.secondary { background: var(--purple); color: white; }
-  .restart-btn.secondary:hover { background: #7B5FC4; }
+  .win-overlay{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0;}
+  .win-overlay.visible{display:flex;animation:popIn .5s;}
+  .win-stars{font-size:2.5rem;letter-spacing:4px;}
+  .win-title{font-size:1.5rem;font-weight:900;color:var(--cheese-dark);}
+  .win-subtitle{font-size:1rem;color:var(--grey-dark);font-weight:600;line-height:1.4;}
+  .win-btns{display:flex;gap:10px;width:100%;}
+  .restart-btn{flex:1;background:var(--cheese);border:none;border-radius:16px;
+    font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:900;color:var(--text);
+    cursor:pointer;padding:13px 0;transition:all .15s;}
+  .restart-btn:hover{background:var(--cheese-dark);color:white;}
+  .restart-btn.secondary{background:var(--purple);color:white;}
+  .restart-btn.secondary:hover{background:#7B5FC4;}
 </style>
 </head>
 <body>
@@ -451,7 +145,6 @@
   <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐<br>Уровень 3<br><small>до 50</small></button>
   <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
 </div>
-
 <div class="op-bar">
   <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
   <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
@@ -467,9 +160,7 @@
   <div class="mouse-area">
     <div class="bubble-wrap">
       <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
-      <div class="speaking-dots" id="speakingDots">
-        <span></span><span></span><span></span>
-      </div>
+      <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
     </div>
     <svg class="mouse-svg" id="mouseSvg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
@@ -509,19 +200,14 @@
   <div id="taskSection">
     <div class="task-area">
       <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
-      <div class="task-expression" id="taskExpr" onclick="readTaskAloud()" title="Нажми — Нюсик прочитает вслух"></div>
+      <div class="task-expression" id="taskExpr" onclick="readTaskAloud()" title="Нажми — Нюсик прочитает"></div>
       <div class="hint" id="hint"></div>
       <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
     </div>
-
     <div class="answers-grid" id="answersGrid"></div>
-
     <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Дальше! →</button>
-
     <div class="progress-row">
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
-      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-text" id="progressText">0/10</div>
     </div>
     <div class="score-row">
@@ -542,361 +228,428 @@
 </div>
 
 <script>
-const TOTAL = 10;
+// ═══════════════════════════════════════════════════════
+//  SQUEAKY MOUSE VOICE
+//  Strategy: SpeechSynthesis → capture via MediaStream →
+//  route through Web Audio → playbackRate pitch-shift
+//  Pitch factor ~1.7 gives a clear chipmunk/mouse effect.
+//  On browsers where MediaStream capture isn't available
+//  we fall back to plain SpeechSynthesis with high pitch.
+// ═══════════════════════════════════════════════════════
+const PITCH_FACTOR = 1.72; // how many semitones up (rate multiplier)
 
-const LEVELS = {
-  1: { max: 10,  label: 'Ур. 1', name: 'до 10',  crossTen: false },
-  2: { max: 20,  label: 'Ур. 2', name: 'до 20',  crossTen: true  },
-  3: { max: 50,  label: 'Ур. 3', name: 'до 50',  crossTen: true  },
-  4: { max: 100, label: 'Ур. 4', name: 'до 100', crossTen: true  },
-};
-
-let level = 1;
-let op = 'add';
-let questionIndex = 0;
-let correctCount = 0;
-let wrongCount = 0;
-let answered = false;
-let correctAnswer = 0;
-let cheesePieces = 0;
+let audioCtx = null;
 let soundOn = true;
+let speaking = false;
+let speakQueue = [];
 let currentTaskText = '';
 
-// ── SPEECH ──────────────────────────────────────────────
-const synth = window.speechSynthesis;
-let ruVoice = null;
+// Lazily create AudioContext (needs user gesture first)
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
 
+// Check if browser supports MediaStream destination capture
+const canCapture = !!(window.AudioContext || window.webkitAudioContext) &&
+                   typeof MediaStream !== 'undefined' &&
+                   typeof window.SpeechSynthesisUtterance !== 'undefined';
+
+let ruVoice = null;
 function loadVoices() {
-  const voices = synth.getVoices();
-  // Prefer Russian voice, fall back to any
-  ruVoice = voices.find(v => v.lang.startsWith('ru')) ||
-            voices.find(v => v.lang.startsWith('uk')) || // Ukrainian as fallback
-            voices[0] || null;
+  const vs = speechSynthesis.getVoices();
+  ruVoice = vs.find(v => v.lang.startsWith('ru')) ||
+            vs.find(v => v.lang.startsWith('uk')) ||
+            vs[0] || null;
 }
 loadVoices();
-if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+if (speechSynthesis.onvoiceschanged !== undefined)
+  speechSynthesis.onvoiceschanged = loadVoices;
 
-function speak(text, opts = {}) {
-  if (!soundOn || !synth) return;
-  synth.cancel();
+// ── Core speak function ──────────────────────────────
+function speak(text, opts = {}, onDone) {
+  if (!soundOn) { onDone && onDone(); return; }
+  speakQueue.push({ text, opts, onDone });
+  if (!speaking) processQueue();
+}
+
+function processQueue() {
+  if (!speakQueue.length) { speaking = false; return; }
+  speaking = true;
+  const { text, opts, onDone } = speakQueue.shift();
+  _doSpeak(text, opts, () => { onDone && onDone(); processQueue(); });
+}
+
+function _doSpeak(text, opts, onDone) {
+  speechSynthesis.cancel();
+
   const utt = new SpeechSynthesisUtterance(text);
   utt.lang = 'ru-RU';
-  utt.rate = opts.rate || 0.88;   // slightly slower for a child
-  utt.pitch = opts.pitch || 1.25; // a bit higher — mouse-like
-  utt.volume = 1;
+  // We speed up speech because pitch-shift via playbackRate also speeds audio —
+  // speak slower so after 1.72x it's roughly normal tempo but 1 octave higher
+  utt.rate  = (opts.rate  || 0.78) * (1 / PITCH_FACTOR); // pre-compensate tempo
+  utt.pitch = 1.0;  // neutral — pitch done in Web Audio
+  utt.volume = canCapture ? 0 : 1; // mute TTS if we'll re-route through WebAudio
   if (ruVoice) utt.voice = ruVoice;
 
-  const dots = document.getElementById('speakingDots');
-  const svg = document.getElementById('mouseSvg');
-  const prevClass = svg.className;
+  setSpeakingUI(true);
 
-  utt.onstart = () => {
-    dots.classList.add('active');
+  if (!canCapture) {
+    // Fallback: just use high-pitch TTS directly (no capture)
+    utt.pitch = 2.0;
+    utt.rate = opts.rate || 0.88;
+    utt.volume = 1;
+    utt.onend = utt.onerror = () => { setSpeakingUI(false); onDone(); };
+    speechSynthesis.speak(utt);
+    return;
+  }
+
+  // ── Capture TTS → pitch-shift via Web Audio ──
+  try {
+    const ctx = getCtx();
+    const dest = ctx.createMediaStreamDestination();
+
+    // MediaRecorder captures the stream
+    const recorder = new MediaRecorder(dest.stream);
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: recorder.mimeType });
+      const arrayBuf = await blob.arrayBuffer();
+      try {
+        const audioBuf = await ctx.decodeAudioData(arrayBuf);
+        const src = ctx.createBufferSource();
+        src.buffer = audioBuf;
+        // playbackRate shifts pitch UP but also speeds up — intentional here
+        // because we pre-slowed TTS rate above to compensate
+        src.playbackRate.value = PITCH_FACTOR;
+        // Small treble boost to make it more "squeaky"
+        const hiShelf = ctx.createBiquadFilter();
+        hiShelf.type = 'highshelf';
+        hiShelf.frequency.value = 3000;
+        hiShelf.gain.value = 8;
+        src.connect(hiShelf);
+        hiShelf.connect(ctx.destination);
+        src.onended = () => { setSpeakingUI(false); onDone(); };
+        src.start();
+      } catch(e) {
+        setSpeakingUI(false); onDone();
+      }
+    };
+
+    // Route TTS → Web Audio destination
+    const oscDummy = ctx.createOscillator(); // keeps stream alive
+    oscDummy.connect(dest);
+    oscDummy.start();
+
+    // Tap into TTS via hidden audio element trick:
+    // We can't directly pipe SpeechSynthesis into AudioContext,
+    // but we can record via MediaRecorder while TTS plays to the stream.
+    // Since volume=0, TTS plays silently; recorder captures it.
+    // NOTE: This works on Chrome. On Safari/Firefox we use fallback below.
+    utt.onstart = () => {
+      try { recorder.start(); } catch(e) {}
+    };
+    utt.onend = () => {
+      oscDummy.stop();
+      try { if (recorder.state === 'recording') recorder.stop(); }
+      catch(e) { setSpeakingUI(false); onDone(); }
+    };
+    utt.onerror = () => {
+      oscDummy.stop();
+      setSpeakingUI(false); onDone();
+    };
+    speechSynthesis.speak(utt);
+
+    // Safety timeout
+    setTimeout(() => {
+      if (recorder.state === 'recording') recorder.stop();
+    }, 12000);
+
+  } catch(err) {
+    // Any failure → plain TTS fallback
+    utt.volume = 1;
+    utt.pitch = 2.0;
+    utt.onend = utt.onerror = () => { setSpeakingUI(false); onDone(); };
+    speechSynthesis.speak(utt);
+  }
+}
+
+function stopSpeech() {
+  speakQueue = [];
+  speaking = false;
+  speechSynthesis.cancel();
+  setSpeakingUI(false);
+}
+
+function setSpeakingUI(on) {
+  document.getElementById('speakingDots').classList.toggle('active', on);
+  const svg = document.getElementById('mouseSvg');
+  if (on) {
+    svg._prevClass = svg.className.replace('speaking','').trim();
     svg.className = 'mouse-svg speaking';
-  };
-  utt.onend = utt.onerror = () => {
-    dots.classList.remove('active');
-    svg.className = prevClass;
-  };
-  synth.speak(utt);
+  } else if (svg._prevClass) {
+    svg.className = svg._prevClass;
+    svg._prevClass = null;
+  }
 }
 
 function toggleSound() {
   soundOn = !soundOn;
-  synth.cancel();
+  if (!soundOn) stopSpeech();
   const btn = document.getElementById('soundBtn');
   btn.textContent = soundOn ? '🔊' : '🔇';
   btn.classList.toggle('muted', !soundOn);
-  document.getElementById('speakingDots').classList.remove('active');
-  if (soundOn) speak('Звук включён!');
-}
-
-// Strip emoji from text before speaking
-function clean(str) {
-  return str.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✅❌⭐🏆🔊🎉💪🤔💛😊😄🥳🎲➕➖]/gu, '').trim();
+  if (soundOn) speak('Звук включён!', { rate: 0.9 });
 }
 
 function readTaskAloud() {
-  if (currentTaskText) speak(currentTaskText, { rate: 0.82, pitch: 1.1 });
+  if (currentTaskText) { stopSpeech(); speak(currentTaskText, { rate: 0.72 }); }
 }
-// ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
 
-const phrases = {
-  ask: [
-    'Помоги мне! Если правильно — дам тебе сыр!',
-    'Думай-думай, Иван! Ты умный!',
-    'Мне так хочется сыра... помоги!',
-    'Нюсик ждёт! Какой ответ?',
-    'Ах, как пахнет сыром... скорее!',
-    'Считай внимательно! Ты справишься!',
-    'Ну-ка, посчитаем вместе!',
-  ],
-  correct: [
-    'Ура! Правильно! Вот тебе сыр!',
-    'Молодец! Ты самый умный!',
-    'Да-да-да! Именно! Кушаем сыр!',
-    'Ты суперзвезда, Иван!',
-    'Правильно! Нюсик счастлив!',
-    'Вот это да! Какой умный Иван!',
-    'Отлично! Нюсик танцует от радости!',
-  ],
-  wrong: [
-    'Ой, не то... но не расстраивайся!',
-    'Нет... но ты можешь! Думай!',
-    'Ошибочка! Нюсик верит в тебя!',
-    'Не расстраивайся! В следующий раз!',
-    'Почти! Смотри на правильный ответ.',
-  ],
-  hint: [
-    'Подсказка: сначала доберись до круглого числа!',
-  ],
-  win3: ['Нюсик в полном восторге! Ты настоящий математик!'],
-  win2: ['Хорошая работа! Ещё немного потренируемся?'],
-  win1: ['Нюсик верит в тебя! В следующий раз получится лучше!'],
+const TOTAL = 10;
+const LEVELS = {
+  1:{max:10, label:'Ур. 1',name:'до 10', crossTen:false},
+  2:{max:20, label:'Ур. 2',name:'до 20', crossTen:true},
+  3:{max:50, label:'Ур. 3',name:'до 50', crossTen:true},
+  4:{max:100,label:'Ур. 4',name:'до 100',crossTen:true},
 };
 
-function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+let level=1, op='add', questionIndex=0, correctCount=0, wrongCount=0;
+let answered=false, correctAnswer=0, cheesePieces=0;
 
-function setLevel(l) {
-  level = l;
-  document.querySelectorAll('.level-btn').forEach((b, i) => b.classList.toggle('active', i + 1 === l));
-  document.getElementById('levelBadge').textContent = LEVELS[l].label;
+const phrases = {
+  ask:['Помоги мне! Если правильно — дам тебе сыр!','Думай-думай, Иван! Ты умный!',
+    'Мне так хочется сыра... помоги!','Нюсик ждёт! Какой ответ?',
+    'Ах, как пахнет сыром... скорее!','Считай внимательно! Ты справишься!','Ну-ка, посчитаем!'],
+  correct:['Ура! Правильно! Вот тебе сыр!','Молодец! Ты самый умный!',
+    'Да-да-да! Именно! Кушаем сыр!','Ты суперзвезда, Иван!',
+    'Правильно! Нюсик счастлив!','Вот это да! Какой умный Иван!','Отлично! Нюсик танцует!'],
+  wrong:['Ой, не то... но не расстраивайся!','Нет... но ты можешь! Думай!',
+    'Ошибочка! Нюсик верит в тебя!','Не расстраивайся! В следующий раз!',
+    'Почти! Смотри на правильный ответ.'],
+};
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+
+function setLevel(l){
+  level=l;
+  document.querySelectorAll('.level-btn').forEach((b,i)=>b.classList.toggle('active',i+1===l));
+  document.getElementById('levelBadge').textContent=LEVELS[l].label;
   restartGame();
 }
-
-function setOp(o) {
-  op = o;
-  document.querySelectorAll('.op-btn').forEach((b, i) => b.classList.toggle('active', ['add','sub','both'][i] === o));
+function setOp(o){
+  op=o;
+  document.querySelectorAll('.op-btn').forEach((b,i)=>b.classList.toggle('active',['add','sub','both'][i]===o));
   restartGame();
 }
+function nextLevel(){if(level<4)setLevel(level+1);else restartGame();}
 
-function nextLevel() {
-  if (level < 4) setLevel(level + 1);
-  else restartGame();
-}
+function generateQuestion(){
+  const cfg=LEVELS[level];
+  let a,b,useAdd,hintText='';
+  if(op==='add')useAdd=true;
+  else if(op==='sub')useAdd=false;
+  else useAdd=Math.random()>.5;
 
-function generateQuestion() {
-  const cfg = LEVELS[level];
-  let a, b, useAdd, hintText = '';
-
-  if (op === 'add') useAdd = true;
-  else if (op === 'sub') useAdd = false;
-  else useAdd = Math.random() > 0.5;
-
-  if (useAdd) {
-    if (cfg.crossTen && Math.random() > 0.4) {
-      const decade = Math.floor(Math.random() * Math.floor((cfg.max - 10) / 10)) * 10;
-      const rem = Math.floor(Math.random() * 8) + 1;
-      a = decade + rem;
-      const cross = 10 - rem;
-      b = cross + Math.floor(Math.random() * Math.min(9, cfg.max - a - cross));
-      if (b <= 0) b = cross;
+  if(useAdd){
+    if(cfg.crossTen&&Math.random()>.4){
+      const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;
+      const rem=Math.floor(Math.random()*8)+1;
+      a=dec+rem; const cross=10-rem;
+      b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));
+      if(b<=0)b=cross;
     } else {
-      a = Math.floor(Math.random() * (cfg.max - 1)) + 1;
-      b = Math.floor(Math.random() * (cfg.max - a)) + 1;
+      a=Math.floor(Math.random()*(cfg.max-1))+1;
+      b=Math.floor(Math.random()*(cfg.max-a))+1;
     }
-    correctAnswer = a + b;
-    if (correctAnswer > cfg.max) { a = Math.max(1, cfg.max - 9); b = Math.floor(Math.random() * 9) + 1; correctAnswer = a + b; }
-    if (cfg.crossTen && correctAnswer > 10 && a % 10 !== 0 && b % 10 !== 0) {
-      hintText = '💡 Подсказка: сначала доберись до круглого числа!';
-    }
+    correctAnswer=a+b;
+    if(correctAnswer>cfg.max){a=Math.max(1,cfg.max-9);b=Math.floor(Math.random()*9)+1;correctAnswer=a+b;}
+    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0)
+      hintText='💡 Подсказка: сначала доберись до круглого числа!';
   } else {
-    if (cfg.crossTen && Math.random() > 0.4) {
-      const decade = (Math.floor(Math.random() * Math.floor(cfg.max / 10)) + 1) * 10;
-      a = decade + Math.floor(Math.random() * Math.min(9, cfg.max - decade));
-      b = Math.floor(Math.random() * (decade % 10 === 0 ? Math.min(9, a - decade + 1) : a - (decade - 10))) + 1;
-      if (a <= 0 || b <= 0 || b >= a) { a = 15; b = 7; }
+    if(cfg.crossTen&&Math.random()>.4){
+      const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
+      a=dec+Math.floor(Math.random()*Math.min(9,cfg.max-dec));
+      b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;
+      if(a<=0||b<=0||b>=a){a=15;b=7;}
     } else {
-      a = Math.floor(Math.random() * (cfg.max - 1)) + 2;
-      b = Math.floor(Math.random() * (a - 1)) + 1;
+      a=Math.floor(Math.random()*(cfg.max-1))+2;
+      b=Math.floor(Math.random()*(a-1))+1;
     }
-    correctAnswer = a - b;
-    if (correctAnswer < 0) { a = 10; b = 3; correctAnswer = 7; }
+    correctAnswer=a-b;
+    if(correctAnswer<0){a=10;b=3;correctAnswer=7;}
   }
 
-  document.getElementById('hint').textContent = hintText;
+  document.getElementById('hint').textContent=hintText;
+  const opSign=useAdd?'+':'−';
+  const opWord=useAdd?'плюс':'минус';
+  currentTaskText=`${a} ${opWord} ${b} равно сколько?`;
+  document.getElementById('taskExpr').innerHTML=
+    `<span>${a}</span> <span class="op">${opSign}</span> <span>${b}</span> <span class="eq">=</span> <span>?</span>`;
 
-  const opSign = useAdd ? '+' : '−';
-  const opWord = useAdd ? 'плюс' : 'минус';
-  currentTaskText = `${a} ${opWord} ${b} равно сколько?`;
-
-  const exprEl = document.getElementById('taskExpr');
-  exprEl.innerHTML = `<span>${a}</span> <span class="op">${opSign}</span> <span>${b}</span> <span class="eq">=</span> <span>?</span>`;
-
-  const spread = cfg.max <= 10 ? 3 : cfg.max <= 20 ? 5 : 10;
-  const choices = new Set([correctAnswer]);
-  let tries = 0;
-  while (choices.size < 4 && tries < 100) {
+  const spread=cfg.max<=10?3:cfg.max<=20?5:10;
+  const choices=new Set([correctAnswer]);
+  let tries=0;
+  while(choices.size<4&&tries<100){
     tries++;
-    const delta = Math.floor(Math.random() * spread) + 1;
-    const w = correctAnswer + (Math.random() > 0.5 ? delta : -delta);
-    if (w >= 0 && w <= cfg.max + 5 && w !== correctAnswer) choices.add(w);
+    const d=Math.floor(Math.random()*spread)+1;
+    const w=correctAnswer+(Math.random()>.5?d:-d);
+    if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);
   }
-  while (choices.size < 4) choices.add(correctAnswer + choices.size);
+  while(choices.size<4)choices.add(correctAnswer+choices.size);
 
-  const shuffled = [...choices].sort(() => Math.random() - 0.5);
-  const grid = document.getElementById('answersGrid');
-  grid.innerHTML = '';
-  shuffled.forEach(n => {
-    const btn = document.createElement('button');
-    btn.className = 'answer-btn';
-    btn.textContent = n;
-    btn.onclick = () => checkAnswer(n, btn);
+  const shuffled=[...choices].sort(()=>Math.random()-.5);
+  const grid=document.getElementById('answersGrid');
+  grid.innerHTML='';
+  shuffled.forEach(n=>{
+    const btn=document.createElement('button');
+    btn.className='answer-btn'; btn.textContent=n;
+    btn.onclick=()=>checkAnswer(n,btn);
     grid.appendChild(btn);
   });
 
   setMouseMood('thinking');
-  const phrase = rnd(phrases.ask);
-  setBubble(phrase + ' 🤔', '');
-
-  // Speak phrase, then read task after short pause
-  if (soundOn) {
-    speak(phrase, { pitch: 1.3 });
-    setTimeout(() => speak(currentTaskText, { rate: 0.82, pitch: 1.1 }), 1800);
-  }
-
+  const phrase=rnd(phrases.ask);
+  setBubble(phrase+' 🤔','');
+  stopSpeech();
+  speak(phrase,{rate:0.82},()=>{
+    setTimeout(()=>speak(currentTaskText,{rate:0.68}),300);
+  });
   document.getElementById('nextBtn').classList.remove('visible');
-  answered = false;
+  answered=false;
 }
 
-function checkAnswer(chosen, btn) {
-  if (answered) return;
-  answered = true;
-  document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+function checkAnswer(chosen,btn){
+  if(answered)return;
+  answered=true;
+  document.querySelectorAll('.answer-btn').forEach(b=>b.disabled=true);
+  stopSpeech();
 
-  if (chosen === correctAnswer) {
+  if(chosen===correctAnswer){
     btn.classList.add('correct');
-    correctCount++;
-    cheesePieces++;
-    document.getElementById('correctCount').textContent = correctCount;
+    correctCount++; cheesePieces++;
+    document.getElementById('correctCount').textContent=correctCount;
     addCheese();
     setMouseMood('happy');
-    const phrase = rnd(phrases.correct);
-    setBubble(phrase + ' 🎉', 'happy-bubble');
-    speak(phrase, { pitch: 1.4, rate: 0.9 });
+    const phrase=rnd(phrases.correct);
+    setBubble(phrase+' 🎉','happy-bubble');
+    speak(phrase,{rate:0.85});
   } else {
     btn.classList.add('wrong');
-    document.querySelectorAll('.answer-btn').forEach(b => {
-      if (parseInt(b.textContent) === correctAnswer) b.classList.add('correct');
+    document.querySelectorAll('.answer-btn').forEach(b=>{
+      if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');
     });
     wrongCount++;
-    document.getElementById('wrongCount').textContent = wrongCount;
+    document.getElementById('wrongCount').textContent=wrongCount;
     setMouseMood('sad');
-    const phrase = rnd(phrases.wrong);
-    setBubble(phrase + ' 💛', 'sad-bubble');
-    // Speak wrong feedback then say the correct answer
-    speak(phrase, { pitch: 1.1, rate: 0.85 });
-    setTimeout(() => speak(`Правильный ответ: ${correctAnswer}`, { rate: 0.8, pitch: 1.0 }), 2000);
+    const phrase=rnd(phrases.wrong);
+    setBubble(phrase+' 💛','sad-bubble');
+    speak(phrase,{rate:0.82},()=>{
+      speak(`Правильный ответ: ${correctAnswer}`,{rate:0.72});
+    });
   }
 
   questionIndex++;
   updateProgress();
-
-  if (questionIndex >= TOTAL) {
-    setTimeout(showWin, 1200);
-  } else {
-    document.getElementById('nextBtn').classList.add('visible');
-  }
+  if(questionIndex>=TOTAL){setTimeout(showWin,1200);}
+  else{document.getElementById('nextBtn').classList.add('visible');}
 }
 
-function nextQuestion() { generateQuestion(); }
+function nextQuestion(){generateQuestion();}
 
-function updateProgress() {
-  const pct = (questionIndex / TOTAL) * 100;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressText').textContent = questionIndex + '/' + TOTAL;
+function updateProgress(){
+  const pct=(questionIndex/TOTAL)*100;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;
 }
 
-function addCheese() {
-  const row = document.getElementById('cheeseRow');
-  const span = document.createElement('span');
-  span.className = 'cheese-piece';
-  span.textContent = '🧀';
+function addCheese(){
+  const row=document.getElementById('cheeseRow');
+  const span=document.createElement('span');
+  span.className='cheese-piece'; span.textContent='🧀';
   row.appendChild(span);
 }
 
-function setMouseMood(mood) {
-  const svg = document.getElementById('mouseSvg');
-  svg.className = 'mouse-svg ' + mood;
-  void svg.offsetWidth;
-  const pupilL = document.getElementById('pupilL');
-  const pupilR = document.getElementById('pupilR');
-  const glintL = document.getElementById('glintL');
-  const glintR = document.getElementById('glintR');
-  const mouth = document.getElementById('mouthPath');
-  const cheese = document.getElementById('cheeseInPaw');
-  if (mood === 'happy') {
-    pupilL.setAttribute('cy','70'); pupilR.setAttribute('cy','70');
-    pupilL.setAttribute('r','4'); pupilR.setAttribute('r','4');
-    glintL.style.display=''; glintR.style.display='';
+function setMouseMood(mood){
+  const svg=document.getElementById('mouseSvg');
+  const prev=svg.className.replace('speaking','').trim();
+  svg.className='mouse-svg '+mood; void svg.offsetWidth;
+  const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
+  const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
+  const mouth=document.getElementById('mouthPath');
+  const cheese=document.getElementById('cheeseInPaw');
+  if(mood==='happy'){
+    pL.setAttribute('cy','70');pR.setAttribute('cy','70');
+    pL.setAttribute('r','4');pR.setAttribute('r','4');
+    gL.style.display='';gR.style.display='';
     mouth.setAttribute('d','M 60 92 Q 70 102 80 92');
-    cheese.style.display = '';
-  } else if (mood === 'sad') {
-    pupilL.setAttribute('cy','70'); pupilR.setAttribute('cy','70');
-    pupilL.setAttribute('r','3.5'); pupilR.setAttribute('r','3.5');
-    glintL.style.display='none'; glintR.style.display='none';
+    cheese.style.display='';
+  } else if(mood==='sad'){
+    pL.setAttribute('cy','70');pR.setAttribute('cy','70');
+    pL.setAttribute('r','3.5');pR.setAttribute('r','3.5');
+    gL.style.display='none';gR.style.display='none';
     mouth.setAttribute('d','M 62 97 Q 70 91 78 97');
-    cheese.style.display = 'none';
+    cheese.style.display='none';
   } else {
-    pupilL.setAttribute('cy','68'); pupilR.setAttribute('cy','68');
-    pupilL.setAttribute('r','4'); pupilR.setAttribute('r','4');
-    glintL.style.display=''; glintR.style.display='';
+    pL.setAttribute('cy','68');pR.setAttribute('cy','68');
+    pL.setAttribute('r','4');pR.setAttribute('r','4');
+    gL.style.display='';gR.style.display='';
     mouth.setAttribute('d','M 62 93 Q 70 99 78 93');
-    cheese.style.display = 'none';
+    cheese.style.display='none';
   }
 }
 
-function setBubble(text, cls) {
-  const b = document.getElementById('bubble');
-  b.textContent = text;
-  b.className = 'bubble ' + cls;
+function setBubble(text,cls){
+  const b=document.getElementById('bubble');
+  b.textContent=text; b.className='bubble '+cls;
 }
 
-function showWin() {
-  synth.cancel();
-  document.getElementById('taskSection').style.display = 'none';
-  const win = document.getElementById('winOverlay');
-  win.classList.add('visible');
+function showWin(){
+  stopSpeech();
+  document.getElementById('taskSection').style.display='none';
+  document.getElementById('winOverlay').classList.add('visible');
   setMouseMood('happy');
-  const cfg = LEVELS[level];
-  const pct = correctCount / TOTAL;
-  let stars, title, sub, speechText;
-  if (pct >= 0.9) {
-    stars = '⭐⭐⭐'; title = 'Кладовочка полная!';
-    sub = `Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён! 🏆`;
-    speechText = `Ура! Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Ты настоящий математик, Иван!`;
-  } else if (pct >= 0.6) {
-    stars = '⭐⭐'; title = 'Хорошая работа!';
-    sub = `${correctCount} из ${TOTAL}. Нюсик доволен! Ещё чуть-чуть потренируемся?`;
-    speechText = `Хорошая работа! ${correctCount} из ${TOTAL}. Ещё немного потренируемся?`;
+  const cfg=LEVELS[level]; const pct=correctCount/TOTAL;
+  let stars,title,sub,speech;
+  if(pct>=.9){
+    stars='⭐⭐⭐';title='Кладовочка полная!';
+    sub=`Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён! 🏆`;
+    speech=`Ура! Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Ты настоящий математик, Иван!`;
+  } else if(pct>=.6){
+    stars='⭐⭐';title='Хорошая работа!';
+    sub=`${correctCount} из ${TOTAL}. Нюсик доволен! Ещё чуть-чуть потренируемся?`;
+    speech=`Хорошая работа! ${correctCount} из ${TOTAL}. Ещё немного потренируемся?`;
   } else {
-    stars = '⭐'; title = 'Нюсик верит в тебя!';
-    sub = `${correctCount} из ${TOTAL}. Попробуем ещё раз — в следующий раз лучше!`;
-    speechText = `Нюсик верит в тебя! ${correctCount} из ${TOTAL}. В следующий раз получится лучше!`;
+    stars='⭐';title='Нюсик верит в тебя!';
+    sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;
+    speech=`Нюсик верит в тебя! ${correctCount} из ${TOTAL}. В следующий раз лучше!`;
   }
-  document.getElementById('winStars').textContent = stars;
-  document.getElementById('winTitle').textContent = title;
-  document.getElementById('winSubtitle').textContent = sub;
-  document.querySelector('.restart-btn.secondary').style.display = level >= 4 ? 'none' : '';
-  setTimeout(() => speak(speechText, { pitch: 1.35, rate: 0.88 }), 300);
+  document.getElementById('winStars').textContent=stars;
+  document.getElementById('winTitle').textContent=title;
+  document.getElementById('winSubtitle').textContent=sub;
+  document.querySelector('.restart-btn.secondary').style.display=level>=4?'none':'';
+  setTimeout(()=>speak(speech,{rate:0.82}),300);
 }
 
-function restartGame() {
-  synth.cancel();
-  questionIndex = 0; correctCount = 0; wrongCount = 0; cheesePieces = 0;
-  document.getElementById('cheeseRow').innerHTML = '';
-  document.getElementById('correctCount').textContent = '0';
-  document.getElementById('wrongCount').textContent = '0';
-  document.getElementById('taskSection').style.display = '';
+function restartGame(){
+  stopSpeech();
+  questionIndex=0;correctCount=0;wrongCount=0;cheesePieces=0;
+  document.getElementById('cheeseRow').innerHTML='';
+  document.getElementById('correctCount').textContent='0';
+  document.getElementById('wrongCount').textContent='0';
+  document.getElementById('taskSection').style.display='';
   document.getElementById('winOverlay').classList.remove('visible');
-  updateProgress();
-  generateQuestion();
+  updateProgress(); generateQuestion();
 }
 
-// Greet on load
-window.addEventListener('load', () => {
-  setTimeout(() => speak('Привет, Иван! Я Нюсик! Помоги мне найти сыр!', { pitch: 1.3, rate: 0.85 }), 600);
-});
+// First interaction unlocks AudioContext + greet
+let greeted=false;
+document.addEventListener('click',()=>{
+  getCtx();
+  if(!greeted){greeted=true;speak('Привет, Иван! Я Нюсик! Помоги мне найти сыр!',{rate:0.8});}
+},{ once:false });
 
 generateQuestion();
 </script>

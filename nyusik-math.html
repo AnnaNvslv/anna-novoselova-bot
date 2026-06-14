@@ -61,7 +61,6 @@
     box-shadow:0 4px 24px rgba(0,0,0,.07);}
   .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
   .mouse-svg{width:130px;height:130px;}
-  /* SVG mood classes — set via setAttribute, not className */
   @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.05);}75%{transform:rotate(8deg) scale(1.05);}}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
   @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
@@ -145,7 +144,7 @@
 <div class="card">
   <div class="mouse-area">
     <div class="bubble-wrap">
-      <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
+      <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр!</div>
       <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
     </div>
     <svg class="mouse-svg" id="mouseSvg" data-mood="thinking" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
@@ -164,8 +163,7 @@
       <line x1="78" y1="87" x2="104" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
       <line x1="78" y1="89" x2="104" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
       <g id="eyes">
-        <circle cx="58" cy="68" r="7" fill="white"/>
-        <circle cx="82" cy="68" r="7" fill="white"/>
+        <circle cx="58" cy="68" r="7" fill="white"/><circle cx="82" cy="68" r="7" fill="white"/>
         <circle cx="59" cy="69" r="4" fill="#3A3330" id="pupilL"/>
         <circle cx="83" cy="69" r="4" fill="#3A3330" id="pupilR"/>
         <circle cx="60" cy="67.5" r="1.5" fill="white" id="glintL"/>
@@ -214,22 +212,48 @@
 </div>
 
 <script>
-// ═══ VOICE ════════════════════════════════════════════
+// ═══ VOICE — natural & squeaky ════════════════════════
+// Strategy: pick the best available Russian female voice,
+// use moderate rate (1.15) so speech sounds natural,
+// and pitch 1.8 for the mouse squeakiness without robotic distortion.
 const synth = window.speechSynthesis;
-let ruVoice = null, soundOn = true, currentTaskText = '', voiceTimer = null;
+let ruVoice = null;
+let soundOn = true;
+let currentTaskText = '';
+let voiceTimer = null;
 
-function loadVoices() {
+function pickVoice() {
   const vs = synth.getVoices();
-  ruVoice = vs.find(v=>v.lang==='ru-RU') || vs.find(v=>v.lang.startsWith('ru')) || vs[0] || null;
+  if (!vs.length) return;
+  // Priority: online neural Russian female > any Russian > fallback
+  const pref = [
+    // Google natural voices (Chrome)
+    v => v.name.includes('Google') && v.lang.startsWith('ru') && /женщин|female|woman|Milena|Irina|Anna/i.test(v.name),
+    v => v.name.includes('Google') && v.lang.startsWith('ru'),
+    // Microsoft natural voices (Edge/Windows)
+    v => /Svetlana|Dariya|Irina|Anna|Milena/i.test(v.name) && v.lang.startsWith('ru'),
+    v => v.lang === 'ru-RU',
+    v => v.lang.startsWith('ru'),
+    v => true,
+  ];
+  for (const fn of pref) {
+    const found = vs.find(fn);
+    if (found) { ruVoice = found; return; }
+  }
 }
-loadVoices();
-if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+pickVoice();
+if (synth.onvoiceschanged !== undefined) {
+  synth.onvoiceschanged = pickVoice;
+}
 
 function speakNow(text) {
   if (!soundOn || !text) return;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang='ru-RU'; u.rate=1.5; u.pitch=2.0; u.volume=1;
+  u.lang = 'ru-RU';
+  u.rate  = 1.15;  // natural speed — not robotic slow, not chipmunk fast
+  u.pitch = 1.75;  // high enough to feel "mousy", low enough to be clear
+  u.volume = 1;
   if (ruVoice) u.voice = ruVoice;
   u.onstart = () => setSpeakUI(true);
   u.onend = u.onerror = () => setSpeakUI(false);
@@ -246,7 +270,6 @@ function stopVoice() {
 }
 function setSpeakUI(on) {
   document.getElementById('speakingDots').classList.toggle('active', on);
-  // Use data-mood attribute — safe for SVG, no className issues
   const svg = document.getElementById('mouseSvg');
   if (on) {
     svg._prevMood = svg.getAttribute('data-mood');
@@ -276,28 +299,97 @@ const LEVELS = {
 let level=1, op='add', questionIndex=0, correctCount=0, wrongCount=0;
 let answered=false, correctAnswer=0, cheesePieces=0;
 
+// ═══ PHRASES — lots of fun ones! ══════════════════════
 const phrases = {
-  ask:['Помоги мне! Дам тебе сыр!','Думай, Иван! Ты умный!',
-       'Хочется сыра! Помоги!','Нюсик ждёт! Какой ответ?',
-       'Как пахнет сыром! Скорее!','Считай! Ты справишься!','Ну-ка, посчитаем!'],
-  correct:['Ура! Правильно! Вот тебе сыр!','Молодец! Ты самый умный!',
-           'Да! Именно! Кушаем сыр!','Ты суперзвезда, Иван!',
-           'Правильно! Нюсик счастлив!','Вот это да! Умный Иван!','Нюсик танцует!'],
-  wrong:['Ой, не то! Не расстраивайся!','Нет... но ты можешь!',
-         'Ошибочка! Нюсик верит в тебя!','Не расстраивайся! Смотри ответ.',
-         'Почти! В следующий раз!'],
+  ask: [
+    'Иван, помоги мне! Если правильно — дам сыр!',
+    'Думай-думай! Ты умный, я знаю!',
+    'Ой, как я хочу сыра... Посчитай, пожалуйста!',
+    'Нюсик очень голодный. Помоги найти ответ!',
+    'Ах, какой запах сыра! Скорее считай!',
+    'Ну-ка, Иван, покажи что умеешь!',
+    'Смотри внимательно! Ты точно справишься!',
+    'Нюсик верит в тебя! Какой ответ?',
+    'Раз, два, три — считаем вместе!',
+    'Это лёгкое задание для такого умного мальчика!',
+    'Сыр так близко... только реши пример!',
+    'Нюсик зажмурил глазки и ждёт ответа!',
+    'Пальчики на месте, голова думает — вперёд!',
+    'Только ты можешь мне помочь, Иван!',
+  ],
+  correct: [
+    'Ура-ура-ура! Правильно! Нюсик прыгает от счастья!',
+    'Вот это да! Ты настоящий математик!',
+    'Молодец! Нюсик танцует и жуёт сыр!',
+    'Правильно! Ты мой любимый помощник!',
+    'Суперзвезда! Иван, ты лучший!',
+    'Именно! Именно так! Умница какая!',
+    'Нюсик счастлив! Сыр достался нам двоим!',
+    'Блестяще! Просто блестяще!',
+    'Вот это мозги! Нюсик восхищается!',
+    'Да-да-да! Ты решил, и Нюсик сытый!',
+    'Правильно! Нюсик делает сальто от радости!',
+    'Ого-го! Какой умный Иван вырос!',
+    'Ты сделал это! Нюсик тебя обнимает!',
+    'Пять с плюсом! Нюсик ставит тебе пятёрку!',
+    'Это точно правильно! Гений за работой!',
+  ],
+  wrong: [
+    'Ой, не угадал... Но не расстраивайся!',
+    'Нет, не то... Посмотри на правильный ответ!',
+    'Ошибочка вышла! Нюсик всё равно любит тебя!',
+    'Почти-почти! Но правильный другой.',
+    'Не расстраивайся! Ошибки помогают учиться!',
+    'Нюсик тоже иногда ошибается с сыром!',
+    'Бывает! Главное — не сдаваться!',
+    'Смотри внимательно на ответ — и запомни!',
+    'Ничего страшного! В следующий раз точно получится!',
+    'Нюсик верит — ты исправишься!',
+    'Упс! Но ты старался, и это главное!',
+    'Неверно, но ты молодец что думал!',
+  ],
+  streak3: [
+    'Три подряд правильно! Нюсик в восторге!',
+    'Три раза верно! Ты просто ракета!',
+    'Три правильных ответа! Нюсик танцует чечётку!',
+  ],
+  streak5: [
+    'Пять подряд! Нюсик не верит своим ушам!',
+    'Пять верных ответов! Ты супергерой математики!',
+  ],
+  hint_cross: [
+    'Подсказка: сначала доберись до круглого числа!',
+    'Попробуй разбить на два шага — до десятки и дальше!',
+    'Совет от Нюсика: считай через десяток!',
+  ],
+  win3: [
+    'Нюсик в полном восторге! Ты настоящий математик!',
+    'Кладовочка полная! Спасибо тебе, Иван!',
+    'Блестящий результат! Нюсик тобой гордится!',
+  ],
+  win2: [
+    'Хорошая работа! Ещё немного потренируемся?',
+    'Нюсик доволен! Мы справились вместе!',
+    'Молодец! С каждым разом лучше и лучше!',
+  ],
+  win1: [
+    'Нюсик верит — в следующий раз будет лучше!',
+    'Не сдавайся! Попробуем ещё раз вместе!',
+    'Математика — это тренировка. Попробуем снова?',
+  ],
 };
+
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+// Track correct streak for bonus praise
+let streak = 0;
 
 function setMouseMood(mood) {
   const svg = document.getElementById('mouseSvg');
-  const cur = svg.getAttribute('data-mood');
-  // Don't override speaking state — store for after
-  if (cur === 'speaking') { svg._prevMood = mood; }
+  if (svg.getAttribute('data-mood') === 'speaking') { svg._prevMood = mood; }
   else { svg.setAttribute('data-mood', mood); }
-
-  const pL=document.getElementById('pupilL'), pR=document.getElementById('pupilR');
-  const gL=document.getElementById('glintL'), gR=document.getElementById('glintR');
+  const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
+  const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
   const mouth=document.getElementById('mouthPath');
   const cheese=document.getElementById('cheeseInPaw');
   if (mood==='happy') {
@@ -330,7 +422,7 @@ function nextLevel(){ if(level<4)setLevel(level+1); else restartGame(); }
 
 function generateQuestion() {
   const cfg=LEVELS[level];
-  let a,b,useAdd,hintText='';
+  let a,b,useAdd,hintText='',hintSpeech='';
   if(op==='add')useAdd=true;
   else if(op==='sub')useAdd=false;
   else useAdd=Math.random()>.5;
@@ -348,8 +440,10 @@ function generateQuestion() {
     }
     correctAnswer=a+b;
     if(correctAnswer>cfg.max){a=Math.max(1,cfg.max-9);b=Math.floor(Math.random()*9)+1;correctAnswer=a+b;}
-    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0)
-      hintText='💡 Сначала доберись до круглого числа!';
+    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0){
+      hintText='💡 Считай через десяток!';
+      hintSpeech=rnd(phrases.hint_cross);
+    }
   } else {
     if(cfg.crossTen&&Math.random()>.4){
       const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
@@ -366,7 +460,7 @@ function generateQuestion() {
 
   document.getElementById('hint').textContent=hintText;
   const opSign=useAdd?'+':'−', opWord=useAdd?'плюс':'минус';
-  currentTaskText=`${a} ${opWord} ${b} — сколько будет?`;
+  currentTaskText=`${a} ${opWord} ${b} — сколько получится?`;
   document.getElementById('taskExpr').innerHTML=
     `<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
 
@@ -391,7 +485,7 @@ function generateQuestion() {
 
   setMouseMood('thinking');
   const phrase=rnd(phrases.ask);
-  setBubble(phrase+' 🤔','');
+  setBubble(phrase,'');
 
   const nb=document.getElementById('nextBtn');
   nb.disabled=true; nb.textContent='Выбери ответ ↑';
@@ -399,7 +493,10 @@ function generateQuestion() {
 
   stopVoice();
   speakNow(phrase);
-  speakAfter(currentTaskText, 2000);
+  // After phrase: read the task, then hint if any
+  const taskDelay = phrase.length * 60 + 400;
+  speakAfter(currentTaskText, taskDelay);
+  if (hintSpeech) speakAfter(hintSpeech, taskDelay + currentTaskText.length*60 + 600);
 }
 
 function checkAnswer(chosen,btn){
@@ -412,25 +509,31 @@ function checkAnswer(chosen,btn){
 
   if(chosen===correctAnswer){
     btn.classList.add('correct');
-    correctCount++; cheesePieces++;
+    correctCount++; cheesePieces++; streak++;
     document.getElementById('correctCount').textContent=correctCount;
     addCheese();
     setMouseMood('happy');
-    const phrase=rnd(phrases.correct);
-    setBubble(phrase+' 🎉','happy-bubble');
+
+    // Pick praise — streak bonus overrides regular
+    let phrase;
+    if(streak===5) phrase=rnd(phrases.streak5);
+    else if(streak===3) phrase=rnd(phrases.streak3);
+    else phrase=rnd(phrases.correct);
+
+    setBubble(phrase,'happy-bubble');
     speakNow(phrase);
   } else {
     btn.classList.add('wrong');
     document.querySelectorAll('.answer-btn').forEach(b=>{
       if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');
     });
-    wrongCount++;
+    wrongCount++; streak=0;
     document.getElementById('wrongCount').textContent=wrongCount;
     setMouseMood('sad');
     const phrase=rnd(phrases.wrong);
-    setBubble(phrase+' 💛','sad-bubble');
+    setBubble(phrase,'sad-bubble');
     speakNow(phrase);
-    speakAfter(`Правильный ответ: ${correctAnswer}.`, 2200);
+    speakAfter(`Правильный ответ: ${correctAnswer}`, phrase.length*55+500);
   }
 
   questionIndex++;
@@ -439,8 +542,7 @@ function checkAnswer(chosen,btn){
   if(questionIndex>=TOTAL){
     setTimeout(showWin,1400);
   } else {
-    nb.disabled=false;
-    nb.textContent='Дальше! →';
+    nb.disabled=false; nb.textContent='Дальше! →';
   }
 }
 
@@ -469,16 +571,16 @@ function showWin(){
   let stars,title,sub,speech;
   if(pct>=.9){
     stars='⭐⭐⭐'; title='Кладовочка полная!';
-    sub=`Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён! 🏆`;
-    speech=`Ура! ${correctCount} из ${TOTAL} правильно! Ты настоящий математик, Иван!`;
+    sub=`${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён!`;
+    speech=`Ура! ${correctCount} из ${TOTAL}! ` + rnd(phrases.win3);
   } else if(pct>=.6){
     stars='⭐⭐'; title='Хорошая работа!';
-    sub=`${correctCount} из ${TOTAL}. Нюсик доволен! Ещё потренируемся?`;
-    speech=`Хорошая работа! ${correctCount} из ${TOTAL}. Ещё потренируемся?`;
+    sub=`${correctCount} из ${TOTAL}. Нюсик доволен!`;
+    speech=`${correctCount} из ${TOTAL}. ` + rnd(phrases.win2);
   } else {
     stars='⭐'; title='Нюсик верит в тебя!';
     sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;
-    speech=`Нюсик верит в тебя! ${correctCount} из ${TOTAL}. В следующий раз лучше!`;
+    speech=rnd(phrases.win1);
   }
   document.getElementById('winStars').textContent=stars;
   document.getElementById('winTitle').textContent=title;
@@ -489,7 +591,7 @@ function showWin(){
 
 function restartGame(){
   stopVoice();
-  questionIndex=0; correctCount=0; wrongCount=0; cheesePieces=0;
+  questionIndex=0; correctCount=0; wrongCount=0; cheesePieces=0; streak=0;
   document.getElementById('cheeseRow').innerHTML='';
   document.getElementById('correctCount').textContent='0';
   document.getElementById('wrongCount').textContent='0';

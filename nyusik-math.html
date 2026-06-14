@@ -37,6 +37,8 @@
     padding:13px 0;width:100%;cursor:pointer;transition:background .15s;}
   .setup-btn:hover{background:#7B5FC4;}
   .setup-note{font-size:.75rem;color:var(--grey);line-height:1.4;}
+  .err-banner{background:#FFE5E5;border:2px solid var(--red);border-radius:12px;
+    padding:10px 14px;font-size:.82rem;font-weight:700;color:#B03030;display:none;margin-top:4px;}
   .bubble-wrap{margin-bottom:12px;}
   .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
     padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
@@ -142,10 +144,11 @@
 <div class="setup-screen" id="setupScreen" style="display:none">
   <div style="font-size:3rem">🐭</div>
   <h2>Привет! Нюсику нужен живой голос</h2>
-  <p>Введи API ключ ElevenLabs — он сохранится в браузере и больше не понадобится вводить.</p>
+  <p>Введи API ключ ElevenLabs — он сохранится в браузере.</p>
   <input type="password" id="apiKeyInput" placeholder="sk_..." />
-  <button class="setup-btn" onclick="saveApiKey()">Сохранить и начать! 🐭</button>
-  <p class="setup-note">Ключ хранится только на этом устройстве.<br>Его никто не увидит.</p>
+  <button class="setup-btn" id="setupBtn" onclick="saveApiKey()">Проверить и начать! 🐭</button>
+  <div class="err-banner" id="errBanner"></div>
+  <p class="setup-note">Ключ хранится только на этом устройстве. Его никто не увидит.</p>
 </div>
 
 <div id="gameWrapper" style="display:none;width:100%">
@@ -234,19 +237,63 @@
 </div>
 
 <script>
-// ═══ API KEY ══════════════════════════════════════════
-const STORAGE_KEY = 'nyusik_xi_key';
-let XI_KEY = localStorage.getItem(STORAGE_KEY) || '';
+// ═══ VOICE ID — Lunya little fairy ═══════════════════
+const XI_VOICE_ID = 'rSfuQoQ3FY8SVKeraMAp';
+const XI_MODEL    = 'eleven_multilingual_v2';
+const STORAGE_KEY = 'nyusik_xi_key_v2'; // v2 = forces re-enter old key
 
-function saveApiKey() {
+let XI_KEY = localStorage.getItem(STORAGE_KEY) || '';
+let soundOn = true, currentTaskText = '', currentAudio = null, voiceTimer = null;
+const audioCache = new Map();
+
+// ── Setup ─────────────────────────────────────────────
+async function saveApiKey() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if (!val.startsWith('sk_') || val.length < 20) {
-    alert('Ключ должен начинаться с sk_');
+    showErr('Ключ должен начинаться с sk_ и быть длиннее 20 символов');
     return;
   }
-  XI_KEY = val;
-  localStorage.setItem(STORAGE_KEY, val);
-  startGame();
+  const btn = document.getElementById('setupBtn');
+  btn.textContent = 'Проверяем...';
+  btn.disabled = true;
+
+  // Test the key + voice with a short phrase
+  try {
+    const resp = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,
+      {
+        method: 'POST',
+        headers: { 'xi-api-key': val, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: 'Привет!',
+          model_id: XI_MODEL,
+          voice_settings: { stability:0.4, similarity_boost:0.8, style:0.5, use_speaker_boost:true },
+        }),
+      }
+    );
+    if (resp.status === 401) { showErr('Ключ неверный. Проверь в личном кабинете ElevenLabs.'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
+    if (resp.status === 404) { showErr('Голос не найден. Убедись что добавила Lunya в My Voices на elevenlabs.io'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
+    if (resp.status === 422) { showErr('Ошибка 422 — возможно голос не добавлен в аккаунт. Зайди на elevenlabs.io/app/voice-library, найди Lunya little fairy и нажми Add to my voices.'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
+    if (!resp.ok) { showErr(`Ошибка ElevenLabs: ${resp.status}`); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
+
+    // Play test audio
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play().catch(()=>{});
+
+    XI_KEY = val;
+    localStorage.setItem(STORAGE_KEY, val);
+    setTimeout(startGame, 1200);
+  } catch(e) {
+    showErr('Ошибка сети. Проверь интернет-соединение.');
+    btn.textContent='Проверить и начать! 🐭'; btn.disabled=false;
+  }
+}
+
+function showErr(msg) {
+  const b = document.getElementById('errBanner');
+  b.textContent = msg; b.style.display = 'block';
 }
 
 function startGame() {
@@ -259,15 +306,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if (XI_KEY) startGame();
   else document.getElementById('setupScreen').style.display = 'flex';
 });
-// ═════════════════════════════════════════════════════
 
-// ═══ ELEVENLABS — Lunya little fairy ═════════════════
-const XI_VOICE_ID = 'rSfuQoQ3FY8SVKeraMAp'; // Lunya little fairy
-const XI_MODEL    = 'eleven_multilingual_v2';
-
-let soundOn = true, currentTaskText = '', currentAudio = null, voiceTimer = null;
-const audioCache = new Map();
-
+// ── ElevenLabs TTS ────────────────────────────────────
 async function speakNow(text) {
   if (!soundOn || !text) return;
   stopVoice();
@@ -283,16 +323,11 @@ async function speakNow(text) {
           body: JSON.stringify({
             text,
             model_id: XI_MODEL,
-            voice_settings: {
-              stability: 0.40,         // playful, variable intonation
-              similarity_boost: 0.80,
-              style: 0.50,             // expressive fairy voice
-              use_speaker_boost: true,
-            },
+            voice_settings: { stability:0.40, similarity_boost:0.80, style:0.50, use_speaker_boost:true },
           }),
         }
       );
-      if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
+      if (!resp.ok) throw new Error(`${resp.status}`);
       const blob = await resp.blob();
       url = URL.createObjectURL(blob);
       if (audioCache.size > 50) audioCache.delete(audioCache.keys().next().value);
@@ -303,42 +338,29 @@ async function speakNow(text) {
     currentAudio.onerror = () => setSpeakUI(false);
     await currentAudio.play();
   } catch(e) {
-    console.warn('ElevenLabs error:', e);
+    console.warn('ElevenLabs error:', e.message);
     setSpeakUI(false);
-    fallbackSpeak(text);
+    // DO NOT fallback — user should know it's broken
   }
-}
-
-function fallbackSpeak(text) {
-  if (!soundOn) return;
-  const synth = window.speechSynthesis; synth.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang='ru-RU'; u.rate=1.0; u.pitch=1.2; u.volume=1;
-  u.onstart=()=>setSpeakUI(true); u.onend=u.onerror=()=>setSpeakUI(false);
-  synth.speak(u);
 }
 
 function speakAfter(text, ms) {
   clearTimeout(voiceTimer);
   voiceTimer = setTimeout(() => speakNow(text), ms);
 }
-
 function stopVoice() {
   clearTimeout(voiceTimer);
   if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  window.speechSynthesis && window.speechSynthesis.cancel();
   setSpeakUI(false);
 }
-
 function setSpeakUI(on) {
   const dots = document.getElementById('speakingDots');
   if (dots) dots.classList.toggle('active', on);
   const svg = document.getElementById('mouseSvg');
   if (!svg) return;
   if (on) { svg._prevMood = svg.getAttribute('data-mood'); svg.setAttribute('data-mood','speaking'); }
-  else { svg.setAttribute('data-mood', svg._prevMood || 'thinking'); svg._prevMood = null; }
+  else { svg.setAttribute('data-mood', svg._prevMood||'thinking'); svg._prevMood=null; }
 }
-
 function toggleSound() {
   soundOn = !soundOn;
   if (!soundOn) stopVoice();
@@ -347,8 +369,8 @@ function toggleSound() {
   if (soundOn) speakNow('Звук включён!');
 }
 function readTaskAloud() { stopVoice(); speakNow(currentTaskText); }
-// ═════════════════════════════════════════════════════
 
+// ── Game logic ────────────────────────────────────────
 const TOTAL = 10;
 const LEVELS = {
   1:{max:10,label:'Ур. 1',name:'до 10', crossTen:false},
@@ -360,83 +382,39 @@ let level=1,op='add',questionIndex=0,correctCount=0,wrongCount=0;
 let answered=false,correctAnswer=0,cheesePieces=0,streak=0;
 
 const phrases = {
-  ask:[
-    'Иван, помоги мне! Если правильно — дам сыр!',
-    'Думай-думай! Ты умный, я знаю!',
-    'Ой, как я хочу сыра... Посчитай, пожалуйста!',
-    'Нюсик очень голодный. Помоги найти ответ!',
-    'Ах, какой запах сыра! Скорее считай!',
-    'Ну-ка, Иван, покажи что умеешь!',
-    'Смотри внимательно! Ты точно справишься!',
-    'Нюсик верит в тебя! Какой ответ?',
-    'Раз, два, три — считаем вместе!',
-    'Это задание для такого умного мальчика — раз плюнуть!',
-    'Сыр так близко... только реши пример!',
-    'Нюсик зажмурил глазки и ждёт ответа!',
-    'Только ты можешь мне помочь, Иван!',
-    'Какое же тут правильное число? Думай!',
-  ],
-  correct:[
-    'Ура-ура-ура! Правильно! Нюсик прыгает от счастья!',
-    'Вот это да! Ты настоящий математик!',
-    'Молодец! Нюсик танцует и жуёт сыр!',
-    'Правильно! Ты мой любимый помощник!',
-    'Суперзвезда! Иван, ты лучший!',
-    'Именно так! Умница, какой умница!',
-    'Нюсик счастлив! Сыр достался нам двоим!',
-    'Блестяще! Просто блестяще!',
-    'Вот это мозги! Нюсик восхищается!',
-    'Правильно! Нюсик делает сальто от радости!',
-    'Ого-го! Какой умный Иван вырос!',
-    'Ты сделал это! Нюсик тебя обнимает!',
-    'Пять с плюсом! Нюсик ставит тебе пятёрку!',
-    'Гений за работой! Нюсик аплодирует!',
-    'Вот это результат! Нюсик в шоке от твоего ума!',
-  ],
-  wrong:[
-    'Ой, не угадал... Но не расстраивайся!',
-    'Нет, не то... Посмотри на правильный ответ!',
-    'Ошибочка вышла! Нюсик всё равно любит тебя!',
-    'Почти-почти! Но правильный другой.',
-    'Не расстраивайся! Ошибки помогают учиться!',
-    'Нюсик тоже иногда ошибается с сыром!',
-    'Бывает! Главное — не сдаваться!',
-    'Смотри внимательно на ответ — и запомни!',
-    'Ничего страшного! В следующий раз точно получится!',
-    'Нюсик верит — ты исправишься!',
-    'Упс! Но ты старался, и это главное!',
-    'Неверно, но ты молодец что думал!',
-  ],
-  streak3:[
-    'Три подряд правильно! Нюсик в восторге!',
-    'Три раза верно! Ты просто ракета!',
-    'Три правильных ответа! Нюсик танцует чечётку!',
-  ],
-  streak5:[
-    'Пять подряд! Нюсик не верит своим ушам!',
-    'Пять верных ответов! Ты супергерой математики!',
-    'Пять из пяти! Нюсик кричит от радости!',
-  ],
-  hint_cross:[
-    'Подсказка: сначала доберись до круглого числа!',
-    'Попробуй разбить на два шага — до десятки и дальше!',
-    'Совет от Нюсика: считай через десяток!',
-  ],
-  win3:[
-    'Нюсик в полном восторге! Ты настоящий математик!',
-    'Кладовочка полная! Спасибо тебе, Иван!',
-    'Блестящий результат! Нюсик тобой гордится!',
-  ],
-  win2:[
-    'Хорошая работа! Ещё немного потренируемся?',
-    'Нюсик доволен! Мы справились вместе!',
-    'Молодец! С каждым разом лучше и лучше!',
-  ],
-  win1:[
-    'Нюсик верит — в следующий раз будет лучше!',
-    'Не сдавайся! Попробуем ещё раз вместе!',
-    'Математика — это тренировка. Попробуем снова?',
-  ],
+  ask:['Иван, помоги мне! Если правильно — дам сыр!','Думай-думай! Ты умный, я знаю!',
+    'Ой, как я хочу сыра... Посчитай, пожалуйста!','Нюсик очень голодный. Помоги найти ответ!',
+    'Ах, какой запах сыра! Скорее считай!','Ну-ка, Иван, покажи что умеешь!',
+    'Смотри внимательно! Ты точно справишься!','Нюсик верит в тебя! Какой ответ?',
+    'Раз, два, три — считаем вместе!','Это задание для такого умного мальчика — раз плюнуть!',
+    'Сыр так близко... только реши пример!','Нюсик зажмурил глазки и ждёт ответа!',
+    'Только ты можешь мне помочь, Иван!','Какое же тут правильное число? Думай!'],
+  correct:['Ура-ура-ура! Правильно! Нюсик прыгает от счастья!','Вот это да! Ты настоящий математик!',
+    'Молодец! Нюсик танцует и жуёт сыр!','Правильно! Ты мой любимый помощник!',
+    'Суперзвезда! Иван, ты лучший!','Именно так! Умница, какой умница!',
+    'Нюсик счастлив! Сыр достался нам двоим!','Блестяще! Просто блестяще!',
+    'Вот это мозги! Нюсик восхищается!','Правильно! Нюсик делает сальто от радости!',
+    'Ого-го! Какой умный Иван вырос!','Ты сделал это! Нюсик тебя обнимает!',
+    'Пять с плюсом! Нюсик ставит тебе пятёрку!','Гений за работой! Нюсик аплодирует!',
+    'Вот это результат! Нюсик в шоке от твоего ума!'],
+  wrong:['Ой, не угадал... Но не расстраивайся!','Нет, не то... Посмотри на правильный ответ!',
+    'Ошибочка вышла! Нюсик всё равно любит тебя!','Почти-почти! Но правильный другой.',
+    'Не расстраивайся! Ошибки помогают учиться!','Нюсик тоже иногда ошибается с сыром!',
+    'Бывает! Главное — не сдаваться!','Смотри внимательно на ответ — и запомни!',
+    'Ничего страшного! В следующий раз точно получится!','Нюсик верит — ты исправишься!',
+    'Упс! Но ты старался, и это главное!','Неверно, но ты молодец что думал!'],
+  streak3:['Три подряд правильно! Нюсик в восторге!','Три раза верно! Ты просто ракета!',
+    'Три правильных ответа! Нюсик танцует чечётку!'],
+  streak5:['Пять подряд! Нюсик не верит своим ушам!','Пять верных ответов! Ты супергерой математики!',
+    'Пять из пяти! Нюсик кричит от радости!'],
+  hint_cross:['Подсказка: сначала доберись до круглого числа!',
+    'Попробуй разбить на два шага — до десятки и дальше!','Совет от Нюсика: считай через десяток!'],
+  win3:['Нюсик в полном восторге! Ты настоящий математик!',
+    'Кладовочка полная! Спасибо тебе, Иван!','Блестящий результат! Нюсик тобой гордится!'],
+  win2:['Хорошая работа! Ещё немного потренируемся?',
+    'Нюсик доволен! Мы справились вместе!','Молодец! С каждым разом лучше и лучше!'],
+  win1:['Нюсик верит — в следующий раз будет лучше!',
+    'Не сдавайся! Попробуем ещё раз вместе!','Математика — это тренировка. Попробуем снова?'],
 };
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 
@@ -447,194 +425,89 @@ function setMouseMood(mood){
   const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
   const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
   const mouth=document.getElementById('mouthPath'),cheese=document.getElementById('cheeseInPaw');
-  if(mood==='happy'){
-    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','4');});
-    gL.style.display=gR.style.display='';
-    mouth.setAttribute('d','M 60 92 Q 70 102 80 92');cheese.style.display='';
-  }else if(mood==='sad'){
-    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','3.5');});
-    gL.style.display=gR.style.display='none';
-    mouth.setAttribute('d','M 62 97 Q 70 91 78 97');cheese.style.display='none';
-  }else{
-    [pL,pR].forEach(p=>{p.setAttribute('cy','68');p.setAttribute('r','4');});
-    gL.style.display=gR.style.display='';
-    mouth.setAttribute('d','M 62 93 Q 70 99 78 93');cheese.style.display='none';
-  }
+  if(mood==='happy'){[pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','4');});
+    gL.style.display=gR.style.display='';mouth.setAttribute('d','M 60 92 Q 70 102 80 92');cheese.style.display='';}
+  else if(mood==='sad'){[pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','3.5');});
+    gL.style.display=gR.style.display='none';mouth.setAttribute('d','M 62 97 Q 70 91 78 97');cheese.style.display='none';}
+  else{[pL,pR].forEach(p=>{p.setAttribute('cy','68');p.setAttribute('r','4');});
+    gL.style.display=gR.style.display='';mouth.setAttribute('d','M 62 93 Q 70 99 78 93');cheese.style.display='none';}
 }
-
-function setLevel(l){
-  level=l;
-  document.querySelectorAll('.level-btn').forEach((b,i)=>b.classList.toggle('active',i+1===l));
-  document.getElementById('levelBadge').textContent=LEVELS[l].label;
-  restartGame();
-}
-function setOp(o){
-  op=o;
-  document.querySelectorAll('.op-btn').forEach((b,i)=>b.classList.toggle('active',['add','sub','both'][i]===o));
-  restartGame();
-}
+function setLevel(l){level=l;document.querySelectorAll('.level-btn').forEach((b,i)=>b.classList.toggle('active',i+1===l));document.getElementById('levelBadge').textContent=LEVELS[l].label;restartGame();}
+function setOp(o){op=o;document.querySelectorAll('.op-btn').forEach((b,i)=>b.classList.toggle('active',['add','sub','both'][i]===o));restartGame();}
 function nextLevel(){if(level<4)setLevel(level+1);else restartGame();}
 
 function generateQuestion(){
   const cfg=LEVELS[level];
   let a,b,useAdd,hintText='',hintSpeech='';
-  if(op==='add')useAdd=true;
-  else if(op==='sub')useAdd=false;
-  else useAdd=Math.random()>.5;
-
+  if(op==='add')useAdd=true;else if(op==='sub')useAdd=false;else useAdd=Math.random()>.5;
   if(useAdd){
-    if(cfg.crossTen&&Math.random()>.4){
-      const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;
-      const rem=Math.floor(Math.random()*8)+1;
-      a=dec+rem;const cross=10-rem;
-      b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));
-      if(b<=0)b=cross;
-    }else{
-      a=Math.floor(Math.random()*(cfg.max-1))+1;
-      b=Math.floor(Math.random()*(cfg.max-a))+1;
-    }
+    if(cfg.crossTen&&Math.random()>.4){const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;const rem=Math.floor(Math.random()*8)+1;a=dec+rem;const cross=10-rem;b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));if(b<=0)b=cross;}
+    else{a=Math.floor(Math.random()*(cfg.max-1))+1;b=Math.floor(Math.random()*(cfg.max-a))+1;}
     correctAnswer=a+b;
     if(correctAnswer>cfg.max){a=Math.max(1,cfg.max-9);b=Math.floor(Math.random()*9)+1;correctAnswer=a+b;}
-    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0){
-      hintText='💡 Считай через десяток!';hintSpeech=rnd(phrases.hint_cross);
-    }
+    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0){hintText='💡 Считай через десяток!';hintSpeech=rnd(phrases.hint_cross);}
   }else{
-    if(cfg.crossTen&&Math.random()>.4){
-      const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
-      a=dec+Math.floor(Math.random()*Math.min(9,cfg.max-dec));
-      b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;
-      if(a<=0||b<=0||b>=a){a=15;b=7;}
-    }else{
-      a=Math.floor(Math.random()*(cfg.max-1))+2;
-      b=Math.floor(Math.random()*(a-1))+1;
-    }
-    correctAnswer=a-b;
-    if(correctAnswer<0){a=10;b=3;correctAnswer=7;}
+    if(cfg.crossTen&&Math.random()>.4){const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;a=dec+Math.floor(Math.random()*Math.min(9,cfg.max-dec));b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;if(a<=0||b<=0||b>=a){a=15;b=7;}}
+    else{a=Math.floor(Math.random()*(cfg.max-1))+2;b=Math.floor(Math.random()*(a-1))+1;}
+    correctAnswer=a-b;if(correctAnswer<0){a=10;b=3;correctAnswer=7;}
   }
-
   document.getElementById('hint').textContent=hintText;
   const opSign=useAdd?'+':'−',opWord=useAdd?'плюс':'минус';
   currentTaskText=`${a} ${opWord} ${b} — сколько получится?`;
-  document.getElementById('taskExpr').innerHTML=
-    `<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
-
+  document.getElementById('taskExpr').innerHTML=`<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
   const spread=cfg.max<=10?3:cfg.max<=20?5:10;
-  const choices=new Set([correctAnswer]);
-  let tries=0;
-  while(choices.size<4&&tries<100){
-    tries++;const d=Math.floor(Math.random()*spread)+1;
-    const w=correctAnswer+(Math.random()>.5?d:-d);
-    if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);
-  }
+  const choices=new Set([correctAnswer]);let tries=0;
+  while(choices.size<4&&tries<100){tries++;const d=Math.floor(Math.random()*spread)+1;const w=correctAnswer+(Math.random()>.5?d:-d);if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);}
   while(choices.size<4)choices.add(correctAnswer+choices.size);
-
-  const grid=document.getElementById('answersGrid');
-  grid.innerHTML='';
-  [...choices].sort(()=>Math.random()-.5).forEach(n=>{
-    const btn=document.createElement('button');
-    btn.className='answer-btn';btn.textContent=n;
-    btn.onclick=()=>checkAnswer(n,btn);
-    grid.appendChild(btn);
-  });
-
-  setMouseMood('thinking');
-  const phrase=rnd(phrases.ask);
-  setBubble(phrase,'');
-  const nb=document.getElementById('nextBtn');
-  nb.disabled=true;nb.textContent='Выбери ответ ↑';
-  answered=false;
-  stopVoice();
-  speakNow(phrase).then(()=>{ speakAfter(currentTaskText,500); }).catch(()=>{});
+  const grid=document.getElementById('answersGrid');grid.innerHTML='';
+  [...choices].sort(()=>Math.random()-.5).forEach(n=>{const btn=document.createElement('button');btn.className='answer-btn';btn.textContent=n;btn.onclick=()=>checkAnswer(n,btn);grid.appendChild(btn);});
+  setMouseMood('thinking');const phrase=rnd(phrases.ask);setBubble(phrase,'');
+  const nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Выбери ответ ↑';
+  answered=false;stopVoice();
+  speakNow(phrase).then(()=>speakAfter(currentTaskText,500)).catch(()=>{});
 }
 
 function checkAnswer(chosen,btn){
-  if(answered)return;
-  answered=true;
-  stopVoice();
+  if(answered)return;answered=true;stopVoice();
   document.querySelectorAll('.answer-btn').forEach(b=>b.disabled=true);
   const nb=document.getElementById('nextBtn');
-
   if(chosen===correctAnswer){
-    btn.classList.add('correct');
-    correctCount++;cheesePieces++;streak++;
+    btn.classList.add('correct');correctCount++;cheesePieces++;streak++;
     document.getElementById('correctCount').textContent=correctCount;
     addCheese();setMouseMood('happy');
-    let phrase;
-    if(streak===5)phrase=rnd(phrases.streak5);
-    else if(streak===3)phrase=rnd(phrases.streak3);
-    else phrase=rnd(phrases.correct);
-    setBubble(phrase,'happy-bubble');
-    speakNow(phrase);
+    let phrase;if(streak===5)phrase=rnd(phrases.streak5);else if(streak===3)phrase=rnd(phrases.streak3);else phrase=rnd(phrases.correct);
+    setBubble(phrase,'happy-bubble');speakNow(phrase);
   }else{
     btn.classList.add('wrong');
-    document.querySelectorAll('.answer-btn').forEach(b=>{
-      if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');
-    });
-    wrongCount++;streak=0;
-    document.getElementById('wrongCount').textContent=wrongCount;
-    setMouseMood('sad');
-    const phrase=rnd(phrases.wrong);
-    setBubble(phrase,'sad-bubble');
-    speakNow(phrase).then(()=>{speakAfter(`Правильный ответ — ${correctAnswer}`,400);}).catch(()=>{});
+    document.querySelectorAll('.answer-btn').forEach(b=>{if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');});
+    wrongCount++;streak=0;document.getElementById('wrongCount').textContent=wrongCount;
+    setMouseMood('sad');const phrase=rnd(phrases.wrong);setBubble(phrase,'sad-bubble');
+    speakNow(phrase).then(()=>speakAfter(`Правильный ответ — ${correctAnswer}`,400)).catch(()=>{});
   }
-
   questionIndex++;updateProgress();
-  if(questionIndex>=TOTAL){setTimeout(showWin,1400);}
-  else{nb.disabled=false;nb.textContent='Дальше! →';}
+  if(questionIndex>=TOTAL){setTimeout(showWin,1400);}else{nb.disabled=false;nb.textContent='Дальше! →';}
 }
-
 function nextQuestion(){generateQuestion();}
-
-function updateProgress(){
-  document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';
-  document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;
-}
-function addCheese(){
-  const s=document.createElement('span');
-  s.className='cheese-piece';s.textContent='🧀';
-  document.getElementById('cheeseRow').appendChild(s);
-}
-function setBubble(text,cls){
-  const b=document.getElementById('bubble');
-  if(b){b.textContent=text;b.className='bubble '+cls;}
-}
-
+function updateProgress(){document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;}
+function addCheese(){const s=document.createElement('span');s.className='cheese-piece';s.textContent='🧀';document.getElementById('cheeseRow').appendChild(s);}
+function setBubble(text,cls){const b=document.getElementById('bubble');if(b){b.textContent=text;b.className='bubble '+cls;}}
 function showWin(){
-  stopVoice();
-  document.getElementById('taskSection').style.display='none';
-  document.getElementById('winOverlay').classList.add('visible');
-  setMouseMood('happy');
-  const cfg=LEVELS[level];const pct=correctCount/TOTAL;
-  let stars,title,sub,speech;
-  if(pct>=.9){
-    stars='⭐⭐⭐';title='Кладовочка полная!';
-    sub=`${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён!`;
-    speech=`Ура! ${correctCount} из ${TOTAL}! `+rnd(phrases.win3);
-  }else if(pct>=.6){
-    stars='⭐⭐';title='Хорошая работа!';
-    sub=`${correctCount} из ${TOTAL}. Нюсик доволен!`;
-    speech=`${correctCount} из ${TOTAL}. `+rnd(phrases.win2);
-  }else{
-    stars='⭐';title='Нюсик верит в тебя!';
-    sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;
-    speech=rnd(phrases.win1);
-  }
-  document.getElementById('winStars').textContent=stars;
-  document.getElementById('winTitle').textContent=title;
+  stopVoice();document.getElementById('taskSection').style.display='none';
+  document.getElementById('winOverlay').classList.add('visible');setMouseMood('happy');
+  const cfg=LEVELS[level];const pct=correctCount/TOTAL;let stars,title,sub,speech;
+  if(pct>=.9){stars='⭐⭐⭐';title='Кладовочка полная!';sub=`${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён!`;speech=`Ура! ${correctCount} из ${TOTAL}! `+rnd(phrases.win3);}
+  else if(pct>=.6){stars='⭐⭐';title='Хорошая работа!';sub=`${correctCount} из ${TOTAL}. Нюсик доволен!`;speech=`${correctCount} из ${TOTAL}. `+rnd(phrases.win2);}
+  else{stars='⭐';title='Нюсик верит в тебя!';sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;speech=rnd(phrases.win1);}
+  document.getElementById('winStars').textContent=stars;document.getElementById('winTitle').textContent=title;
   document.getElementById('winSubtitle').textContent=sub;
   document.querySelector('.restart-btn.secondary').style.display=level>=4?'none':'';
   speakAfter(speech,400);
 }
-
 function restartGame(){
-  stopVoice();
-  questionIndex=0;correctCount=0;wrongCount=0;cheesePieces=0;streak=0;
-  document.getElementById('cheeseRow').innerHTML='';
-  document.getElementById('correctCount').textContent='0';
-  document.getElementById('wrongCount').textContent='0';
-  document.getElementById('taskSection').style.display='';
-  document.getElementById('winOverlay').classList.remove('visible');
-  updateProgress();generateQuestion();
+  stopVoice();questionIndex=0;correctCount=0;wrongCount=0;cheesePieces=0;streak=0;
+  document.getElementById('cheeseRow').innerHTML='';document.getElementById('correctCount').textContent='0';
+  document.getElementById('wrongCount').textContent='0';document.getElementById('taskSection').style.display='';
+  document.getElementById('winOverlay').classList.remove('visible');updateProgress();generateQuestion();
 }
 </script>
 </body>

@@ -39,6 +39,9 @@
   .header {
     text-align: center;
     margin-bottom: 10px;
+    position: relative;
+    width: 100%;
+    max-width: 480px;
   }
   .header h1 {
     font-size: 1.7rem;
@@ -46,6 +49,52 @@
     color: var(--grey-dark);
   }
   .header h1 span { color: var(--cheese-dark); }
+
+  /* SOUND TOGGLE */
+  .sound-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    border: 2px solid var(--grey-light);
+    border-radius: 12px;
+    font-size: 1.3rem;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .sound-btn:hover { background: var(--grey-light); }
+  .sound-btn.muted { opacity: 0.45; }
+
+  /* Speaking indicator — bouncing dots on bubble */
+  .bubble-wrap { position: relative; }
+  .speaking-dots {
+    display: none;
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 4px;
+    flex-direction: row;
+  }
+  .speaking-dots.active { display: flex; }
+  .speaking-dots span {
+    width: 7px; height: 7px;
+    background: var(--purple);
+    border-radius: 50%;
+    animation: dotBounce 0.7s ease infinite;
+  }
+  .speaking-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .speaking-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dotBounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
 
   /* LEVEL BAR */
   .level-bar {
@@ -160,7 +209,7 @@
     max-width: 300px;
     text-align: center;
     line-height: 1.45;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
     min-height: 58px;
     display: flex;
     align-items: center;
@@ -178,6 +227,7 @@
   .mouse-svg.happy { animation: wiggle 0.5s ease; }
   .mouse-svg.sad { animation: shake 0.4s ease; }
   .mouse-svg.thinking { animation: bop 1.2s ease infinite; }
+  .mouse-svg.speaking { animation: pulse 0.6s ease infinite alternate; }
   @keyframes wiggle {
     0%,100% { transform: rotate(0); }
     25% { transform: rotate(-8deg) scale(1.05); }
@@ -193,6 +243,10 @@
   @keyframes bop {
     0%,100% { transform: translateY(0); }
     50% { transform: translateY(-5px); }
+  }
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.06); }
   }
 
   /* TASK */
@@ -226,6 +280,14 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: background 0.15s;
+  }
+  .task-expression:hover { background: var(--grey-light); }
+  .task-expression:hover::after {
+    content: ' 🔊';
+    font-size: 1.2rem;
   }
   .task-expression .op { color: var(--purple); }
   .task-expression .eq { color: var(--grey); }
@@ -236,6 +298,20 @@
     margin-top: 4px;
     min-height: 20px;
   }
+  .read-task-btn {
+    background: none;
+    border: 2px dashed var(--grey-light);
+    border-radius: 10px;
+    color: var(--grey);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: all 0.15s;
+  }
+  .read-task-btn:hover { border-color: var(--purple); color: var(--purple); background: #F3EEFF; }
 
   /* ANSWERS */
   .answers-grid {
@@ -272,7 +348,6 @@
     animation: shake 0.4s;
   }
 
-  /* NEXT BTN — always in flow, never overlapping */
   .next-btn {
     display: block;
     width: 100%;
@@ -359,10 +434,7 @@
     transition: all 0.15s;
   }
   .restart-btn:hover { background: var(--cheese-dark); color: white; }
-  .restart-btn.secondary {
-    background: var(--purple);
-    color: white;
-  }
+  .restart-btn.secondary { background: var(--purple); color: white; }
   .restart-btn.secondary:hover { background: #7B5FC4; }
 </style>
 </head>
@@ -370,9 +442,9 @@
 
 <div class="header">
   <h1>🧀 Нюсик и <span>математика</span></h1>
+  <button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Включить/выключить звук">🔊</button>
 </div>
 
-<!-- Level selector -->
 <div class="level-bar">
   <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
   <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
@@ -380,24 +452,25 @@
   <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
 </div>
 
-<!-- Op selector -->
 <div class="op-bar">
   <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
   <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
   <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
 </div>
 
-<!-- Cheese store -->
 <div class="cheese-store">
   <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
   <div class="cheese-row" id="cheeseRow"></div>
 </div>
 
 <div class="card">
-
-  <!-- Mouse -->
   <div class="mouse-area">
-    <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
+    <div class="bubble-wrap">
+      <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
+      <div class="speaking-dots" id="speakingDots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
     <svg class="mouse-svg" id="mouseSvg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
       <ellipse cx="98" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
@@ -433,12 +506,12 @@
     </svg>
   </div>
 
-  <!-- Task section -->
   <div id="taskSection">
     <div class="task-area">
       <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
-      <div class="task-expression" id="taskExpr"></div>
+      <div class="task-expression" id="taskExpr" onclick="readTaskAloud()" title="Нажми — Нюсик прочитает вслух"></div>
       <div class="hint" id="hint"></div>
+      <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
     </div>
 
     <div class="answers-grid" id="answersGrid"></div>
@@ -457,7 +530,6 @@
     </div>
   </div>
 
-  <!-- Win -->
   <div class="win-overlay" id="winOverlay">
     <div class="win-stars" id="winStars">⭐⭐⭐</div>
     <div class="win-title" id="winTitle">Кладовочка полная!</div>
@@ -467,18 +539,16 @@
       <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
     </div>
   </div>
-
 </div>
 
 <script>
 const TOTAL = 10;
 
-// Level configs
 const LEVELS = {
-  1: { max: 10,  label: 'Ур. 1',   name: 'до 10',  crossTen: false },
-  2: { max: 20,  label: 'Ур. 2',   name: 'до 20',  crossTen: true  },
-  3: { max: 50,  label: 'Ур. 3',   name: 'до 50',  crossTen: true  },
-  4: { max: 100, label: 'Ур. 4',   name: 'до 100', crossTen: true  },
+  1: { max: 10,  label: 'Ур. 1', name: 'до 10',  crossTen: false },
+  2: { max: 20,  label: 'Ур. 2', name: 'до 20',  crossTen: true  },
+  3: { max: 50,  label: 'Ур. 3', name: 'до 50',  crossTen: true  },
+  4: { max: 100, label: 'Ур. 4', name: 'до 100', crossTen: true  },
 };
 
 let level = 1;
@@ -489,31 +559,100 @@ let wrongCount = 0;
 let answered = false;
 let correctAnswer = 0;
 let cheesePieces = 0;
+let soundOn = true;
+let currentTaskText = '';
+
+// ── SPEECH ──────────────────────────────────────────────
+const synth = window.speechSynthesis;
+let ruVoice = null;
+
+function loadVoices() {
+  const voices = synth.getVoices();
+  // Prefer Russian voice, fall back to any
+  ruVoice = voices.find(v => v.lang.startsWith('ru')) ||
+            voices.find(v => v.lang.startsWith('uk')) || // Ukrainian as fallback
+            voices[0] || null;
+}
+loadVoices();
+if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+
+function speak(text, opts = {}) {
+  if (!soundOn || !synth) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'ru-RU';
+  utt.rate = opts.rate || 0.88;   // slightly slower for a child
+  utt.pitch = opts.pitch || 1.25; // a bit higher — mouse-like
+  utt.volume = 1;
+  if (ruVoice) utt.voice = ruVoice;
+
+  const dots = document.getElementById('speakingDots');
+  const svg = document.getElementById('mouseSvg');
+  const prevClass = svg.className;
+
+  utt.onstart = () => {
+    dots.classList.add('active');
+    svg.className = 'mouse-svg speaking';
+  };
+  utt.onend = utt.onerror = () => {
+    dots.classList.remove('active');
+    svg.className = prevClass;
+  };
+  synth.speak(utt);
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  synth.cancel();
+  const btn = document.getElementById('soundBtn');
+  btn.textContent = soundOn ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !soundOn);
+  document.getElementById('speakingDots').classList.remove('active');
+  if (soundOn) speak('Звук включён!');
+}
+
+// Strip emoji from text before speaking
+function clean(str) {
+  return str.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✅❌⭐🏆🔊🎉💪🤔💛😊😄🥳🎲➕➖]/gu, '').trim();
+}
+
+function readTaskAloud() {
+  if (currentTaskText) speak(currentTaskText, { rate: 0.82, pitch: 1.1 });
+}
+// ────────────────────────────────────────────────────────
 
 const phrases = {
   ask: [
-    'Помоги мне! Если правильно — дам тебе сыр! 🧀',
-    'Думай-думай, Иван! Ты умный! 🤔',
-    'Мне так хочется сыра... помоги! 🧀',
-    'Нюсик ждёт! Какой ответ? 😊',
-    'Ах, как пахнет сыром... скорее! 🧀',
-    'Считай внимательно! Ты справишься! 💪',
+    'Помоги мне! Если правильно — дам тебе сыр!',
+    'Думай-думай, Иван! Ты умный!',
+    'Мне так хочется сыра... помоги!',
+    'Нюсик ждёт! Какой ответ?',
+    'Ах, как пахнет сыром... скорее!',
+    'Считай внимательно! Ты справишься!',
+    'Ну-ка, посчитаем вместе!',
   ],
   correct: [
-    'УРА! Правильно! Вот тебе сыр! 🧀🎉',
-    'МОЛОДЕЦ! Ты самый умный! ⭐',
-    'Да-да-да! Именно! Кушаем сыр! 🧀😄',
-    'Ты суперзвезда, Иван! ⭐⭐⭐',
-    'Правильно! Нюсик счастлив! 🥳',
-    'Вот это да! Какой умный Иван! 🎉',
+    'Ура! Правильно! Вот тебе сыр!',
+    'Молодец! Ты самый умный!',
+    'Да-да-да! Именно! Кушаем сыр!',
+    'Ты суперзвезда, Иван!',
+    'Правильно! Нюсик счастлив!',
+    'Вот это да! Какой умный Иван!',
+    'Отлично! Нюсик танцует от радости!',
   ],
   wrong: [
-    'Ой, не то... попробуй ещё раз! 💪',
-    'Нет-нет... но ты можешь! Думай! 🤔',
-    'Ошибочка! Но Нюсик верит в тебя! 💛',
-    'Не расстраивайся! В следующий раз! 😊',
-    'Почти! Попробуй снова? 🧀',
+    'Ой, не то... но не расстраивайся!',
+    'Нет... но ты можешь! Думай!',
+    'Ошибочка! Нюсик верит в тебя!',
+    'Не расстраивайся! В следующий раз!',
+    'Почти! Смотри на правильный ответ.',
   ],
+  hint: [
+    'Подсказка: сначала доберись до круглого числа!',
+  ],
+  win3: ['Нюсик в полном восторге! Ты настоящий математик!'],
+  win2: ['Хорошая работа! Ещё немного потренируемся?'],
+  win1: ['Нюсик верит в тебя! В следующий раз получится лучше!'],
 };
 
 function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -538,20 +677,18 @@ function nextLevel() {
 
 function generateQuestion() {
   const cfg = LEVELS[level];
-  let a, b, useAdd, hint = '';
+  let a, b, useAdd, hintText = '';
 
   if (op === 'add') useAdd = true;
   else if (op === 'sub') useAdd = false;
   else useAdd = Math.random() > 0.5;
 
   if (useAdd) {
-    // For higher levels, sometimes force crossing a decade
     if (cfg.crossTen && Math.random() > 0.4) {
-      // a ends in 1-9, b crosses next decade
       const decade = Math.floor(Math.random() * Math.floor((cfg.max - 10) / 10)) * 10;
-      const rem = Math.floor(Math.random() * 8) + 1; // 1-8
+      const rem = Math.floor(Math.random() * 8) + 1;
       a = decade + rem;
-      const cross = 10 - rem; // how much to reach next decade
+      const cross = 10 - rem;
       b = cross + Math.floor(Math.random() * Math.min(9, cfg.max - a - cross));
       if (b <= 0) b = cross;
     } else {
@@ -561,7 +698,7 @@ function generateQuestion() {
     correctAnswer = a + b;
     if (correctAnswer > cfg.max) { a = Math.max(1, cfg.max - 9); b = Math.floor(Math.random() * 9) + 1; correctAnswer = a + b; }
     if (cfg.crossTen && correctAnswer > 10 && a % 10 !== 0 && b % 10 !== 0) {
-      hint = '💡 Подсказка: сначала доберись до круглого числа!';
+      hintText = '💡 Подсказка: сначала доберись до круглого числа!';
     }
   } else {
     if (cfg.crossTen && Math.random() > 0.4) {
@@ -577,12 +714,15 @@ function generateQuestion() {
     if (correctAnswer < 0) { a = 10; b = 3; correctAnswer = 7; }
   }
 
-  document.getElementById('hint').textContent = hint;
+  document.getElementById('hint').textContent = hintText;
+
+  const opSign = useAdd ? '+' : '−';
+  const opWord = useAdd ? 'плюс' : 'минус';
+  currentTaskText = `${a} ${opWord} ${b} равно сколько?`;
 
   const exprEl = document.getElementById('taskExpr');
-  exprEl.innerHTML = `<span>${a}</span> <span class="op">${useAdd ? '+' : '−'}</span> <span>${b}</span> <span class="eq">=</span> <span>?</span>`;
+  exprEl.innerHTML = `<span>${a}</span> <span class="op">${opSign}</span> <span>${b}</span> <span class="eq">=</span> <span>?</span>`;
 
-  // Generate wrong answers — smarter spread for bigger numbers
   const spread = cfg.max <= 10 ? 3 : cfg.max <= 20 ? 5 : 10;
   const choices = new Set([correctAnswer]);
   let tries = 0;
@@ -592,7 +732,6 @@ function generateQuestion() {
     const w = correctAnswer + (Math.random() > 0.5 ? delta : -delta);
     if (w >= 0 && w <= cfg.max + 5 && w !== correctAnswer) choices.add(w);
   }
-  // fallback
   while (choices.size < 4) choices.add(correctAnswer + choices.size);
 
   const shuffled = [...choices].sort(() => Math.random() - 0.5);
@@ -607,9 +746,16 @@ function generateQuestion() {
   });
 
   setMouseMood('thinking');
-  setBubble(rnd(phrases.ask), '');
-  const nb = document.getElementById('nextBtn');
-  nb.classList.remove('visible');
+  const phrase = rnd(phrases.ask);
+  setBubble(phrase + ' 🤔', '');
+
+  // Speak phrase, then read task after short pause
+  if (soundOn) {
+    speak(phrase, { pitch: 1.3 });
+    setTimeout(() => speak(currentTaskText, { rate: 0.82, pitch: 1.1 }), 1800);
+  }
+
+  document.getElementById('nextBtn').classList.remove('visible');
   answered = false;
 }
 
@@ -625,21 +771,29 @@ function checkAnswer(chosen, btn) {
     document.getElementById('correctCount').textContent = correctCount;
     addCheese();
     setMouseMood('happy');
-    setBubble(rnd(phrases.correct), 'happy-bubble');
+    const phrase = rnd(phrases.correct);
+    setBubble(phrase + ' 🎉', 'happy-bubble');
+    speak(phrase, { pitch: 1.4, rate: 0.9 });
   } else {
     btn.classList.add('wrong');
-    document.querySelectorAll('.answer-btn').forEach(b => { if (parseInt(b.textContent) === correctAnswer) b.classList.add('correct'); });
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (parseInt(b.textContent) === correctAnswer) b.classList.add('correct');
+    });
     wrongCount++;
     document.getElementById('wrongCount').textContent = wrongCount;
     setMouseMood('sad');
-    setBubble(rnd(phrases.wrong), 'sad-bubble');
+    const phrase = rnd(phrases.wrong);
+    setBubble(phrase + ' 💛', 'sad-bubble');
+    // Speak wrong feedback then say the correct answer
+    speak(phrase, { pitch: 1.1, rate: 0.85 });
+    setTimeout(() => speak(`Правильный ответ: ${correctAnswer}`, { rate: 0.8, pitch: 1.0 }), 2000);
   }
 
   questionIndex++;
   updateProgress();
 
   if (questionIndex >= TOTAL) {
-    setTimeout(showWin, 1100);
+    setTimeout(showWin, 1200);
   } else {
     document.getElementById('nextBtn').classList.add('visible');
   }
@@ -699,31 +853,36 @@ function setBubble(text, cls) {
 }
 
 function showWin() {
+  synth.cancel();
   document.getElementById('taskSection').style.display = 'none';
   const win = document.getElementById('winOverlay');
   win.classList.add('visible');
   setMouseMood('happy');
   const cfg = LEVELS[level];
   const pct = correctCount / TOTAL;
-  let stars, title, sub;
+  let stars, title, sub, speechText;
   if (pct >= 0.9) {
     stars = '⭐⭐⭐'; title = 'Кладовочка полная!';
-    sub = `Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень "${cfg.name}" покорён! 🏆`;
+    sub = `Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён! 🏆`;
+    speechText = `Ура! Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Ты настоящий математик, Иван!`;
   } else if (pct >= 0.6) {
     stars = '⭐⭐'; title = 'Хорошая работа!';
     sub = `${correctCount} из ${TOTAL}. Нюсик доволен! Ещё чуть-чуть потренируемся?`;
+    speechText = `Хорошая работа! ${correctCount} из ${TOTAL}. Ещё немного потренируемся?`;
   } else {
     stars = '⭐'; title = 'Нюсик верит в тебя!';
     sub = `${correctCount} из ${TOTAL}. Попробуем ещё раз — в следующий раз лучше!`;
+    speechText = `Нюсик верит в тебя! ${correctCount} из ${TOTAL}. В следующий раз получится лучше!`;
   }
   document.getElementById('winStars').textContent = stars;
   document.getElementById('winTitle').textContent = title;
   document.getElementById('winSubtitle').textContent = sub;
-  // hide "harder" btn on max level
   document.querySelector('.restart-btn.secondary').style.display = level >= 4 ? 'none' : '';
+  setTimeout(() => speak(speechText, { pitch: 1.35, rate: 0.88 }), 300);
 }
 
 function restartGame() {
+  synth.cancel();
   questionIndex = 0; correctCount = 0; wrongCount = 0; cheesePieces = 0;
   document.getElementById('cheeseRow').innerHTML = '';
   document.getElementById('correctCount').textContent = '0';
@@ -733,6 +892,11 @@ function restartGame() {
   updateProgress();
   generateQuestion();
 }
+
+// Greet on load
+window.addEventListener('load', () => {
+  setTimeout(() => speak('Привет, Иван! Я Нюсик! Помоги мне найти сыр!', { pitch: 1.3, rate: 0.85 }), 600);
+});
 
 generateQuestion();
 </script>

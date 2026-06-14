@@ -24,6 +24,22 @@
     display:flex;align-items:center;justify-content:center;transition:all .15s;}
   .sound-btn:hover{background:var(--grey-light);}
   .sound-btn.muted{opacity:.45;}
+
+  /* API key setup screen */
+  .setup-screen{display:flex;flex-direction:column;align-items:center;gap:14px;
+    background:white;border-radius:28px;padding:28px 20px;width:100%;max-width:480px;
+    box-shadow:0 4px 24px rgba(0,0,0,.07);text-align:center;}
+  .setup-screen h2{font-size:1.2rem;font-weight:900;color:var(--grey-dark);}
+  .setup-screen p{font-size:.9rem;color:var(--grey);line-height:1.5;}
+  .setup-screen input{width:100%;padding:12px 14px;border:2px solid var(--grey-light);
+    border-radius:12px;font-family:'Nunito',sans-serif;font-size:.9rem;color:var(--text);}
+  .setup-screen input:focus{outline:none;border-color:var(--purple);}
+  .setup-btn{background:var(--purple);color:white;border:none;border-radius:14px;
+    font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;
+    padding:13px 0;width:100%;cursor:pointer;transition:background .15s;}
+  .setup-btn:hover{background:#7B5FC4;}
+  .setup-note{font-size:.75rem;color:var(--grey);line-height:1.4;}
+
   .bubble-wrap{margin-bottom:12px;}
   .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
     padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
@@ -38,6 +54,7 @@
   .speaking-dots span:nth-child(2){animation-delay:.15s;}
   .speaking-dots span:nth-child(3){animation-delay:.3s;}
   @keyframes dotBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+
   .level-bar,.op-bar{display:flex;gap:6px;width:100%;max-width:480px;margin-bottom:10px;}
   .level-btn{flex:1;padding:7px 2px;border:2px solid var(--grey-light);border-radius:12px;
     background:white;font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:800;
@@ -49,6 +66,7 @@
     color:var(--grey-dark);cursor:pointer;transition:all .15s;}
   .op-btn.active{background:var(--blue);border-color:var(--blue);color:white;}
   .op-btn:hover:not(.active){background:var(--grey-light);}
+
   .cheese-store{background:var(--warm);border:3px solid var(--cheese);border-radius:18px;
     padding:8px 16px;margin-bottom:10px;text-align:center;width:100%;max-width:480px;}
   .cheese-store-label{font-size:.75rem;font-weight:800;color:var(--grey-dark);
@@ -57,6 +75,7 @@
   .cheese-piece{font-size:1.3rem;animation:popIn .3s cubic-bezier(.36,.07,.19,.97);}
   @keyframes popIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}
     70%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+
   .card{background:white;border-radius:28px;padding:20px 16px;width:100%;max-width:480px;
     box-shadow:0 4px 24px rgba(0,0,0,.07);}
   .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
@@ -69,6 +88,7 @@
   .mouse-svg[data-mood="sad"]{animation:shake .4s ease;}
   .mouse-svg[data-mood="thinking"]{animation:bop 1.2s ease infinite;}
   .mouse-svg[data-mood="speaking"]{animation:mousePulse .4s ease infinite alternate;}
+
   .task-area{text-align:center;margin-bottom:14px;}
   .task-label{font-size:.78rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
   .level-badge{display:inline-block;background:var(--purple);color:white;font-size:.7rem;
@@ -84,6 +104,7 @@
     color:var(--grey);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;
     padding:4px 12px;cursor:pointer;margin-top:6px;transition:all .15s;}
   .read-task-btn:hover{border-color:var(--purple);color:var(--purple);background:#F3EEFF;}
+
   .answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .answer-btn{background:var(--warm);border:3px solid var(--cheese);border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:900;color:var(--text);
@@ -92,12 +113,14 @@
   .answer-btn:active:not(:disabled){transform:scale(.97);}
   .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
   .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
+
   .next-btn{display:block;width:100%;border:none;border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;
     cursor:pointer;padding:14px 0;margin-bottom:14px;transition:background .2s,color .2s;}
   .next-btn:disabled{background:var(--grey-light);color:var(--grey);cursor:default;}
   .next-btn:not(:disabled){background:var(--green);color:white;}
   .next-btn:not(:disabled):hover{background:var(--green-dark);}
+
   .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
   .progress-bar-bg{flex:1;height:10px;background:var(--grey-light);border-radius:8px;overflow:hidden;}
   .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cheese),var(--green));
@@ -105,6 +128,7 @@
   .progress-text{font-size:.8rem;font-weight:800;color:var(--grey);min-width:36px;text-align:right;}
   .score-row{display:flex;gap:16px;justify-content:center;font-size:.85rem;font-weight:700;color:var(--grey);}
   .correct-count{color:var(--green-dark);}.wrong-count{color:var(--red);}
+
   .win-overlay{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0;}
   .win-overlay.visible{display:flex;animation:popIn .5s;}
   .win-stars{font-size:2.5rem;letter-spacing:4px;}
@@ -125,152 +149,226 @@
   <h1>🧀 Нюсик и <span>математика</span></h1>
   <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
 </div>
-<div class="level-bar">
-  <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
-  <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
-  <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐<br>Уровень 3<br><small>до 50</small></button>
-  <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
-</div>
-<div class="op-bar">
-  <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
-  <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
-  <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
-</div>
-<div class="cheese-store">
-  <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
-  <div class="cheese-row" id="cheeseRow"></div>
+
+<!-- Setup screen (shown only if no API key saved) -->
+<div class="setup-screen" id="setupScreen" style="display:none">
+  <div style="font-size:3rem">🧀</div>
+  <h2>Привет! Нюсику нужен живой голос</h2>
+  <p>Введи API ключ ElevenLabs — он сохранится в браузере и больше не понадобится вводить.</p>
+  <input type="password" id="apiKeyInput" placeholder="sk_..." />
+  <button class="setup-btn" onclick="saveApiKey()">Сохранить и начать! 🐭</button>
+  <p class="setup-note">Ключ хранится только на этом устройстве в localStorage.<br>Его никто не увидит.</p>
 </div>
 
-<div class="card">
-  <div class="mouse-area">
-    <div class="bubble-wrap">
-      <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр!</div>
-      <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
-    </div>
-    <svg class="mouse-svg" id="mouseSvg" data-mood="thinking" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-      <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
-      <ellipse cx="98" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
-      <ellipse cx="42" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
-      <ellipse cx="98" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
-      <ellipse cx="70" cy="98" rx="34" ry="28" fill="#B0A8A0"/>
-      <ellipse cx="70" cy="74" rx="32" ry="29" fill="#C4BDB8"/>
-      <ellipse cx="70" cy="87" rx="8" ry="5" fill="#DDB0B0"/>
-      <circle cx="70" cy="86" r="4" fill="#C88888"/>
-      <line x1="62" y1="85" x2="36" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="62" y1="87" x2="36" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="62" y1="89" x2="36" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="78" y1="85" x2="104" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="78" y1="87" x2="104" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="78" y1="89" x2="104" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
-      <g id="eyes">
-        <circle cx="58" cy="68" r="7" fill="white"/><circle cx="82" cy="68" r="7" fill="white"/>
-        <circle cx="59" cy="69" r="4" fill="#3A3330" id="pupilL"/>
-        <circle cx="83" cy="69" r="4" fill="#3A3330" id="pupilR"/>
-        <circle cx="60" cy="67.5" r="1.5" fill="white" id="glintL"/>
-        <circle cx="84" cy="67.5" r="1.5" fill="white" id="glintR"/>
-      </g>
-      <path id="mouthPath" d="M 62 93 Q 70 100 78 93" fill="none" stroke="#8B5E5E" stroke-width="2" stroke-linecap="round"/>
-      <path d="M 100 118 Q 120 130 116 110 Q 112 95 128 88" fill="none" stroke="#B0A8A0" stroke-width="5" stroke-linecap="round"/>
-      <ellipse cx="50" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
-      <ellipse cx="90" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
-      <g id="cheeseInPaw" style="display:none">
-        <rect x="96" y="104" width="22" height="18" rx="4" fill="#F5C842" transform="rotate(-15,107,113)"/>
-        <circle cx="101" cy="109" r="2.5" fill="#E0A800" transform="rotate(-15,107,113)"/>
-        <circle cx="110" cy="115" r="2" fill="#E0A800" transform="rotate(-15,107,113)"/>
-      </g>
-    </svg>
+<div id="gameWrapper" style="display:none;width:100%;display:none">
+  <div class="level-bar">
+    <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
+    <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
+    <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐<br>Уровень 3<br><small>до 50</small></button>
+    <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
+  </div>
+  <div class="op-bar">
+    <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
+    <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
+    <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
+  </div>
+  <div class="cheese-store">
+    <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
+    <div class="cheese-row" id="cheeseRow"></div>
   </div>
 
-  <div id="taskSection">
-    <div class="task-area">
-      <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
-      <div class="task-expression" id="taskExpr" onclick="readTaskAloud()"></div>
-      <div class="hint" id="hint"></div>
-      <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
+  <div class="card">
+    <div class="mouse-area">
+      <div class="bubble-wrap">
+        <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр!</div>
+        <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
+      </div>
+      <svg class="mouse-svg" id="mouseSvg" data-mood="thinking" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
+        <ellipse cx="98" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
+        <ellipse cx="42" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
+        <ellipse cx="98" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
+        <ellipse cx="70" cy="98" rx="34" ry="28" fill="#B0A8A0"/>
+        <ellipse cx="70" cy="74" rx="32" ry="29" fill="#C4BDB8"/>
+        <ellipse cx="70" cy="87" rx="8" ry="5" fill="#DDB0B0"/>
+        <circle cx="70" cy="86" r="4" fill="#C88888"/>
+        <line x1="62" y1="85" x2="36" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="62" y1="87" x2="36" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="62" y1="89" x2="36" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="78" y1="85" x2="104" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="78" y1="87" x2="104" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="78" y1="89" x2="104" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+        <g id="eyes">
+          <circle cx="58" cy="68" r="7" fill="white"/><circle cx="82" cy="68" r="7" fill="white"/>
+          <circle cx="59" cy="69" r="4" fill="#3A3330" id="pupilL"/>
+          <circle cx="83" cy="69" r="4" fill="#3A3330" id="pupilR"/>
+          <circle cx="60" cy="67.5" r="1.5" fill="white" id="glintL"/>
+          <circle cx="84" cy="67.5" r="1.5" fill="white" id="glintR"/>
+        </g>
+        <path id="mouthPath" d="M 62 93 Q 70 100 78 93" fill="none" stroke="#8B5E5E" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 100 118 Q 120 130 116 110 Q 112 95 128 88" fill="none" stroke="#B0A8A0" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="50" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
+        <ellipse cx="90" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
+        <g id="cheeseInPaw" style="display:none">
+          <rect x="96" y="104" width="22" height="18" rx="4" fill="#F5C842" transform="rotate(-15,107,113)"/>
+          <circle cx="101" cy="109" r="2.5" fill="#E0A800" transform="rotate(-15,107,113)"/>
+          <circle cx="110" cy="115" r="2" fill="#E0A800" transform="rotate(-15,107,113)"/>
+        </g>
+      </svg>
     </div>
-    <div class="answers-grid" id="answersGrid"></div>
-    <button class="next-btn" id="nextBtn" disabled onclick="nextQuestion()">Выбери ответ ↑</button>
-    <div class="progress-row">
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
-      <div class="progress-text" id="progressText">0/10</div>
-    </div>
-    <div class="score-row">
-      <span>✅ <span class="correct-count" id="correctCount">0</span></span>
-      <span>❌ <span class="wrong-count" id="wrongCount">0</span></span>
-    </div>
-  </div>
 
-  <div class="win-overlay" id="winOverlay">
-    <div class="win-stars" id="winStars">⭐⭐⭐</div>
-    <div class="win-title" id="winTitle">Кладовочка полная!</div>
-    <div class="win-subtitle" id="winSubtitle"></div>
-    <div class="win-btns">
-      <button class="restart-btn" onclick="restartGame()">Ещё раз! 🔄</button>
-      <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
+    <div id="taskSection">
+      <div class="task-area">
+        <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
+        <div class="task-expression" id="taskExpr" onclick="readTaskAloud()"></div>
+        <div class="hint" id="hint"></div>
+        <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
+      </div>
+      <div class="answers-grid" id="answersGrid"></div>
+      <button class="next-btn" id="nextBtn" disabled onclick="nextQuestion()">Выбери ответ ↑</button>
+      <div class="progress-row">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-text" id="progressText">0/10</div>
+      </div>
+      <div class="score-row">
+        <span>✅ <span class="correct-count" id="correctCount">0</span></span>
+        <span>❌ <span class="wrong-count" id="wrongCount">0</span></span>
+      </div>
+    </div>
+
+    <div class="win-overlay" id="winOverlay">
+      <div class="win-stars" id="winStars">⭐⭐⭐</div>
+      <div class="win-title" id="winTitle">Кладовочка полная!</div>
+      <div class="win-subtitle" id="winSubtitle"></div>
+      <div class="win-btns">
+        <button class="restart-btn" onclick="restartGame()">Ещё раз! 🔄</button>
+        <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-// ═══ VOICE — natural & squeaky ════════════════════════
-// Strategy: pick the best available Russian female voice,
-// use moderate rate (1.15) so speech sounds natural,
-// and pitch 1.8 for the mouse squeakiness without robotic distortion.
-const synth = window.speechSynthesis;
-let ruVoice = null;
+// ═══ API KEY MANAGEMENT ═══════════════════════════════
+const STORAGE_KEY = 'nyusik_xi_key';
+let XI_KEY = localStorage.getItem(STORAGE_KEY) || '';
+
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val.startsWith('sk_') || val.length < 20) {
+    alert('Ключ должен начинаться с sk_ и быть достаточно длинным');
+    return;
+  }
+  XI_KEY = val;
+  localStorage.setItem(STORAGE_KEY, val);
+  startGame();
+}
+
+function startGame() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('gameWrapper').style.display = '';
+  generateQuestion();
+}
+
+// Show setup or game on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (XI_KEY) {
+    startGame();
+  } else {
+    document.getElementById('setupScreen').style.display = 'flex';
+  }
+});
+// ═════════════════════════════════════════════════════
+
+// ═══ ELEVENLABS VOICE ════════════════════════════════
+// Voice: Aria (9BWtsMINqrJLrRacOk9x) — multilingual, warm, expressive
+// Model: eleven_multilingual_v2 — best quality for Russian
+const XI_VOICE_ID = '9BWtsMINqrJLrRacOk9x';
+const XI_MODEL    = 'eleven_multilingual_v2';
+
 let soundOn = true;
 let currentTaskText = '';
+let currentAudio = null;
 let voiceTimer = null;
+// Simple cache: text → blob URL (avoid re-fetching same phrase)
+const audioCache = new Map();
 
-function pickVoice() {
-  const vs = synth.getVoices();
-  if (!vs.length) return;
-  // Priority: online neural Russian female > any Russian > fallback
-  const pref = [
-    // Google natural voices (Chrome)
-    v => v.name.includes('Google') && v.lang.startsWith('ru') && /женщин|female|woman|Milena|Irina|Anna/i.test(v.name),
-    v => v.name.includes('Google') && v.lang.startsWith('ru'),
-    // Microsoft natural voices (Edge/Windows)
-    v => /Svetlana|Dariya|Irina|Anna|Milena/i.test(v.name) && v.lang.startsWith('ru'),
-    v => v.lang === 'ru-RU',
-    v => v.lang.startsWith('ru'),
-    v => true,
-  ];
-  for (const fn of pref) {
-    const found = vs.find(fn);
-    if (found) { ruVoice = found; return; }
+async function speakNow(text) {
+  if (!soundOn || !text) return;
+  stopVoice();
+  setSpeakUI(true);
+
+  try {
+    let url = audioCache.get(text);
+    if (!url) {
+      const resp = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': XI_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text,
+            model_id: XI_MODEL,
+            voice_settings: {
+              stability: 0.45,        // a bit playful/variable
+              similarity_boost: 0.82,
+              style: 0.35,            // expressive but not over the top
+              use_speaker_boost: true,
+            },
+          }),
+        }
+      );
+      if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
+      const blob = await resp.blob();
+      url = URL.createObjectURL(blob);
+      // Cache up to 40 entries
+      if (audioCache.size > 40) audioCache.delete(audioCache.keys().next().value);
+      audioCache.set(text, url);
+    }
+
+    currentAudio = new Audio(url);
+    currentAudio.onended = () => setSpeakUI(false);
+    currentAudio.onerror = () => setSpeakUI(false);
+    await currentAudio.play();
+  } catch (e) {
+    console.warn('ElevenLabs error:', e);
+    setSpeakUI(false);
+    // Fallback to browser TTS if ElevenLabs fails
+    fallbackSpeak(text);
   }
 }
-pickVoice();
-if (synth.onvoiceschanged !== undefined) {
-  synth.onvoiceschanged = pickVoice;
-}
 
-function speakNow(text) {
-  if (!soundOn || !text) return;
+function fallbackSpeak(text) {
+  if (!soundOn) return;
+  const synth = window.speechSynthesis;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ru-RU';
-  u.rate  = 1.15;  // natural speed — not robotic slow, not chipmunk fast
-  u.pitch = 1.75;  // high enough to feel "mousy", low enough to be clear
-  u.volume = 1;
-  if (ruVoice) u.voice = ruVoice;
+  u.lang = 'ru-RU'; u.rate = 1.0; u.pitch = 1.2; u.volume = 1;
   u.onstart = () => setSpeakUI(true);
   u.onend = u.onerror = () => setSpeakUI(false);
   synth.speak(u);
 }
+
 function speakAfter(text, ms) {
   clearTimeout(voiceTimer);
   voiceTimer = setTimeout(() => speakNow(text), ms);
 }
+
 function stopVoice() {
   clearTimeout(voiceTimer);
-  synth.cancel();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  window.speechSynthesis && window.speechSynthesis.cancel();
   setSpeakUI(false);
 }
+
 function setSpeakUI(on) {
-  document.getElementById('speakingDots').classList.toggle('active', on);
+  const dots = document.getElementById('speakingDots');
+  if (dots) dots.classList.toggle('active', on);
   const svg = document.getElementById('mouseSvg');
+  if (!svg) return;
   if (on) {
     svg._prevMood = svg.getAttribute('data-mood');
     svg.setAttribute('data-mood', 'speaking');
@@ -279,6 +377,7 @@ function setSpeakUI(on) {
     svg._prevMood = null;
   }
 }
+
 function toggleSound() {
   soundOn = !soundOn;
   if (!soundOn) stopVoice();
@@ -297,9 +396,8 @@ const LEVELS = {
   4:{max:100,label:'Ур. 4',name:'до 100',crossTen:true},
 };
 let level=1, op='add', questionIndex=0, correctCount=0, wrongCount=0;
-let answered=false, correctAnswer=0, cheesePieces=0;
+let answered=false, correctAnswer=0, cheesePieces=0, streak=0;
 
-// ═══ PHRASES — lots of fun ones! ══════════════════════
 const phrases = {
   ask: [
     'Иван, помоги мне! Если правильно — дам сыр!',
@@ -311,11 +409,11 @@ const phrases = {
     'Смотри внимательно! Ты точно справишься!',
     'Нюсик верит в тебя! Какой ответ?',
     'Раз, два, три — считаем вместе!',
-    'Это лёгкое задание для такого умного мальчика!',
+    'Это задание для такого умного мальчика — раз плюнуть!',
     'Сыр так близко... только реши пример!',
     'Нюсик зажмурил глазки и ждёт ответа!',
-    'Пальчики на месте, голова думает — вперёд!',
     'Только ты можешь мне помочь, Иван!',
+    'Какое же тут правильное число? Думай!',
   ],
   correct: [
     'Ура-ура-ура! Правильно! Нюсик прыгает от счастья!',
@@ -323,16 +421,16 @@ const phrases = {
     'Молодец! Нюсик танцует и жуёт сыр!',
     'Правильно! Ты мой любимый помощник!',
     'Суперзвезда! Иван, ты лучший!',
-    'Именно! Именно так! Умница какая!',
+    'Именно так! Умница, какой умница!',
     'Нюсик счастлив! Сыр достался нам двоим!',
     'Блестяще! Просто блестяще!',
     'Вот это мозги! Нюсик восхищается!',
-    'Да-да-да! Ты решил, и Нюсик сытый!',
     'Правильно! Нюсик делает сальто от радости!',
     'Ого-го! Какой умный Иван вырос!',
     'Ты сделал это! Нюсик тебя обнимает!',
     'Пять с плюсом! Нюсик ставит тебе пятёрку!',
-    'Это точно правильно! Гений за работой!',
+    'Гений за работой! Нюсик аплодирует!',
+    'Вот это результат! Нюсик в шоке от твоего ума!',
   ],
   wrong: [
     'Ой, не угадал... Но не расстраивайся!',
@@ -356,6 +454,7 @@ const phrases = {
   streak5: [
     'Пять подряд! Нюсик не верит своим ушам!',
     'Пять верных ответов! Ты супергерой математики!',
+    'Пять из пяти! Нюсик кричит от радости!',
   ],
   hint_cross: [
     'Подсказка: сначала доберись до круглого числа!',
@@ -378,14 +477,11 @@ const phrases = {
     'Математика — это тренировка. Попробуем снова?',
   ],
 };
-
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
-
-// Track correct streak for bonus praise
-let streak = 0;
 
 function setMouseMood(mood) {
   const svg = document.getElementById('mouseSvg');
+  if (!svg) return;
   if (svg.getAttribute('data-mood') === 'speaking') { svg._prevMood = mood; }
   else { svg.setAttribute('data-mood', mood); }
   const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
@@ -492,11 +588,11 @@ function generateQuestion() {
   answered=false;
 
   stopVoice();
-  speakNow(phrase);
-  // After phrase: read the task, then hint if any
-  const taskDelay = phrase.length * 60 + 400;
-  speakAfter(currentTaskText, taskDelay);
-  if (hintSpeech) speakAfter(hintSpeech, taskDelay + currentTaskText.length*60 + 600);
+  // Speak phrase then task (ElevenLabs is async, so chain via speakAfter with generous delay)
+  speakNow(phrase).then(() => {
+    speakAfter(currentTaskText, 600);
+    if (hintSpeech) speakAfter(hintSpeech, 600 + currentTaskText.length * 70 + 800);
+  }).catch(()=>{});
 }
 
 function checkAnswer(chosen,btn){
@@ -513,13 +609,10 @@ function checkAnswer(chosen,btn){
     document.getElementById('correctCount').textContent=correctCount;
     addCheese();
     setMouseMood('happy');
-
-    // Pick praise — streak bonus overrides regular
     let phrase;
     if(streak===5) phrase=rnd(phrases.streak5);
     else if(streak===3) phrase=rnd(phrases.streak3);
     else phrase=rnd(phrases.correct);
-
     setBubble(phrase,'happy-bubble');
     speakNow(phrase);
   } else {
@@ -532,8 +625,9 @@ function checkAnswer(chosen,btn){
     setMouseMood('sad');
     const phrase=rnd(phrases.wrong);
     setBubble(phrase,'sad-bubble');
-    speakNow(phrase);
-    speakAfter(`Правильный ответ: ${correctAnswer}`, phrase.length*55+500);
+    speakNow(phrase).then(()=>{
+      speakAfter(`Правильный ответ — ${correctAnswer}`, 400);
+    }).catch(()=>{});
   }
 
   questionIndex++;
@@ -559,7 +653,7 @@ function addCheese(){
 }
 function setBubble(text,cls){
   const b=document.getElementById('bubble');
-  b.textContent=text; b.className='bubble '+cls;
+  if(b){b.textContent=text; b.className='bubble '+cls;}
 }
 
 function showWin(){
@@ -600,8 +694,6 @@ function restartGame(){
   updateProgress();
   generateQuestion();
 }
-
-generateQuestion();
 </script>
 </body>
 </html>

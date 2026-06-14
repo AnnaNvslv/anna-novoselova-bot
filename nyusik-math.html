@@ -38,7 +38,11 @@
   .setup-btn:hover{background:#7B5FC4;}
   .setup-note{font-size:.75rem;color:var(--grey);line-height:1.4;}
   .err-banner{background:#FFE5E5;border:2px solid var(--red);border-radius:12px;
-    padding:10px 14px;font-size:.82rem;font-weight:700;color:#B03030;display:none;margin-top:4px;}
+    padding:10px 14px;font-size:.82rem;font-weight:700;color:#B03030;display:none;margin-top:4px;line-height:1.5;}
+  .voice-select{width:100%;padding:10px 14px;border:2px solid var(--grey-light);
+    border-radius:12px;font-family:'Nunito',sans-serif;font-size:.9rem;color:var(--text);
+    background:white;cursor:pointer;}
+  .voice-select:focus{outline:none;border-color:var(--purple);}
   .bubble-wrap{margin-bottom:12px;}
   .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
     padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
@@ -143,9 +147,17 @@
 
 <div class="setup-screen" id="setupScreen" style="display:none">
   <div style="font-size:3rem">🐭</div>
-  <h2>Привет! Нюсику нужен живой голос</h2>
-  <p>Введи API ключ ElevenLabs — он сохранится в браузере.</p>
+  <h2>Привет! Настройка голоса Нюсика</h2>
+  <p>Введи API ключ ElevenLabs и выбери голос.</p>
   <input type="password" id="apiKeyInput" placeholder="sk_..." />
+  <select class="voice-select" id="voiceSelect">
+    <option value="EXAVITQu4vr4xnSDxMaL">Bella — мягкий женский (Free)</option>
+    <option value="21m00Tcm4TlvDq8ikWAM">Rachel — спокойный (Free)</option>
+    <option value="AZnzlk1XvdvUeBnXmlld">Domi — живой, энергичный (Free)</option>
+    <option value="MF3mGyEYCl7XYWbV9V6O">Elli — молодой женский (Free)</option>
+    <option value="TxGEqnHWrfWFTfGW9XjX">Josh — мужской тёплый (Free)</option>
+    <option value="rSfuQoQ3FY8SVKeraMAp">Lunya little fairy (платный)</option>
+  </select>
   <button class="setup-btn" id="setupBtn" onclick="saveApiKey()">Проверить и начать! 🐭</button>
   <div class="err-banner" id="errBanner"></div>
   <p class="setup-note">Ключ хранится только на этом устройстве. Его никто не увидит.</p>
@@ -237,142 +249,114 @@
 </div>
 
 <script>
-// ═══ VOICE ID — Lunya little fairy ═══════════════════
-const XI_VOICE_ID = 'rSfuQoQ3FY8SVKeraMAp';
-const XI_MODEL    = 'eleven_multilingual_v2';
-const STORAGE_KEY = 'nyusik_xi_key_v2'; // v2 = forces re-enter old key
+// Storage keys — v3 forces fresh setup
+const STORAGE_KEY     = 'nyusik_xi_key_v3';
+const STORAGE_VOICE   = 'nyusik_xi_voice_v3';
+const XI_MODEL        = 'eleven_multilingual_v2';
 
-let XI_KEY = localStorage.getItem(STORAGE_KEY) || '';
+let XI_KEY      = localStorage.getItem(STORAGE_KEY)   || '';
+let XI_VOICE_ID = localStorage.getItem(STORAGE_VOICE) || 'EXAVITQu4vr4xnSDxMaL';
 let soundOn = true, currentTaskText = '', currentAudio = null, voiceTimer = null;
 const audioCache = new Map();
 
 // ── Setup ─────────────────────────────────────────────
 async function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
+  const val   = document.getElementById('apiKeyInput').value.trim();
+  const voice = document.getElementById('voiceSelect').value;
   if (!val.startsWith('sk_') || val.length < 20) {
-    showErr('Ключ должен начинаться с sk_ и быть длиннее 20 символов');
-    return;
+    showErr('Ключ должен начинаться с sk_ и быть длиннее 20 символов'); return;
   }
   const btn = document.getElementById('setupBtn');
-  btn.textContent = 'Проверяем...';
-  btn.disabled = true;
-
-  // Test the key + voice with a short phrase
+  btn.textContent = 'Проверяем...'; btn.disabled = true;
+  hideErr();
   try {
     const resp = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,
-      {
-        method: 'POST',
-        headers: { 'xi-api-key': val, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: 'Привет!',
-          model_id: XI_MODEL,
-          voice_settings: { stability:0.4, similarity_boost:0.8, style:0.5, use_speaker_boost:true },
-        }),
+      `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
+      { method:'POST',
+        headers:{'xi-api-key':val,'Content-Type':'application/json'},
+        body:JSON.stringify({text:'Привет!',model_id:XI_MODEL,
+          voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
       }
     );
-    if (resp.status === 401) { showErr('Ключ неверный. Проверь в личном кабинете ElevenLabs.'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
-    if (resp.status === 404) { showErr('Голос не найден. Убедись что добавила Lunya в My Voices на elevenlabs.io'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
-    if (resp.status === 422) { showErr('Ошибка 422 — возможно голос не добавлен в аккаунт. Зайди на elevenlabs.io/app/voice-library, найди Lunya little fairy и нажми Add to my voices.'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
-    if (!resp.ok) { showErr(`Ошибка ElevenLabs: ${resp.status}`); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; return; }
+    if (resp.status===401){ showErr('Ключ неверный — проверь в кабинете ElevenLabs.'); reset(); return; }
+    if (resp.status===402){ showErr('402: лимит символов исчерпан или нужна подписка. Попробуй другой голос из списка или пополни баланс на elevenlabs.io.'); reset(); return; }
+    if (resp.status===404){ showErr('Голос не найден. Выбери другой из списка.'); reset(); return; }
+    if (!resp.ok){ showErr(`Ошибка ElevenLabs: ${resp.status}`); reset(); return; }
 
-    // Play test audio
     const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.play().catch(()=>{});
+    const url  = URL.createObjectURL(blob);
+    new Audio(url).play().catch(()=>{});
 
-    XI_KEY = val;
+    XI_KEY = val; XI_VOICE_ID = voice;
     localStorage.setItem(STORAGE_KEY, val);
-    setTimeout(startGame, 1200);
+    localStorage.setItem(STORAGE_VOICE, voice);
+    setTimeout(startGame, 1000);
   } catch(e) {
-    showErr('Ошибка сети. Проверь интернет-соединение.');
-    btn.textContent='Проверить и начать! 🐭'; btn.disabled=false;
+    showErr('Ошибка сети. Проверь соединение.'); reset();
   }
 }
+function reset(){ const btn=document.getElementById('setupBtn'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; }
+function showErr(m){ const b=document.getElementById('errBanner'); b.textContent=m; b.style.display='block'; }
+function hideErr(){ document.getElementById('errBanner').style.display='none'; }
 
-function showErr(msg) {
-  const b = document.getElementById('errBanner');
-  b.textContent = msg; b.style.display = 'block';
-}
-
-function startGame() {
-  document.getElementById('setupScreen').style.display = 'none';
-  document.getElementById('gameWrapper').style.display = '';
+function startGame(){
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('gameWrapper').style.display='';
   generateQuestion();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (XI_KEY) startGame();
-  else document.getElementById('setupScreen').style.display = 'flex';
+window.addEventListener('DOMContentLoaded',()=>{
+  if(XI_KEY){ startGame(); }
+  else{ document.getElementById('setupScreen').style.display='flex'; }
 });
 
 // ── ElevenLabs TTS ────────────────────────────────────
-async function speakNow(text) {
-  if (!soundOn || !text) return;
-  stopVoice();
-  setSpeakUI(true);
-  try {
-    let url = audioCache.get(text);
-    if (!url) {
-      const resp = await fetch(
+async function speakNow(text){
+  if(!soundOn||!text)return;
+  stopVoice(); setSpeakUI(true);
+  try{
+    let url=audioCache.get(text);
+    if(!url){
+      const resp=await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,
-        {
-          method: 'POST',
-          headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text,
-            model_id: XI_MODEL,
-            voice_settings: { stability:0.40, similarity_boost:0.80, style:0.50, use_speaker_boost:true },
-          }),
+        {method:'POST',
+         headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
+         body:JSON.stringify({text,model_id:XI_MODEL,
+           voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
         }
       );
-      if (!resp.ok) throw new Error(`${resp.status}`);
-      const blob = await resp.blob();
-      url = URL.createObjectURL(blob);
-      if (audioCache.size > 50) audioCache.delete(audioCache.keys().next().value);
-      audioCache.set(text, url);
+      if(!resp.ok)throw new Error(resp.status);
+      const blob=await resp.blob();
+      url=URL.createObjectURL(blob);
+      if(audioCache.size>50)audioCache.delete(audioCache.keys().next().value);
+      audioCache.set(text,url);
     }
-    currentAudio = new Audio(url);
-    currentAudio.onended = () => setSpeakUI(false);
-    currentAudio.onerror = () => setSpeakUI(false);
+    currentAudio=new Audio(url);
+    currentAudio.onended=()=>setSpeakUI(false);
+    currentAudio.onerror=()=>setSpeakUI(false);
     await currentAudio.play();
-  } catch(e) {
-    console.warn('ElevenLabs error:', e.message);
+  }catch(e){
+    console.warn('XI error:',e.message);
     setSpeakUI(false);
-    // DO NOT fallback — user should know it's broken
   }
 }
+function speakAfter(text,ms){ clearTimeout(voiceTimer); voiceTimer=setTimeout(()=>speakNow(text),ms); }
+function stopVoice(){ clearTimeout(voiceTimer); if(currentAudio){currentAudio.pause();currentAudio=null;} setSpeakUI(false); }
+function setSpeakUI(on){
+  const d=document.getElementById('speakingDots'); if(d)d.classList.toggle('active',on);
+  const s=document.getElementById('mouseSvg'); if(!s)return;
+  if(on){s._pm=s.getAttribute('data-mood');s.setAttribute('data-mood','speaking');}
+  else{s.setAttribute('data-mood',s._pm||'thinking');s._pm=null;}
+}
+function toggleSound(){ soundOn=!soundOn; if(!soundOn)stopVoice();
+  document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
+  document.getElementById('soundBtn').classList.toggle('muted',!soundOn);
+  if(soundOn)speakNow('Звук включён!'); }
+function readTaskAloud(){ stopVoice(); speakNow(currentTaskText); }
 
-function speakAfter(text, ms) {
-  clearTimeout(voiceTimer);
-  voiceTimer = setTimeout(() => speakNow(text), ms);
-}
-function stopVoice() {
-  clearTimeout(voiceTimer);
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  setSpeakUI(false);
-}
-function setSpeakUI(on) {
-  const dots = document.getElementById('speakingDots');
-  if (dots) dots.classList.toggle('active', on);
-  const svg = document.getElementById('mouseSvg');
-  if (!svg) return;
-  if (on) { svg._prevMood = svg.getAttribute('data-mood'); svg.setAttribute('data-mood','speaking'); }
-  else { svg.setAttribute('data-mood', svg._prevMood||'thinking'); svg._prevMood=null; }
-}
-function toggleSound() {
-  soundOn = !soundOn;
-  if (!soundOn) stopVoice();
-  document.getElementById('soundBtn').textContent = soundOn ? '🔊' : '🔇';
-  document.getElementById('soundBtn').classList.toggle('muted', !soundOn);
-  if (soundOn) speakNow('Звук включён!');
-}
-function readTaskAloud() { stopVoice(); speakNow(currentTaskText); }
-
-// ── Game logic ────────────────────────────────────────
-const TOTAL = 10;
-const LEVELS = {
+// ── Game ──────────────────────────────────────────────
+const TOTAL=10;
+const LEVELS={
   1:{max:10,label:'Ур. 1',name:'до 10', crossTen:false},
   2:{max:20,label:'Ур. 2',name:'до 20', crossTen:true},
   3:{max:50,label:'Ур. 3',name:'до 50', crossTen:true},
@@ -381,7 +365,7 @@ const LEVELS = {
 let level=1,op='add',questionIndex=0,correctCount=0,wrongCount=0;
 let answered=false,correctAnswer=0,cheesePieces=0,streak=0;
 
-const phrases = {
+const phrases={
   ask:['Иван, помоги мне! Если правильно — дам сыр!','Думай-думай! Ты умный, я знаю!',
     'Ой, как я хочу сыра... Посчитай, пожалуйста!','Нюсик очень голодный. Помоги найти ответ!',
     'Ах, какой запах сыра! Скорее считай!','Ну-ка, Иван, покажи что умеешь!',
@@ -419,9 +403,8 @@ const phrases = {
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 
 function setMouseMood(mood){
-  const svg=document.getElementById('mouseSvg'); if(!svg)return;
-  if(svg.getAttribute('data-mood')==='speaking'){svg._prevMood=mood;}
-  else{svg.setAttribute('data-mood',mood);}
+  const s=document.getElementById('mouseSvg');if(!s)return;
+  if(s.getAttribute('data-mood')==='speaking'){s._pm=mood;}else{s.setAttribute('data-mood',mood);}
   const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
   const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
   const mouth=document.getElementById('mouthPath'),cheese=document.getElementById('cheeseInPaw');
@@ -437,8 +420,7 @@ function setOp(o){op=o;document.querySelectorAll('.op-btn').forEach((b,i)=>b.cla
 function nextLevel(){if(level<4)setLevel(level+1);else restartGame();}
 
 function generateQuestion(){
-  const cfg=LEVELS[level];
-  let a,b,useAdd,hintText='',hintSpeech='';
+  const cfg=LEVELS[level];let a,b,useAdd,hintText='',hintSpeech='';
   if(op==='add')useAdd=true;else if(op==='sub')useAdd=false;else useAdd=Math.random()>.5;
   if(useAdd){
     if(cfg.crossTen&&Math.random()>.4){const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;const rem=Math.floor(Math.random()*8)+1;a=dec+rem;const cross=10-rem;b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));if(b<=0)b=cross;}

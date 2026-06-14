@@ -99,12 +99,10 @@
   .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
   .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
 
-  /* NEXT BTN — always in DOM flow, toggled via visibility so layout stays stable */
-  .next-btn{display:block;width:100%;background:var(--green);border:none;border-radius:16px;
+  /* next-btn: NO class toggling, controlled purely via JS style.display */
+  .next-btn{width:100%;background:var(--green);border:none;border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;color:white;
-    cursor:pointer;padding:14px 0;margin-bottom:14px;
-    visibility:hidden;opacity:0;transition:opacity .25s;}
-  .next-btn.visible{visibility:visible;opacity:1;}
+    cursor:pointer;padding:14px 0;margin-bottom:14px;}
   .next-btn:hover{background:var(--green-dark);}
 
   .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
@@ -203,8 +201,8 @@
     </div>
     <div class="answers-grid" id="answersGrid"></div>
 
-    <!-- visibility:hidden keeps layout space, button never "disappears" from flow -->
-    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Дальше! →</button>
+    <!-- Controlled via style.display in JS only, no CSS classes -->
+    <button class="next-btn" id="nextBtn" style="display:none" onclick="nextQuestion()">Дальше! →</button>
 
     <div class="progress-row">
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
@@ -228,9 +226,7 @@
 </div>
 
 <script>
-// ═══ VOICE: simple, bulletproof ═══════════════════════════
-// No queue, no callbacks — just fire-and-forget with a cancel guard.
-// Squeaky effect: rate 1.5 + pitch 2.0 (chipmunk/mouse)
+// ═══ VOICE ════════════════════════════════════════════════
 const synth = window.speechSynthesis;
 let ruVoice = null;
 let soundOn = true;
@@ -259,8 +255,6 @@ function speakNow(text) {
   u.onstart = () => setSpeakUI(true);
   u.onend = u.onerror = () => setSpeakUI(false);
   synth.speak(u);
-  // fallback clear if onend never fires
-  clearTimeout(voiceTimer);
   voiceTimer = setTimeout(() => setSpeakUI(false), 10000);
 }
 
@@ -312,6 +306,10 @@ let level=1, op='add';
 let questionIndex=0, correctCount=0, wrongCount=0;
 let answered=false, correctAnswer=0, cheesePieces=0;
 
+const nextBtn = document.getElementById('nextBtn');
+const showNext = () => { nextBtn.style.display = 'block'; };
+const hideNext = () => { nextBtn.style.display = 'none'; };
+
 const phrases = {
   ask:['Помоги мне! Дам тебе сыр!','Думай, Иван! Ты умный!',
        'Хочется сыра! Помоги!','Нюсик ждёт! Какой ответ?',
@@ -324,9 +322,6 @@ const phrases = {
          'Почти! В следующий раз!'],
 };
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
-
-function showNextBtn()  { document.getElementById('nextBtn').classList.add('visible'); }
-function hideNextBtn()  { document.getElementById('nextBtn').classList.remove('visible'); }
 
 function setLevel(l) {
   level = l;
@@ -405,13 +400,12 @@ function generateQuestion() {
   });
 
   setMouseMood('thinking');
-  const phrase=rnd(phrases.ask);
-  setBubble(phrase+' 🤔','');
-  hideNextBtn();
+  setBubble(rnd(phrases.ask)+' 🤔','');
+  hideNext();
   answered=false;
 
   stopVoice();
-  speakNow(phrase);
+  speakNow(rnd(phrases.ask));
   speakAfter(currentTaskText, 2200);
 }
 
@@ -450,7 +444,7 @@ function checkAnswer(chosen, btn) {
   if (questionIndex>=TOTAL) {
     setTimeout(showWin, 1400);
   } else {
-    showNextBtn();   // show immediately — layout is stable via visibility:hidden
+    showNext();
   }
 }
 

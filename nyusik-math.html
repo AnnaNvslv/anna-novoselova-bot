@@ -24,7 +24,6 @@
     display:flex;align-items:center;justify-content:center;transition:all .15s;}
   .sound-btn:hover{background:var(--grey-light);}
   .sound-btn.muted{opacity:.45;}
-
   .bubble-wrap{margin-bottom:12px;}
   .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
     padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
@@ -39,7 +38,6 @@
   .speaking-dots span:nth-child(2){animation-delay:.15s;}
   .speaking-dots span:nth-child(3){animation-delay:.3s;}
   @keyframes dotBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
-
   .level-bar,.op-bar{display:flex;gap:6px;width:100%;max-width:480px;margin-bottom:10px;}
   .level-btn{flex:1;padding:7px 2px;border:2px solid var(--grey-light);border-radius:12px;
     background:white;font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:800;
@@ -51,7 +49,6 @@
     color:var(--grey-dark);cursor:pointer;transition:all .15s;}
   .op-btn.active{background:var(--blue);border-color:var(--blue);color:white;}
   .op-btn:hover:not(.active){background:var(--grey-light);}
-
   .cheese-store{background:var(--warm);border:3px solid var(--cheese);border-radius:18px;
     padding:8px 16px;margin-bottom:10px;text-align:center;width:100%;max-width:480px;}
   .cheese-store-label{font-size:.75rem;font-weight:800;color:var(--grey-dark);
@@ -60,20 +57,19 @@
   .cheese-piece{font-size:1.3rem;animation:popIn .3s cubic-bezier(.36,.07,.19,.97);}
   @keyframes popIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}
     70%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
-
   .card{background:white;border-radius:28px;padding:20px 16px;width:100%;max-width:480px;
     box-shadow:0 4px 24px rgba(0,0,0,.07);}
   .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
   .mouse-svg{width:130px;height:130px;}
-  .mouse-svg.happy{animation:wiggle .5s ease;}
-  .mouse-svg.sad{animation:shake .4s ease;}
-  .mouse-svg.thinking{animation:bop 1.2s ease infinite;}
-  .mouse-svg.speaking{animation:mousePulse .4s ease infinite alternate;}
+  /* SVG mood classes — set via setAttribute, not className */
   @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.05);}75%{transform:rotate(8deg) scale(1.05);}}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
   @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
   @keyframes mousePulse{from{transform:scale(1);}to{transform:scale(1.08) rotate(2deg);}}
-
+  .mouse-svg[data-mood="happy"]{animation:wiggle .5s ease;}
+  .mouse-svg[data-mood="sad"]{animation:shake .4s ease;}
+  .mouse-svg[data-mood="thinking"]{animation:bop 1.2s ease infinite;}
+  .mouse-svg[data-mood="speaking"]{animation:mousePulse .4s ease infinite alternate;}
   .task-area{text-align:center;margin-bottom:14px;}
   .task-label{font-size:.78rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
   .level-badge{display:inline-block;background:var(--purple);color:white;font-size:.7rem;
@@ -89,7 +85,6 @@
     color:var(--grey);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;
     padding:4px 12px;cursor:pointer;margin-top:6px;transition:all .15s;}
   .read-task-btn:hover{border-color:var(--purple);color:var(--purple);background:#F3EEFF;}
-
   .answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .answer-btn{background:var(--warm);border:3px solid var(--cheese);border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:900;color:var(--text);
@@ -98,15 +93,12 @@
   .answer-btn:active:not(:disabled){transform:scale(.97);}
   .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
   .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
-
-  /* Next btn: ALWAYS visible, just disabled/grey before answer */
   .next-btn{display:block;width:100%;border:none;border-radius:16px;
     font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;
     cursor:pointer;padding:14px 0;margin-bottom:14px;transition:background .2s,color .2s;}
   .next-btn:disabled{background:var(--grey-light);color:var(--grey);cursor:default;}
   .next-btn:not(:disabled){background:var(--green);color:white;}
   .next-btn:not(:disabled):hover{background:var(--green-dark);}
-
   .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
   .progress-bar-bg{flex:1;height:10px;background:var(--grey-light);border-radius:8px;overflow:hidden;}
   .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cheese),var(--green));
@@ -114,7 +106,6 @@
   .progress-text{font-size:.8rem;font-weight:800;color:var(--grey);min-width:36px;text-align:right;}
   .score-row{display:flex;gap:16px;justify-content:center;font-size:.85rem;font-weight:700;color:var(--grey);}
   .correct-count{color:var(--green-dark);}.wrong-count{color:var(--red);}
-
   .win-overlay{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0;}
   .win-overlay.visible{display:flex;animation:popIn .5s;}
   .win-stars{font-size:2.5rem;letter-spacing:4px;}
@@ -135,7 +126,6 @@
   <h1>🧀 Нюсик и <span>математика</span></h1>
   <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
 </div>
-
 <div class="level-bar">
   <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
   <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
@@ -147,7 +137,6 @@
   <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
   <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
 </div>
-
 <div class="cheese-store">
   <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
   <div class="cheese-row" id="cheeseRow"></div>
@@ -159,7 +148,7 @@
       <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
       <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
     </div>
-    <svg class="mouse-svg" id="mouseSvg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+    <svg class="mouse-svg" id="mouseSvg" data-mood="thinking" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
       <ellipse cx="98" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
       <ellipse cx="42" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
@@ -202,10 +191,7 @@
       <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
     </div>
     <div class="answers-grid" id="answersGrid"></div>
-
-    <!-- Всегда видна: серая (disabled) до ответа, зелёная после -->
     <button class="next-btn" id="nextBtn" disabled onclick="nextQuestion()">Выбери ответ ↑</button>
-
     <div class="progress-row">
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-text" id="progressText">0/10</div>
@@ -230,16 +216,11 @@
 <script>
 // ═══ VOICE ════════════════════════════════════════════
 const synth = window.speechSynthesis;
-let ruVoice = null;
-let soundOn = true;
-let currentTaskText = '';
-let voiceTimer = null;
+let ruVoice = null, soundOn = true, currentTaskText = '', voiceTimer = null;
 
 function loadVoices() {
   const vs = synth.getVoices();
-  ruVoice = vs.find(v => v.lang === 'ru-RU') ||
-            vs.find(v => v.lang.startsWith('ru')) ||
-            vs[0] || null;
+  ruVoice = vs.find(v=>v.lang==='ru-RU') || vs.find(v=>v.lang.startsWith('ru')) || vs[0] || null;
 }
 loadVoices();
 if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
@@ -248,36 +229,33 @@ function speakNow(text) {
   if (!soundOn || !text) return;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ru-RU'; u.rate = 1.5; u.pitch = 2.0; u.volume = 1;
+  u.lang='ru-RU'; u.rate=1.5; u.pitch=2.0; u.volume=1;
   if (ruVoice) u.voice = ruVoice;
   u.onstart = () => setSpeakUI(true);
   u.onend = u.onerror = () => setSpeakUI(false);
   synth.speak(u);
 }
-
 function speakAfter(text, ms) {
   clearTimeout(voiceTimer);
   voiceTimer = setTimeout(() => speakNow(text), ms);
 }
-
 function stopVoice() {
   clearTimeout(voiceTimer);
   synth.cancel();
   setSpeakUI(false);
 }
-
 function setSpeakUI(on) {
   document.getElementById('speakingDots').classList.toggle('active', on);
+  // Use data-mood attribute — safe for SVG, no className issues
   const svg = document.getElementById('mouseSvg');
   if (on) {
-    svg._sc = svg.className;
-    svg.className = 'mouse-svg speaking';
-  } else if (svg._sc) {
-    svg.className = svg._sc;
-    svg._sc = null;
+    svg._prevMood = svg.getAttribute('data-mood');
+    svg.setAttribute('data-mood', 'speaking');
+  } else {
+    svg.setAttribute('data-mood', svg._prevMood || 'thinking');
+    svg._prevMood = null;
   }
 }
-
 function toggleSound() {
   soundOn = !soundOn;
   if (!soundOn) stopVoice();
@@ -285,7 +263,6 @@ function toggleSound() {
   document.getElementById('soundBtn').classList.toggle('muted', !soundOn);
   if (soundOn) speakNow('Звук включён!');
 }
-
 function readTaskAloud() { stopVoice(); speakNow(currentTaskText); }
 // ═════════════════════════════════════════════════════
 
@@ -296,18 +273,8 @@ const LEVELS = {
   3:{max:50,label:'Ур. 3',name:'до 50', crossTen:true},
   4:{max:100,label:'Ур. 4',name:'до 100',crossTen:true},
 };
-let level=1,op='add',questionIndex=0,correctCount=0,wrongCount=0;
-let answered=false,correctAnswer=0,cheesePieces=0;
-
-const NB = document.getElementById('nextBtn');
-function enableNext(label) {
-  NB.disabled = false;
-  NB.textContent = label || 'Дальше! →';
-}
-function disableNext() {
-  NB.disabled = true;
-  NB.textContent = 'Выбери ответ ↑';
-}
+let level=1, op='add', questionIndex=0, correctCount=0, wrongCount=0;
+let answered=false, correctAnswer=0, cheesePieces=0;
 
 const phrases = {
   ask:['Помоги мне! Дам тебе сыр!','Думай, Иван! Ты умный!',
@@ -321,6 +288,32 @@ const phrases = {
          'Почти! В следующий раз!'],
 };
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function setMouseMood(mood) {
+  const svg = document.getElementById('mouseSvg');
+  const cur = svg.getAttribute('data-mood');
+  // Don't override speaking state — store for after
+  if (cur === 'speaking') { svg._prevMood = mood; }
+  else { svg.setAttribute('data-mood', mood); }
+
+  const pL=document.getElementById('pupilL'), pR=document.getElementById('pupilR');
+  const gL=document.getElementById('glintL'), gR=document.getElementById('glintR');
+  const mouth=document.getElementById('mouthPath');
+  const cheese=document.getElementById('cheeseInPaw');
+  if (mood==='happy') {
+    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','4');});
+    gL.style.display=gR.style.display='';
+    mouth.setAttribute('d','M 60 92 Q 70 102 80 92'); cheese.style.display='';
+  } else if (mood==='sad') {
+    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','3.5');});
+    gL.style.display=gR.style.display='none';
+    mouth.setAttribute('d','M 62 97 Q 70 91 78 97'); cheese.style.display='none';
+  } else {
+    [pL,pR].forEach(p=>{p.setAttribute('cy','68');p.setAttribute('r','4');});
+    gL.style.display=gR.style.display='';
+    mouth.setAttribute('d','M 62 93 Q 70 99 78 93'); cheese.style.display='none';
+  }
+}
 
 function setLevel(l) {
   level=l;
@@ -381,8 +374,7 @@ function generateQuestion() {
   const choices=new Set([correctAnswer]);
   let tries=0;
   while(choices.size<4&&tries<100){
-    tries++;
-    const d=Math.floor(Math.random()*spread)+1;
+    tries++; const d=Math.floor(Math.random()*spread)+1;
     const w=correctAnswer+(Math.random()>.5?d:-d);
     if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);
   }
@@ -400,8 +392,11 @@ function generateQuestion() {
   setMouseMood('thinking');
   const phrase=rnd(phrases.ask);
   setBubble(phrase+' 🤔','');
-  disableNext();
+
+  const nb=document.getElementById('nextBtn');
+  nb.disabled=true; nb.textContent='Выбери ответ ↑';
   answered=false;
+
   stopVoice();
   speakNow(phrase);
   speakAfter(currentTaskText, 2000);
@@ -412,6 +407,8 @@ function checkAnswer(chosen,btn){
   answered=true;
   stopVoice();
   document.querySelectorAll('.answer-btn').forEach(b=>b.disabled=true);
+
+  const nb=document.getElementById('nextBtn');
 
   if(chosen===correctAnswer){
     btn.classList.add('correct');
@@ -442,7 +439,8 @@ function checkAnswer(chosen,btn){
   if(questionIndex>=TOTAL){
     setTimeout(showWin,1400);
   } else {
-    enableNext('Дальше! →');
+    nb.disabled=false;
+    nb.textContent='Дальше! →';
   }
 }
 
@@ -452,37 +450,11 @@ function updateProgress(){
   document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';
   document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;
 }
-
 function addCheese(){
   const s=document.createElement('span');
   s.className='cheese-piece'; s.textContent='🧀';
   document.getElementById('cheeseRow').appendChild(s);
 }
-
-function setMouseMood(mood){
-  const svg=document.getElementById('mouseSvg');
-  if(!svg.className.includes('speaking')){
-    svg.className='mouse-svg '+mood; void svg.offsetWidth;
-  } else { svg._sc='mouse-svg '+mood; }
-  const pL=document.getElementById('pupilL'),pR=document.getElementById('pupilR');
-  const gL=document.getElementById('glintL'),gR=document.getElementById('glintR');
-  const mouth=document.getElementById('mouthPath');
-  const cheese=document.getElementById('cheeseInPaw');
-  if(mood==='happy'){
-    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','4');});
-    gL.style.display=gR.style.display='';
-    mouth.setAttribute('d','M 60 92 Q 70 102 80 92'); cheese.style.display='';
-  } else if(mood==='sad'){
-    [pL,pR].forEach(p=>{p.setAttribute('cy','70');p.setAttribute('r','3.5');});
-    gL.style.display=gR.style.display='none';
-    mouth.setAttribute('d','M 62 97 Q 70 91 78 97'); cheese.style.display='none';
-  } else {
-    [pL,pR].forEach(p=>{p.setAttribute('cy','68');p.setAttribute('r','4');});
-    gL.style.display=gR.style.display='';
-    mouth.setAttribute('d','M 62 93 Q 70 99 78 93'); cheese.style.display='none';
-  }
-}
-
 function setBubble(text,cls){
   const b=document.getElementById('bubble');
   b.textContent=text; b.className='bubble '+cls;

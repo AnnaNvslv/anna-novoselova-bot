@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Нюсик учит математику</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap');
+
+  :root {
+    --cream: #FFF8F0;
+    --warm: #FFF0DC;
+    --grey-light: #E8E4E0;
+    --grey: #B0A8A0;
+    --grey-dark: #6B6360;
+    --cheese: #F5C842;
+    --cheese-dark: #E0A800;
+    --green: #5CC87A;
+    --green-dark: #3DA85C;
+    --red: #FF6B6B;
+    --purple: #9B7FD4;
+    --blue: #5BA4CF;
+    --text: #3A3330;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 12px 32px;
+    color: var(--text);
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: var(--grey-dark);
+  }
+  .header h1 span { color: var(--cheese-dark); }
+
+  /* LEVEL BAR */
+  .level-bar {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 10px;
+  }
+  .level-btn {
+    flex: 1;
+    padding: 7px 2px;
+    border: 2px solid var(--grey-light);
+    border-radius: 12px;
+    background: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--grey-dark);
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .level-btn.active { background: var(--purple); border-color: var(--purple); color: white; }
+  .level-btn:hover:not(.active) { background: var(--grey-light); }
+
+  /* OP BAR */
+  .op-bar {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 10px;
+  }
+  .op-btn {
+    flex: 1;
+    padding: 7px 0;
+    border: 2px solid var(--grey-light);
+    border-radius: 12px;
+    background: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--grey-dark);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .op-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+  .op-btn:hover:not(.active) { background: var(--grey-light); }
+
+  /* CHEESE STORE */
+  .cheese-store {
+    background: var(--warm);
+    border: 3px solid var(--cheese);
+    border-radius: 18px;
+    padding: 8px 16px;
+    margin-bottom: 10px;
+    text-align: center;
+    width: 100%;
+    max-width: 480px;
+  }
+  .cheese-store-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--grey-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .cheese-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    justify-content: center;
+    min-height: 26px;
+  }
+  .cheese-piece {
+    font-size: 1.3rem;
+    animation: popIn 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    70% { transform: scale(1.3) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  /* CARD */
+  .card {
+    background: white;
+    border-radius: 28px;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  }
+
+  /* MOUSE */
+  .mouse-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .bubble {
+    background: var(--grey-light);
+    border-radius: 18px 18px 18px 4px;
+    padding: 12px 18px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--grey-dark);
+    max-width: 300px;
+    text-align: center;
+    line-height: 1.45;
+    margin-bottom: 10px;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s, color 0.3s;
+  }
+  .bubble.happy-bubble { background: #D4F5DC; color: #2A7A40; }
+  .bubble.sad-bubble { background: #FFE5E5; color: #B03030; }
+
+  .mouse-svg {
+    width: 130px;
+    height: 130px;
+    transition: transform 0.3s;
+  }
+  .mouse-svg.happy { animation: wiggle 0.5s ease; }
+  .mouse-svg.sad { animation: shake 0.4s ease; }
+  .mouse-svg.thinking { animation: bop 1.2s ease infinite; }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-8deg) scale(1.05); }
+    75% { transform: rotate(8deg) scale(1.05); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+  @keyframes bop {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* TASK */
+  .task-area { text-align: center; margin-bottom: 14px; }
+  .task-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--grey);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .level-badge {
+    display: inline-block;
+    background: var(--purple);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border-radius: 8px;
+    padding: 2px 8px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .task-expression {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -1px;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .task-expression .op { color: var(--purple); }
+  .task-expression .eq { color: var(--grey); }
+  .hint {
+    font-size: 0.82rem;
+    color: var(--blue);
+    font-weight: 700;
+    margin-top: 4px;
+    min-height: 20px;
+  }
+
+  /* ANSWERS */
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .answer-btn {
+    background: var(--warm);
+    border: 3px solid var(--cheese);
+    border-radius: 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    padding: 14px 0;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .answer-btn:hover:not(:disabled) { background: var(--cheese); transform: scale(1.04); }
+  .answer-btn:active:not(:disabled) { transform: scale(0.97); }
+  .answer-btn.correct {
+    background: var(--green);
+    border-color: var(--green-dark);
+    color: white;
+    animation: popIn 0.3s;
+  }
+  .answer-btn.wrong {
+    background: var(--red);
+    border-color: #C04040;
+    color: white;
+    animation: shake 0.4s;
+  }
+
+  /* NEXT BTN — always in flow, never overlapping */
+  .next-btn {
+    display: block;
+    width: 100%;
+    background: var(--green);
+    border: none;
+    border-radius: 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: white;
+    cursor: pointer;
+    padding: 14px 0;
+    transition: all 0.15s;
+    opacity: 0;
+    pointer-events: none;
+    margin-bottom: 14px;
+  }
+  .next-btn.visible { opacity: 1; pointer-events: auto; animation: popIn 0.3s; }
+  .next-btn:hover { background: var(--green-dark); }
+
+  /* PROGRESS */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .progress-bar-bg {
+    flex: 1;
+    height: 10px;
+    background: var(--grey-light);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cheese), var(--green));
+    border-radius: 8px;
+    transition: width 0.4s ease;
+  }
+  .progress-text {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--grey);
+    min-width: 36px;
+    text-align: right;
+  }
+  .score-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--grey);
+  }
+  .correct-count { color: var(--green-dark); }
+  .wrong-count { color: var(--red); }
+
+  /* WIN */
+  .win-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 8px 0;
+  }
+  .win-overlay.visible { display: flex; animation: popIn 0.5s; }
+  .win-stars { font-size: 2.5rem; letter-spacing: 4px; }
+  .win-title { font-size: 1.5rem; font-weight: 900; color: var(--cheese-dark); }
+  .win-subtitle { font-size: 1rem; color: var(--grey-dark); font-weight: 600; line-height: 1.4; }
+  .win-btns { display: flex; gap: 10px; width: 100%; }
+  .restart-btn {
+    flex: 1;
+    background: var(--cheese);
+    border: none;
+    border-radius: 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--text);
+    cursor: pointer;
+    padding: 13px 0;
+    transition: all 0.15s;
+  }
+  .restart-btn:hover { background: var(--cheese-dark); color: white; }
+  .restart-btn.secondary {
+    background: var(--purple);
+    color: white;
+  }
+  .restart-btn.secondary:hover { background: #7B5FC4; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧀 Нюсик и <span>математика</span></h1>
+</div>
+
+<!-- Level selector -->
+<div class="level-bar">
+  <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
+  <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
+  <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐<br>Уровень 3<br><small>до 50</small></button>
+  <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
+</div>
+
+<!-- Op selector -->
+<div class="op-bar">
+  <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
+  <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
+  <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
+</div>
+
+<!-- Cheese store -->
+<div class="cheese-store">
+  <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
+  <div class="cheese-row" id="cheeseRow"></div>
+</div>
+
+<div class="card">
+
+  <!-- Mouse -->
+  <div class="mouse-area">
+    <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр! 🧀</div>
+    <svg class="mouse-svg" id="mouseSvg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="42" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
+      <ellipse cx="98" cy="48" rx="18" ry="20" fill="#C8C0BC"/>
+      <ellipse cx="42" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
+      <ellipse cx="98" cy="49" rx="11" ry="13" fill="#E8C0C0"/>
+      <ellipse cx="70" cy="98" rx="34" ry="28" fill="#B0A8A0"/>
+      <ellipse cx="70" cy="74" rx="32" ry="29" fill="#C4BDB8"/>
+      <ellipse cx="70" cy="87" rx="8" ry="5" fill="#DDB0B0"/>
+      <circle cx="70" cy="86" r="4" fill="#C88888"/>
+      <line x1="62" y1="85" x2="36" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="62" y1="87" x2="36" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="62" y1="89" x2="36" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="78" y1="85" x2="104" y2="81" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="78" y1="87" x2="104" y2="87" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="78" y1="89" x2="104" y2="93" stroke="#999" stroke-width="1.5" stroke-linecap="round"/>
+      <g id="eyes">
+        <circle cx="58" cy="68" r="7" fill="white"/>
+        <circle cx="82" cy="68" r="7" fill="white"/>
+        <circle cx="59" cy="69" r="4" fill="#3A3330" id="pupilL"/>
+        <circle cx="83" cy="69" r="4" fill="#3A3330" id="pupilR"/>
+        <circle cx="60" cy="67.5" r="1.5" fill="white" id="glintL"/>
+        <circle cx="84" cy="67.5" r="1.5" fill="white" id="glintR"/>
+      </g>
+      <path id="mouthPath" d="M 62 93 Q 70 100 78 93" fill="none" stroke="#8B5E5E" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 100 118 Q 120 130 116 110 Q 112 95 128 88" fill="none" stroke="#B0A8A0" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="50" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
+      <ellipse cx="90" cy="122" rx="12" ry="7" fill="#B0A8A0"/>
+      <g id="cheeseInPaw" style="display:none">
+        <rect x="96" y="104" width="22" height="18" rx="4" fill="#F5C842" transform="rotate(-15,107,113)"/>
+        <circle cx="101" cy="109" r="2.5" fill="#E0A800" transform="rotate(-15,107,113)"/>
+        <circle cx="110" cy="115" r="2" fill="#E0A800" transform="rotate(-15,107,113)"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Task section -->
+  <div id="taskSection">
+    <div class="task-area">
+      <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
+      <div class="task-expression" id="taskExpr"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <div class="answers-grid" id="answersGrid"></div>
+
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Дальше! →</button>
+
+    <div class="progress-row">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0/10</div>
+    </div>
+    <div class="score-row">
+      <span>✅ <span class="correct-count" id="correctCount">0</span></span>
+      <span>❌ <span class="wrong-count" id="wrongCount">0</span></span>
+    </div>
+  </div>
+
+  <!-- Win -->
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-stars" id="winStars">⭐⭐⭐</div>
+    <div class="win-title" id="winTitle">Кладовочка полная!</div>
+    <div class="win-subtitle" id="winSubtitle"></div>
+    <div class="win-btns">
+      <button class="restart-btn" onclick="restartGame()">Ещё раз! 🔄</button>
+      <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const TOTAL = 10;
+
+// Level configs
+const LEVELS = {
+  1: { max: 10,  label: 'Ур. 1',   name: 'до 10',  crossTen: false },
+  2: { max: 20,  label: 'Ур. 2',   name: 'до 20',  crossTen: true  },
+  3: { max: 50,  label: 'Ур. 3',   name: 'до 50',  crossTen: true  },
+  4: { max: 100, label: 'Ур. 4',   name: 'до 100', crossTen: true  },
+};
+
+let level = 1;
+let op = 'add';
+let questionIndex = 0;
+let correctCount = 0;
+let wrongCount = 0;
+let answered = false;
+let correctAnswer = 0;
+let cheesePieces = 0;
+
+const phrases = {
+  ask: [
+    'Помоги мне! Если правильно — дам тебе сыр! 🧀',
+    'Думай-думай, Иван! Ты умный! 🤔',
+    'Мне так хочется сыра... помоги! 🧀',
+    'Нюсик ждёт! Какой ответ? 😊',
+    'Ах, как пахнет сыром... скорее! 🧀',
+    'Считай внимательно! Ты справишься! 💪',
+  ],
+  correct: [
+    'УРА! Правильно! Вот тебе сыр! 🧀🎉',
+    'МОЛОДЕЦ! Ты самый умный! ⭐',
+    'Да-да-да! Именно! Кушаем сыр! 🧀😄',
+    'Ты суперзвезда, Иван! ⭐⭐⭐',
+    'Правильно! Нюсик счастлив! 🥳',
+    'Вот это да! Какой умный Иван! 🎉',
+  ],
+  wrong: [
+    'Ой, не то... попробуй ещё раз! 💪',
+    'Нет-нет... но ты можешь! Думай! 🤔',
+    'Ошибочка! Но Нюсик верит в тебя! 💛',
+    'Не расстраивайся! В следующий раз! 😊',
+    'Почти! Попробуй снова? 🧀',
+  ],
+};
+
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function setLevel(l) {
+  level = l;
+  document.querySelectorAll('.level-btn').forEach((b, i) => b.classList.toggle('active', i + 1 === l));
+  document.getElementById('levelBadge').textContent = LEVELS[l].label;
+  restartGame();
+}
+
+function setOp(o) {
+  op = o;
+  document.querySelectorAll('.op-btn').forEach((b, i) => b.classList.toggle('active', ['add','sub','both'][i] === o));
+  restartGame();
+}
+
+function nextLevel() {
+  if (level < 4) setLevel(level + 1);
+  else restartGame();
+}
+
+function generateQuestion() {
+  const cfg = LEVELS[level];
+  let a, b, useAdd, hint = '';
+
+  if (op === 'add') useAdd = true;
+  else if (op === 'sub') useAdd = false;
+  else useAdd = Math.random() > 0.5;
+
+  if (useAdd) {
+    // For higher levels, sometimes force crossing a decade
+    if (cfg.crossTen && Math.random() > 0.4) {
+      // a ends in 1-9, b crosses next decade
+      const decade = Math.floor(Math.random() * Math.floor((cfg.max - 10) / 10)) * 10;
+      const rem = Math.floor(Math.random() * 8) + 1; // 1-8
+      a = decade + rem;
+      const cross = 10 - rem; // how much to reach next decade
+      b = cross + Math.floor(Math.random() * Math.min(9, cfg.max - a - cross));
+      if (b <= 0) b = cross;
+    } else {
+      a = Math.floor(Math.random() * (cfg.max - 1)) + 1;
+      b = Math.floor(Math.random() * (cfg.max - a)) + 1;
+    }
+    correctAnswer = a + b;
+    if (correctAnswer > cfg.max) { a = Math.max(1, cfg.max - 9); b = Math.floor(Math.random() * 9) + 1; correctAnswer = a + b; }
+    if (cfg.crossTen && correctAnswer > 10 && a % 10 !== 0 && b % 10 !== 0) {
+      hint = '💡 Подсказка: сначала доберись до круглого числа!';
+    }
+  } else {
+    if (cfg.crossTen && Math.random() > 0.4) {
+      const decade = (Math.floor(Math.random() * Math.floor(cfg.max / 10)) + 1) * 10;
+      a = decade + Math.floor(Math.random() * Math.min(9, cfg.max - decade));
+      b = Math.floor(Math.random() * (decade % 10 === 0 ? Math.min(9, a - decade + 1) : a - (decade - 10))) + 1;
+      if (a <= 0 || b <= 0 || b >= a) { a = 15; b = 7; }
+    } else {
+      a = Math.floor(Math.random() * (cfg.max - 1)) + 2;
+      b = Math.floor(Math.random() * (a - 1)) + 1;
+    }
+    correctAnswer = a - b;
+    if (correctAnswer < 0) { a = 10; b = 3; correctAnswer = 7; }
+  }
+
+  document.getElementById('hint').textContent = hint;
+
+  const exprEl = document.getElementById('taskExpr');
+  exprEl.innerHTML = `<span>${a}</span> <span class="op">${useAdd ? '+' : '−'}</span> <span>${b}</span> <span class="eq">=</span> <span>?</span>`;
+
+  // Generate wrong answers — smarter spread for bigger numbers
+  const spread = cfg.max <= 10 ? 3 : cfg.max <= 20 ? 5 : 10;
+  const choices = new Set([correctAnswer]);
+  let tries = 0;
+  while (choices.size < 4 && tries < 100) {
+    tries++;
+    const delta = Math.floor(Math.random() * spread) + 1;
+    const w = correctAnswer + (Math.random() > 0.5 ? delta : -delta);
+    if (w >= 0 && w <= cfg.max + 5 && w !== correctAnswer) choices.add(w);
+  }
+  // fallback
+  while (choices.size < 4) choices.add(correctAnswer + choices.size);
+
+  const shuffled = [...choices].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById('answersGrid');
+  grid.innerHTML = '';
+  shuffled.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = n;
+    btn.onclick = () => checkAnswer(n, btn);
+    grid.appendChild(btn);
+  });
+
+  setMouseMood('thinking');
+  setBubble(rnd(phrases.ask), '');
+  const nb = document.getElementById('nextBtn');
+  nb.classList.remove('visible');
+  answered = false;
+}
+
+function checkAnswer(chosen, btn) {
+  if (answered) return;
+  answered = true;
+  document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+
+  if (chosen === correctAnswer) {
+    btn.classList.add('correct');
+    correctCount++;
+    cheesePieces++;
+    document.getElementById('correctCount').textContent = correctCount;
+    addCheese();
+    setMouseMood('happy');
+    setBubble(rnd(phrases.correct), 'happy-bubble');
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.answer-btn').forEach(b => { if (parseInt(b.textContent) === correctAnswer) b.classList.add('correct'); });
+    wrongCount++;
+    document.getElementById('wrongCount').textContent = wrongCount;
+    setMouseMood('sad');
+    setBubble(rnd(phrases.wrong), 'sad-bubble');
+  }
+
+  questionIndex++;
+  updateProgress();
+
+  if (questionIndex >= TOTAL) {
+    setTimeout(showWin, 1100);
+  } else {
+    document.getElementById('nextBtn').classList.add('visible');
+  }
+}
+
+function nextQuestion() { generateQuestion(); }
+
+function updateProgress() {
+  const pct = (questionIndex / TOTAL) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = questionIndex + '/' + TOTAL;
+}
+
+function addCheese() {
+  const row = document.getElementById('cheeseRow');
+  const span = document.createElement('span');
+  span.className = 'cheese-piece';
+  span.textContent = '🧀';
+  row.appendChild(span);
+}
+
+function setMouseMood(mood) {
+  const svg = document.getElementById('mouseSvg');
+  svg.className = 'mouse-svg ' + mood;
+  void svg.offsetWidth;
+  const pupilL = document.getElementById('pupilL');
+  const pupilR = document.getElementById('pupilR');
+  const glintL = document.getElementById('glintL');
+  const glintR = document.getElementById('glintR');
+  const mouth = document.getElementById('mouthPath');
+  const cheese = document.getElementById('cheeseInPaw');
+  if (mood === 'happy') {
+    pupilL.setAttribute('cy','70'); pupilR.setAttribute('cy','70');
+    pupilL.setAttribute('r','4'); pupilR.setAttribute('r','4');
+    glintL.style.display=''; glintR.style.display='';
+    mouth.setAttribute('d','M 60 92 Q 70 102 80 92');
+    cheese.style.display = '';
+  } else if (mood === 'sad') {
+    pupilL.setAttribute('cy','70'); pupilR.setAttribute('cy','70');
+    pupilL.setAttribute('r','3.5'); pupilR.setAttribute('r','3.5');
+    glintL.style.display='none'; glintR.style.display='none';
+    mouth.setAttribute('d','M 62 97 Q 70 91 78 97');
+    cheese.style.display = 'none';
+  } else {
+    pupilL.setAttribute('cy','68'); pupilR.setAttribute('cy','68');
+    pupilL.setAttribute('r','4'); pupilR.setAttribute('r','4');
+    glintL.style.display=''; glintR.style.display='';
+    mouth.setAttribute('d','M 62 93 Q 70 99 78 93');
+    cheese.style.display = 'none';
+  }
+}
+
+function setBubble(text, cls) {
+  const b = document.getElementById('bubble');
+  b.textContent = text;
+  b.className = 'bubble ' + cls;
+}
+
+function showWin() {
+  document.getElementById('taskSection').style.display = 'none';
+  const win = document.getElementById('winOverlay');
+  win.classList.add('visible');
+  setMouseMood('happy');
+  const cfg = LEVELS[level];
+  const pct = correctCount / TOTAL;
+  let stars, title, sub;
+  if (pct >= 0.9) {
+    stars = '⭐⭐⭐'; title = 'Кладовочка полная!';
+    sub = `Нюсик в восторге! ${correctCount} из ${TOTAL} правильно! Уровень "${cfg.name}" покорён! 🏆`;
+  } else if (pct >= 0.6) {
+    stars = '⭐⭐'; title = 'Хорошая работа!';
+    sub = `${correctCount} из ${TOTAL}. Нюсик доволен! Ещё чуть-чуть потренируемся?`;
+  } else {
+    stars = '⭐'; title = 'Нюсик верит в тебя!';
+    sub = `${correctCount} из ${TOTAL}. Попробуем ещё раз — в следующий раз лучше!`;
+  }
+  document.getElementById('winStars').textContent = stars;
+  document.getElementById('winTitle').textContent = title;
+  document.getElementById('winSubtitle').textContent = sub;
+  // hide "harder" btn on max level
+  document.querySelector('.restart-btn.secondary').style.display = level >= 4 ? 'none' : '';
+}
+
+function restartGame() {
+  questionIndex = 0; correctCount = 0; wrongCount = 0; cheesePieces = 0;
+  document.getElementById('cheeseRow').innerHTML = '';
+  document.getElementById('correctCount').textContent = '0';
+  document.getElementById('wrongCount').textContent = '0';
+  document.getElementById('taskSection').style.display = '';
+  document.getElementById('winOverlay').classList.remove('visible');
+  updateProgress();
+  generateQuestion();
+}
+
+generateQuestion();
+</script>
+</body>
+</html>

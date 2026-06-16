@@ -52,7 +52,6 @@ async function renderSlots(){
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
   const calDur=+(s.cal_duration||60);
 
-  // Index by date+time
   const slotMap={};
   (slots||[]).forEach(sl=>{ slotMap[`${sl.date}|${sl.start_time?.substr(0,5)}`]=sl; });
   const apptMap={};
@@ -61,28 +60,30 @@ async function renderSlots(){
   const gridH = (CAL_END_H - CAL_START_H) * 60 * PX_PER_MIN;
   const nowMin = now.getHours()*60+now.getMinutes();
 
-  // Hour labels (left column)
   let hourLabels='';
   for(let h=CAL_START_H;h<=CAL_END_H;h++){
     const top=minToPx(h*60);
     hourLabels+=`<div class="cg2-hour-label" style="top:${top}px">${String(h).padStart(2,'0')}:00</div>`;
   }
 
-  // Hour lines (background)
   let hourLines='';
   for(let h=CAL_START_H;h<=CAL_END_H;h++){
     const top=minToPx(h*60);
     hourLines+=`<div class="cg2-hline" style="top:${top}px"></div>`;
   }
 
-  // Build day columns
+  // Helper: last name (second word) for short slots
+  function lastName(fullName){
+    const parts=(fullName||'').trim().split(/\s+/);
+    return parts.length>1?parts[1]:parts[0]||'—';
+  }
+
   let dayCols='';
-  weekDays.forEach((d,ci)=>{
+  weekDays.forEach((d)=>{
     const dt=new Date(d+'T12:00:00');
     const isToday=d===todayStr;
     const isWork=workDays.includes(dt.getDay());
 
-    // Collect all events for this day
     const events=[];
     const seenTimes=new Set();
 
@@ -92,63 +93,87 @@ async function renderSlots(){
       seenTimes.add(tm);
       const appt=apptMap[`${d}|${tm}`];
       const slotType=sl.slot_type||'primary';
-      const dur = appt ? (SLOT_DURATIONS[slotType]||calDur) : (SLOT_DURATIONS[slotType]||calDur);
+      const dur=SLOT_DURATIONS[slotType]||calDur;
       events.push({ tm, slot:sl, appt:appt||null, dur, slotType });
     });
 
-    // Appointments without a slot
     (appts||[]).filter(a=>a.date===d).forEach(a=>{
       const tm=a.time?.substr(0,5);
       if(!tm||seenTimes.has(tm))return;
       events.push({ tm, slot:null, appt:a, dur:calDur, slotType:'primary' });
     });
 
-    // Render each event as absolutely positioned block
     let eventsHTML='';
     events.forEach(({tm,slot,appt,dur,slotType})=>{
-      const startMin=tmToMin(tm);
-      const top=minToPx(startMin);
-      const height=Math.max(dur*PX_PER_MIN - 2, 18);
-      const isShort=height<36;
+      const top=minToPx(tmToMin(tm));
+      const height=Math.max(dur*PX_PER_MIN - 2, 16);
+      // Short = less than ~30px — use single-line inline layout
+      const isShort=height<32;
 
       if(appt){
         const c=SLOT_COLORS.patient;
-        const name=appt.patients?.name||'—';
+        const fullName=appt.patients?.name||'—';
         const sub=apptTypeName(appt.type||'')||appt.appointment_number||'';
-        const delBtn=isAdmin()||isErvin()?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot?.id||''}','${appt.patient_id}')" title="Удалить">✕</button>`:'';
-        eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="openPatientCard('${appt.patient_id}')">
-          ${delBtn}
-          <div class="cg2-ev-time">${tm}</div>
-          ${!isShort?`<div class="cg2-ev-name">${name}</div><div class="cg2-ev-sub">${sub}</div>`:`<span class="cg2-ev-name" style="display:inline">${name}</span>`}
-        </div>`;
+        const canDel=isAdmin()||isErvin();
+        if(isShort){
+          // Inline: [time] [lastName] ... [✕]
+          eventsHTML+=`<div class="cg2-event cg2-event-row" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="openPatientCard('${appt.patient_id}')">
+            <span class="cg2-ri-time">${tm}</span>
+            <span class="cg2-ri-name">${lastName(fullName)}</span>
+            ${canDel?`<button class="cg2-ri-del" onclick="event.stopPropagation();removeSlotDirect('${slot?.id||''}','${appt.patient_id}')" title="Удалить">✕</button>`:''}
+          </div>`;
+        } else {
+          eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="openPatientCard('${appt.patient_id}')">
+            ${canDel?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot?.id||''}','${appt.patient_id}')" title="Удалить">✕</button>`:''}
+            <div class="cg2-ev-time">${tm}</div>
+            <div class="cg2-ev-name">${fullName}</div>
+            <div class="cg2-ev-sub">${sub}</div>
+          </div>`;
+        }
       } else if(slot&&slot.booked_by==='ervin'){
         const c=SLOT_COLORS.ervin;
         const can=isErvin()||isAdmin();
-        eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
-          ${can?`<button class="cg2-del" onclick="event.stopPropagation();unbookErvin('${slot.id}')" title="Отменить">✕</button>`:''}
-          <div class="cg2-ev-time">${tm}</div>
-          ${!isShort?`<div class="cg2-ev-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div>`:`<span class="cg2-ev-name" style="display:inline">Ervin</span>`}
-        </div>`;
+        const noteName=slot.ervin_note?` — ${slot.ervin_note}`:'';
+        if(isShort){
+          eventsHTML+=`<div class="cg2-event cg2-event-row" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+            <span class="cg2-ri-time">${tm}</span>
+            <span class="cg2-ri-name">Ervin${noteName}</span>
+            ${can?`<button class="cg2-ri-del" onclick="event.stopPropagation();unbookErvin('${slot.id}')" title="Отменить">✕</button>`:''}
+          </div>`;
+        } else {
+          eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+            ${can?`<button class="cg2-del" onclick="event.stopPropagation();unbookErvin('${slot.id}')" title="Отменить">✕</button>`:''}
+            <div class="cg2-ev-time">${tm}</div>
+            <div class="cg2-ev-name">Ervin${noteName}</div>
+          </div>`;
+        }
       } else if(slot&&!slot.is_booked){
         const c=SLOT_COLORS[slotType]||SLOT_COLORS.primary;
-        const delBtn=isAdmin()?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot.id}',null)" title="Удалить слот">✕</button>`:'';
-        const addBtn=isAdmin()?`<button class="cg2-add-btn" onclick="event.stopPropagation();openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" title="Записать пациента">✚</button>`
-                   :isErvin()?`<button class="cg2-add-btn cg2-add-btn-ervin" onclick="event.stopPropagation();bookErvinAt('${d}','${tm}','${slot.id}')" title="Занять">✚</button>`:'';
-        eventsHTML+=`<div class="cg2-event cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
-          ${delBtn}${addBtn}
-          <div class="cg2-ev-time">${tm}</div>
-          ${!isShort?`<div class="cg2-ev-name">✓ Свободно</div>`:''}
-        </div>`;
+        const delFn=`removeSlotDirect('${slot.id}',null)`;
+        const addFn=isAdmin()?`openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')`:isErvin()?`bookErvinAt('${d}','${tm}','${slot.id}')`:null;
+        if(isShort){
+          eventsHTML+=`<div class="cg2-event cg2-event-row cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+            <span class="cg2-ri-time">${tm}</span>
+            <span class="cg2-ri-name">✓</span>
+            ${addFn?`<button class="cg2-ri-add${isErvin()&&!isAdmin()?' cg2-ri-add-ervin':''}" onclick="event.stopPropagation();${addFn}" title="Записать">✚</button>`:''}
+            ${isAdmin()?`<button class="cg2-ri-del" onclick="event.stopPropagation();${delFn}" title="Удалить">✕</button>`:''}
+          </div>`;
+        } else {
+          eventsHTML+=`<div class="cg2-event cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+            ${isAdmin()?`<button class="cg2-del" onclick="event.stopPropagation();${delFn}" title="Удалить слот">✕</button>`:''}
+            ${addFn?`<button class="cg2-add-btn${isErvin()&&!isAdmin()?' cg2-add-btn-ervin':''}" onclick="event.stopPropagation();${addFn}" title="Записать">✚</button>`:''}
+            <div class="cg2-ev-time">${tm}</div>
+            <div class="cg2-ev-name">✓ Свободно</div>
+          </div>`;
+        }
       }
     });
 
-    // Current time indicator
     const nowLine=(isToday&&nowMin>=CAL_START_H*60&&nowMin<CAL_END_H*60)
       ?`<div class="cg2-now" style="top:${minToPx(nowMin)}px"></div>`:'';
 
-    // Click-to-add handler on empty area
     const clickHandler=(isAdmin()||isErvin())
-      ?`onclick="cg2ClickAdd(event,'${d}',${CAL_START_H})"`:'';
+      ?`onclick="cg2ClickAdd(event,'${d}',${CAL_START_H})"`:'';;
 
     dayCols+=`<div class="cg2-day${isToday?' cg2-day-today':''}${!isWork?' cg2-day-nonwork':''}" ${clickHandler} style="height:${gridH}px">
       ${hourLines}
@@ -157,7 +182,6 @@ async function renderSlots(){
     </div>`;
   });
 
-  // Header row
   let headerCols='<div class="cg2-th-time"></div>';
   weekDays.forEach(d=>{
     const dt=new Date(d+'T12:00:00');
@@ -175,72 +199,70 @@ async function renderSlots(){
     .cg2-wrap{overflow-x:auto;overflow-y:visible;}
     .cg2-header{display:grid;grid-template-columns:44px repeat(7,1fr);background:white;border-bottom:2px solid var(--border);border-radius:10px 10px 0 0;min-width:600px;}
     .cg2-th-time{padding:8px 0;}
-    .cg2-th{
-      text-align:center;padding:8px 4px 6px;border-left:1px solid var(--border);
-      display:flex;flex-direction:column;align-items:center;gap:2px;
-    }
+    .cg2-th{text-align:center;padding:8px 4px 6px;border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:2px;}
     .cg2-th-today{background:var(--accent-l);}
     .cg2-th-nonwork{opacity:.5;}
     .cg2-th-dow{font-size:10px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.05em;}
     .cg2-th-date{font-size:20px;font-weight:800;color:var(--text);line-height:1.1;}
     .cg2-th-today .cg2-th-date{color:var(--accent);}
-    .cg2-openday-btn{
-      border:none;border-radius:4px;cursor:pointer;font-family:inherit;
-      background:var(--accent);color:#fff;font-size:10px;font-weight:700;
-      padding:2px 7px;transition:background .12s;
-    }
+    .cg2-openday-btn{border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;transition:background .12s;}
     .cg2-openday-btn:hover{background:var(--accent-h,#155a9c);}
     .cg2-body{display:grid;grid-template-columns:44px repeat(7,1fr);background:#e2e8f0;gap:1px;border-radius:0 0 10px 10px;min-width:600px;overflow:hidden;}
     .cg2-time-col{background:white;position:relative;}
-    .cg2-hour-label{
-      position:absolute;right:4px;transform:translateY(-50%);
-      font-size:9px;font-weight:700;color:var(--text-l);
-      white-space:nowrap;pointer-events:none;
-    }
-    .cg2-day{
-      background:white;position:relative;cursor:default;
-    }
+    .cg2-hour-label{position:absolute;right:4px;transform:translateY(-50%);font-size:9px;font-weight:700;color:var(--text-l);white-space:nowrap;pointer-events:none;}
+    .cg2-day{background:white;position:relative;cursor:default;}
     .cg2-day-nonwork{background:#f8f8f8;}
     .cg2-day-today{background:#fffdf5;}
     .cg2-hline{position:absolute;left:0;right:0;border-top:1px solid #e2e8f0;pointer-events:none;}
     .cg2-now{position:absolute;left:0;right:0;height:2px;background:#ef4444;pointer-events:none;z-index:5;}
     .cg2-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#ef4444;}
-    .cg2-event{
-      position:absolute;left:2px;right:2px;
-      border-radius:5px;padding:3px 6px;
-      font-size:11px;overflow:hidden;
-      cursor:pointer;z-index:3;
-      box-sizing:border-box;
-      transition:filter .1s;
-    }
+
+    /* Tall events (>32px) — stacked layout */
+    .cg2-event{position:absolute;left:2px;right:2px;border-radius:5px;padding:3px 6px;font-size:11px;overflow:hidden;cursor:pointer;z-index:3;box-sizing:border-box;transition:filter .1s;}
     .cg2-event:hover{filter:brightness(.94);}
     .cg2-event-free{cursor:default;}
     .cg2-ev-time{font-size:9.5px;font-weight:700;opacity:.7;line-height:1.2;white-space:nowrap;}
     .cg2-ev-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
     .cg2-ev-sub{font-size:9.5px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .cg2-del{
-      position:absolute;top:2px;right:2px;
-      border:none;border-radius:3px;
-      background:rgba(220,38,38,.18);color:#b91c1c;
-      font-size:10px;font-weight:700;
-      width:18px;height:18px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      padding:0;line-height:1;
-      transition:background .12s;z-index:4;
-    }
+    /* del/add buttons for tall events */
+    .cg2-del{position:absolute;top:2px;right:2px;border:none;border-radius:3px;background:rgba(220,38,38,.18);color:#b91c1c;font-size:10px;font-weight:700;width:16px;height:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .12s;z-index:4;}
     .cg2-del:hover{background:rgba(220,38,38,.45);}
-    .cg2-add-btn{
-      position:absolute;bottom:2px;right:2px;
+    .cg2-add-btn{position:absolute;bottom:2px;right:2px;border:none;border-radius:3px;background:rgba(0,0,0,.18);color:inherit;font-size:11px;font-weight:700;width:18px;height:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;z-index:4;transition:background .12s;}
+    .cg2-add-btn:hover{background:rgba(0,0,0,.35);}
+    .cg2-add-btn-ervin{background:rgba(217,119,6,.2);color:#92400e;}
+
+    /* Short events (<=32px) — single-line row layout */
+    .cg2-event-row{
+      display:flex;align-items:center;gap:3px;
+      padding:0 4px;overflow:hidden;
+    }
+    .cg2-ri-time{font-size:9px;font-weight:800;opacity:.75;white-space:nowrap;flex-shrink:0;}
+    .cg2-ri-name{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+    /* inline buttons — sit in the flex row on the right */
+    .cg2-ri-del{
+      flex-shrink:0;margin-left:auto;
       border:none;border-radius:3px;
-      background:rgba(0,0,0,.18);color:inherit;
-      font-size:11px;font-weight:700;
-      width:18px;height:18px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
+      background:rgba(220,38,38,.2);color:#b91c1c;
+      font-size:9px;font-weight:700;
+      width:14px;height:14px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
       padding:0;line-height:1;z-index:4;
       transition:background .12s;
     }
-    .cg2-add-btn:hover{background:rgba(0,0,0,.35);}
-    .cg2-add-btn-ervin{background:rgba(217,119,6,.2);color:#92400e;}
+    .cg2-ri-del:hover{background:rgba(220,38,38,.5);}
+    .cg2-ri-add{
+      flex-shrink:0;
+      border:none;border-radius:3px;
+      background:rgba(0,0,0,.15);color:inherit;
+      font-size:9px;font-weight:700;
+      width:14px;height:14px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      padding:0;line-height:1;z-index:4;
+      transition:background .12s;
+    }
+    .cg2-ri-add:hover{background:rgba(0,0,0,.3);}
+    .cg2-ri-add-ervin{background:rgba(217,119,6,.2);color:#92400e;}
+
     @media(max-width:700px){
       .cg2-header,.cg2-body{grid-template-columns:36px repeat(7,1fr);}
       .cg2-th-date{font-size:15px;}
@@ -275,13 +297,12 @@ async function renderSlots(){
   </div>`;
 }
 
-// Click on empty grid area → add slot/appointment dialog
+// Click on empty grid area → add slot dialog
 function cg2ClickAdd(e, date, calStartH){
-  // Ignore if clicked on an event
   if(e.target.closest('.cg2-event')) return;
   const col=e.currentTarget;
   const rect=col.getBoundingClientRect();
-  const clickY=e.clientY - rect.top + col.scrollTop;
+  const clickY=e.clientY - rect.top;
   const clickMin = Math.round(clickY / PX_PER_MIN / 15)*15 + calStartH*60;
   const tm=minToTm(Math.max(calStartH*60, Math.min((CAL_END_H*60)-15, clickMin)));
   if(isAdmin()) openAddSlotOrAppt(date, tm);
@@ -319,8 +340,6 @@ async function _casSave(){
 async function removeSlotDirect(slotId, patientId){
   if(patientId){
     if(!confirm('Удалить запись (слот останется свободным)?'))return;
-    // We don't delete the appointment here — just navigate if needed
-    // In practice admin would cancel via appointment card
     if(slotId) await db.from('available_slots').update({is_booked:false,booked_by:null}).eq('id',slotId);
     toast('Используй карту пациента для отмены записи','info');
     renderSlots(); return;
@@ -330,9 +349,7 @@ async function removeSlotDirect(slotId, patientId){
   renderSlots();
 }
 
-async function addSlotAt(date,time){
-  openAddSlotOrAppt(date,time);
-}
+async function addSlotAt(date,time){ openAddSlotOrAppt(date,time); }
 
 async function removeSlot(id){
   await db.from('available_slots').delete().eq('id',id);
@@ -418,12 +435,10 @@ async function saveDaySlots(){
   toast(t('slots_opened').replace('%s',rows.length));closeModal();renderSlots();
 }
 
-function openAddCustomSlot(){
-  openAddSlotOrAppt(today(),'09:00');
-}
+function openAddCustomSlot(){ openAddSlotOrAppt(today(),'09:00'); }
 async function saveCustomSlot(){
-  const date=document.getElementById('cas-date')?.value||document.getElementById('cs-date')?.value;
-  const time=document.getElementById('cas-time')?.value||document.getElementById('cs-time')?.value;
+  const date=document.getElementById('cas-date')?.value;
+  const time=document.getElementById('cas-time')?.value;
   const slotType=document.getElementById('cas-type')?.value||'primary';
   if(!date||!time)return;
   await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});

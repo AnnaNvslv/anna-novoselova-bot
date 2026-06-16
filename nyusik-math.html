@@ -13,20 +13,139 @@
     --purple:#9B7FD4;--blue:#5BA4CF;--text:#3A3330;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Nunito',sans-serif;background:var(--cream);min-height:100vh;
-    display:flex;flex-direction:column;align-items:center;padding:12px 12px 32px;color:var(--text);}
-  .header{text-align:center;margin-bottom:10px;position:relative;width:100%;max-width:480px;}
-  .header h1{font-size:1.7rem;font-weight:900;color:var(--grey-dark);}
+
+  /* ── DESKTOP: everything in 100vh, two-column card ── */
+  body {
+    font-family:'Nunito',sans-serif;
+    background:var(--cream);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:8px 12px 8px;
+    overflow:hidden; /* no scroll on desktop */
+  }
+
+  /* Header */
+  .header{text-align:center;margin-bottom:6px;position:relative;width:100%;max-width:900px;}
+  .header h1{font-size:1.5rem;font-weight:900;color:var(--grey-dark);}
   .header h1 span{color:var(--cheese-dark);}
   .sound-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);
-    background:white;border:2px solid var(--grey-light);border-radius:12px;
-    font-size:1.3rem;width:44px;height:44px;cursor:pointer;
+    background:white;border:2px solid var(--grey-light);border-radius:10px;
+    font-size:1.2rem;width:40px;height:40px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;transition:all .15s;}
   .sound-btn:hover{background:var(--grey-light);}
   .sound-btn.muted{opacity:.45;}
+
+  /* Top controls row */
+  .controls-row{display:flex;gap:8px;width:100%;max-width:900px;margin-bottom:6px;}
+  .level-bar{display:flex;gap:5px;flex:1;}
+  .op-bar{display:flex;gap:5px;}
+  .level-btn{flex:1;padding:5px 2px;border:2px solid var(--grey-light);border-radius:10px;
+    background:white;font-family:'Nunito',sans-serif;font-size:.68rem;font-weight:800;
+    color:var(--grey-dark);cursor:pointer;transition:all .15s;line-height:1.25;text-align:center;}
+  .level-btn.active{background:var(--purple);border-color:var(--purple);color:white;}
+  .level-btn:hover:not(.active){background:var(--grey-light);}
+  .op-btn{padding:5px 14px;border:2px solid var(--grey-light);border-radius:10px;
+    background:white;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;
+    color:var(--grey-dark);cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .op-btn.active{background:var(--blue);border-color:var(--blue);color:white;}
+  .op-btn:hover:not(.active){background:var(--grey-light);}
+
+  /* Cheese store */
+  .cheese-store{background:var(--warm);border:2px solid var(--cheese);border-radius:14px;
+    padding:5px 14px;margin-bottom:6px;text-align:center;width:100%;max-width:900px;}
+  .cheese-store-label{font-size:.68rem;font-weight:800;color:var(--grey-dark);
+    text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+  .cheese-row{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;min-height:22px;}
+  .cheese-piece{font-size:1.1rem;animation:popIn .3s cubic-bezier(.36,.07,.19,.97);}
+
+  /* Main card — two columns on desktop */
+  .card{background:white;border-radius:22px;padding:16px;width:100%;max-width:900px;
+    box-shadow:0 4px 24px rgba(0,0,0,.07);
+    display:flex;gap:20px;flex:1;min-height:0;}
+
+  /* Left column: mouse */
+  .left-col{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:220px;flex-shrink:0;}
+  .bubble-wrap{margin-bottom:8px;width:100%;}
+  .bubble{background:var(--grey-light);border-radius:16px 16px 16px 4px;
+    padding:10px 14px;font-size:1rem;font-weight:700;color:var(--grey-dark);
+    text-align:center;line-height:1.4;min-height:52px;
+    display:flex;align-items:center;justify-content:center;transition:background .3s,color .3s;}
+  .bubble.happy-bubble{background:#D4F5DC;color:#2A7A40;}
+  .bubble.sad-bubble{background:#FFE5E5;color:#B03030;}
+  .speaking-dots{display:none;justify-content:center;gap:4px;margin-top:4px;}
+  .speaking-dots.active{display:flex;}
+  .speaking-dots span{width:6px;height:6px;background:var(--purple);border-radius:50%;
+    animation:dotBounce .7s ease infinite;}
+  .speaking-dots span:nth-child(2){animation-delay:.15s;}
+  .speaking-dots span:nth-child(3){animation-delay:.3s;}
+  .mouse-svg{width:150px;height:150px;}
+
+  /* Right column: game */
+  .right-col{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0;}
+
+  .task-area{text-align:center;margin-bottom:8px;}
+  .task-label{font-size:.72rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
+  .level-badge{display:inline-block;background:var(--purple);color:white;font-size:.65rem;
+    font-weight:800;border-radius:7px;padding:2px 7px;margin-left:5px;vertical-align:middle;}
+  .task-expression{font-size:3.2rem;font-weight:900;color:var(--text);letter-spacing:-1px;
+    min-height:62px;display:flex;align-items:center;justify-content:center;gap:8px;
+    cursor:pointer;border-radius:10px;transition:background .15s;padding:4px 8px;}
+  .task-expression:hover{background:var(--grey-light);}
+  .task-expression .op{color:var(--purple);}
+  .task-expression .eq{color:var(--grey);}
+  .hint{font-size:.78rem;color:var(--blue);font-weight:700;margin-top:2px;min-height:18px;}
+  .read-task-btn{background:none;border:2px dashed var(--grey-light);border-radius:9px;
+    color:var(--grey);font-family:'Nunito',sans-serif;font-size:.73rem;font-weight:700;
+    padding:3px 10px;cursor:pointer;margin-top:4px;transition:all .15s;}
+  .read-task-btn:hover{border-color:var(--purple);color:var(--purple);background:#F3EEFF;}
+
+  .answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .answer-btn{background:var(--warm);border:3px solid var(--cheese);border-radius:14px;
+    font-family:'Nunito',sans-serif;font-size:1.9rem;font-weight:900;color:var(--text);
+    cursor:pointer;padding:12px 0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+  .answer-btn:hover:not(:disabled){background:var(--cheese);transform:scale(1.03);}
+  .answer-btn:active:not(:disabled){transform:scale(.97);}
+  .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
+  .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
+
+  .next-btn{display:block;width:100%;border:none;border-radius:14px;
+    font-family:'Nunito',sans-serif;font-size:1rem;font-weight:900;
+    cursor:pointer;padding:11px 0;margin-bottom:8px;transition:background .2s,color .2s;}
+  .next-btn:disabled{background:var(--grey-light);color:var(--grey);cursor:default;}
+  .next-btn:not(:disabled){background:var(--green);color:white;}
+  .next-btn:not(:disabled):hover{background:var(--green-dark);}
+
+  .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .progress-bar-bg{flex:1;height:9px;background:var(--grey-light);border-radius:8px;overflow:hidden;}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cheese),var(--green));
+    border-radius:8px;transition:width .4s ease;}
+  .progress-text{font-size:.75rem;font-weight:800;color:var(--grey);min-width:34px;text-align:right;}
+  .score-row{display:flex;gap:16px;justify-content:center;font-size:.82rem;font-weight:700;color:var(--grey);}
+  .correct-count{color:var(--green-dark);}.wrong-count{color:var(--red);}
+
+  /* Win overlay covers the right column */
+  .win-overlay{display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;text-align:center;flex:1;}
+  .win-overlay.visible{display:flex;animation:popIn .5s;}
+  .win-stars{font-size:2.2rem;letter-spacing:4px;}
+  .win-title{font-size:1.4rem;font-weight:900;color:var(--cheese-dark);}
+  .win-subtitle{font-size:.95rem;color:var(--grey-dark);font-weight:600;line-height:1.4;}
+  .win-btns{display:flex;gap:10px;width:100%;}
+  .restart-btn{flex:1;background:var(--cheese);border:none;border-radius:14px;
+    font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:900;color:var(--text);
+    cursor:pointer;padding:11px 0;transition:all .15s;}
+  .restart-btn:hover{background:var(--cheese-dark);color:white;}
+  .restart-btn.secondary{background:var(--purple);color:white;}
+  .restart-btn.secondary:hover{background:#7B5FC4;}
+
+  /* Setup screen */
   .setup-screen{display:flex;flex-direction:column;align-items:center;gap:14px;
     background:white;border-radius:28px;padding:28px 20px;width:100%;max-width:480px;
-    box-shadow:0 4px 24px rgba(0,0,0,.07);text-align:center;}
+    box-shadow:0 4px 24px rgba(0,0,0,.07);text-align:center;margin-top:40px;}
   .setup-screen h2{font-size:1.2rem;font-weight:900;color:var(--grey-dark);}
   .setup-screen p{font-size:.9rem;color:var(--grey);line-height:1.5;}
   .setup-screen input{width:100%;padding:12px 14px;border:2px solid var(--grey-light);
@@ -43,99 +162,31 @@
     border-radius:12px;font-family:'Nunito',sans-serif;font-size:.9rem;color:var(--text);
     background:white;cursor:pointer;}
   .voice-select:focus{outline:none;border-color:var(--purple);}
-  .bubble-wrap{margin-bottom:12px;}
-  .bubble{background:var(--grey-light);border-radius:18px 18px 18px 4px;
-    padding:12px 18px;font-size:1.1rem;font-weight:700;color:var(--grey-dark);
-    max-width:300px;text-align:center;line-height:1.45;min-height:58px;
-    display:flex;align-items:center;justify-content:center;transition:background .3s,color .3s;}
-  .bubble.happy-bubble{background:#D4F5DC;color:#2A7A40;}
-  .bubble.sad-bubble{background:#FFE5E5;color:#B03030;}
-  .speaking-dots{display:none;justify-content:center;gap:4px;margin-top:5px;}
-  .speaking-dots.active{display:flex;}
-  .speaking-dots span{width:7px;height:7px;background:var(--purple);border-radius:50%;
-    animation:dotBounce .7s ease infinite;}
-  .speaking-dots span:nth-child(2){animation-delay:.15s;}
-  .speaking-dots span:nth-child(3){animation-delay:.3s;}
+
+  /* Animations */
+  @keyframes popIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}70%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
   @keyframes dotBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
-  .level-bar,.op-bar{display:flex;gap:6px;width:100%;max-width:480px;margin-bottom:10px;}
-  .level-btn{flex:1;padding:7px 2px;border:2px solid var(--grey-light);border-radius:12px;
-    background:white;font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:800;
-    color:var(--grey-dark);cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;}
-  .level-btn.active{background:var(--purple);border-color:var(--purple);color:white;}
-  .level-btn:hover:not(.active){background:var(--grey-light);}
-  .op-btn{flex:1;padding:7px 0;border:2px solid var(--grey-light);border-radius:12px;
-    background:white;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;
-    color:var(--grey-dark);cursor:pointer;transition:all .15s;}
-  .op-btn.active{background:var(--blue);border-color:var(--blue);color:white;}
-  .op-btn:hover:not(.active){background:var(--grey-light);}
-  .cheese-store{background:var(--warm);border:3px solid var(--cheese);border-radius:18px;
-    padding:8px 16px;margin-bottom:10px;text-align:center;width:100%;max-width:480px;}
-  .cheese-store-label{font-size:.75rem;font-weight:800;color:var(--grey-dark);
-    text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-  .cheese-row{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;min-height:26px;}
-  .cheese-piece{font-size:1.3rem;animation:popIn .3s cubic-bezier(.36,.07,.19,.97);}
-  @keyframes popIn{0%{transform:scale(0) rotate(-20deg);opacity:0;}
-    70%{transform:scale(1.3) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
-  .card{background:white;border-radius:28px;padding:20px 16px;width:100%;max-width:480px;
-    box-shadow:0 4px 24px rgba(0,0,0,.07);}
-  .mouse-area{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
-  .mouse-svg{width:130px;height:130px;}
   @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-8deg) scale(1.05);}75%{transform:rotate(8deg) scale(1.05);}}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
-  @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  @keyframes bop{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
   @keyframes mousePulse{from{transform:scale(1);}to{transform:scale(1.08) rotate(2deg);}}
   .mouse-svg[data-mood="happy"]{animation:wiggle .5s ease;}
   .mouse-svg[data-mood="sad"]{animation:shake .4s ease;}
   .mouse-svg[data-mood="thinking"]{animation:bop 1.2s ease infinite;}
   .mouse-svg[data-mood="speaking"]{animation:mousePulse .4s ease infinite alternate;}
-  .task-area{text-align:center;margin-bottom:14px;}
-  .task-label{font-size:.78rem;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
-  .level-badge{display:inline-block;background:var(--purple);color:white;font-size:.7rem;
-    font-weight:800;border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
-  .task-expression{font-size:3rem;font-weight:900;color:var(--text);letter-spacing:-1px;
-    min-height:58px;display:flex;align-items:center;justify-content:center;gap:8px;
-    cursor:pointer;border-radius:12px;transition:background .15s;padding:4px 8px;}
-  .task-expression:hover{background:var(--grey-light);}
-  .task-expression .op{color:var(--purple);}
-  .task-expression .eq{color:var(--grey);}
-  .hint{font-size:.82rem;color:var(--blue);font-weight:700;margin-top:4px;min-height:20px;}
-  .read-task-btn{background:none;border:2px dashed var(--grey-light);border-radius:10px;
-    color:var(--grey);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;
-    padding:4px 12px;cursor:pointer;margin-top:6px;transition:all .15s;}
-  .read-task-btn:hover{border-color:var(--purple);color:var(--purple);background:#F3EEFF;}
-  .answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-  .answer-btn{background:var(--warm);border:3px solid var(--cheese);border-radius:16px;
-    font-family:'Nunito',sans-serif;font-size:1.7rem;font-weight:900;color:var(--text);
-    cursor:pointer;padding:14px 0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
-  .answer-btn:hover:not(:disabled){background:var(--cheese);transform:scale(1.04);}
-  .answer-btn:active:not(:disabled){transform:scale(.97);}
-  .answer-btn.correct{background:var(--green);border-color:var(--green-dark);color:white;animation:popIn .3s;}
-  .answer-btn.wrong{background:var(--red);border-color:#C04040;color:white;animation:shake .4s;}
-  .next-btn{display:block;width:100%;border:none;border-radius:16px;
-    font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;
-    cursor:pointer;padding:14px 0;margin-bottom:14px;transition:background .2s,color .2s;}
-  .next-btn:disabled{background:var(--grey-light);color:var(--grey);cursor:default;}
-  .next-btn:not(:disabled){background:var(--green);color:white;}
-  .next-btn:not(:disabled):hover{background:var(--green-dark);}
-  .progress-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-  .progress-bar-bg{flex:1;height:10px;background:var(--grey-light);border-radius:8px;overflow:hidden;}
-  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cheese),var(--green));
-    border-radius:8px;transition:width .4s ease;}
-  .progress-text{font-size:.8rem;font-weight:800;color:var(--grey);min-width:36px;text-align:right;}
-  .score-row{display:flex;gap:16px;justify-content:center;font-size:.85rem;font-weight:700;color:var(--grey);}
-  .correct-count{color:var(--green-dark);}.wrong-count{color:var(--red);}
-  .win-overlay{display:none;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0;}
-  .win-overlay.visible{display:flex;animation:popIn .5s;}
-  .win-stars{font-size:2.5rem;letter-spacing:4px;}
-  .win-title{font-size:1.5rem;font-weight:900;color:var(--cheese-dark);}
-  .win-subtitle{font-size:1rem;color:var(--grey-dark);font-weight:600;line-height:1.4;}
-  .win-btns{display:flex;gap:10px;width:100%;}
-  .restart-btn{flex:1;background:var(--cheese);border:none;border-radius:16px;
-    font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:900;color:var(--text);
-    cursor:pointer;padding:13px 0;transition:all .15s;}
-  .restart-btn:hover{background:var(--cheese-dark);color:white;}
-  .restart-btn.secondary{background:var(--purple);color:white;}
-  .restart-btn.secondary:hover{background:#7B5FC4;}
+
+  /* Mobile fallback */
+  @media(max-width:640px){
+    body{overflow:auto;padding:10px 10px 24px;}
+    .card{flex-direction:column;gap:0;}
+    .left-col{width:100%;flex-direction:row;justify-content:center;gap:12px;padding-bottom:12px;
+      border-bottom:2px solid var(--grey-light);margin-bottom:12px;}
+    .bubble-wrap{margin-bottom:0;flex:1;}
+    .mouse-svg{width:100px;height:100px;flex-shrink:0;}
+    .controls-row{flex-direction:column;gap:6px;}
+    .op-bar{justify-content:stretch;}
+    .op-btn{flex:1;text-align:center;}
+  }
 </style>
 </head>
 <body>
@@ -145,6 +196,7 @@
   <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
 </div>
 
+<!-- Setup screen -->
 <div class="setup-screen" id="setupScreen" style="display:none">
   <div style="font-size:3rem">🐭</div>
   <h2>Привет! Настройка голоса Нюсика</h2>
@@ -163,24 +215,31 @@
   <p class="setup-note">Ключ хранится только на этом устройстве. Его никто не увидит.</p>
 </div>
 
-<div id="gameWrapper" style="display:none;width:100%">
-  <div class="level-bar">
-    <button class="level-btn active" onclick="setLevel(1)">⭐<br>Уровень 1<br><small>до 10</small></button>
-    <button class="level-btn" onclick="setLevel(2)">⭐⭐<br>Уровень 2<br><small>до 20</small></button>
-    <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐<br>Уровень 3<br><small>до 50</small></button>
-    <button class="level-btn" onclick="setLevel(4)">🏆<br>Уровень 4<br><small>до 100</small></button>
+<!-- Game -->
+<div id="gameWrapper" style="display:none;width:100%;max-width:900px;display:none;flex-direction:column;flex:1;min-height:0;">
+
+  <div class="controls-row">
+    <div class="level-bar">
+      <button class="level-btn active" onclick="setLevel(1)">⭐ Ур.1<br><small>до 10</small></button>
+      <button class="level-btn" onclick="setLevel(2)">⭐⭐ Ур.2<br><small>до 20</small></button>
+      <button class="level-btn" onclick="setLevel(3)">⭐⭐⭐ Ур.3<br><small>до 50</small></button>
+      <button class="level-btn" onclick="setLevel(4)">🏆 Ур.4<br><small>до 100</small></button>
+    </div>
+    <div class="op-bar">
+      <button class="op-btn" onclick="setOp('add')">➕ Сложение</button>
+      <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
+      <button class="op-btn active" onclick="setOp('both')">🎲 Оба!</button>
+    </div>
   </div>
-  <div class="op-bar">
-    <button class="op-btn active" onclick="setOp('add')">➕ Сложение</button>
-    <button class="op-btn" onclick="setOp('sub')">➖ Вычитание</button>
-    <button class="op-btn" onclick="setOp('both')">🎲 Оба!</button>
-  </div>
+
   <div class="cheese-store">
     <div class="cheese-store-label">🏠 Кладовочка Нюсика</div>
     <div class="cheese-row" id="cheeseRow"></div>
   </div>
+
   <div class="card">
-    <div class="mouse-area">
+    <!-- Left: mouse -->
+    <div class="left-col">
       <div class="bubble-wrap">
         <div class="bubble" id="bubble">Привет, Иван! Я Нюсик. Помоги мне найти сыр!</div>
         <div class="speaking-dots" id="speakingDots"><span></span><span></span><span></span></div>
@@ -218,31 +277,35 @@
         </g>
       </svg>
     </div>
-    <div id="taskSection">
-      <div class="task-area">
-        <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
-        <div class="task-expression" id="taskExpr" onclick="readTaskAloud()"></div>
-        <div class="hint" id="hint"></div>
-        <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
+
+    <!-- Right: task -->
+    <div class="right-col">
+      <div id="taskSection">
+        <div class="task-area">
+          <div class="task-label">Какой ответ? <span class="level-badge" id="levelBadge">Ур. 1</span></div>
+          <div class="task-expression" id="taskExpr" onclick="readTaskAloud()"></div>
+          <div class="hint" id="hint"></div>
+          <button class="read-task-btn" onclick="readTaskAloud()">🔊 Прочитать задание</button>
+        </div>
+        <div class="answers-grid" id="answersGrid"></div>
+        <button class="next-btn" id="nextBtn" disabled onclick="nextQuestion()">Выбери ответ ↑</button>
+        <div class="progress-row">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+          <div class="progress-text" id="progressText">0/10</div>
+        </div>
+        <div class="score-row">
+          <span>✅ <span class="correct-count" id="correctCount">0</span></span>
+          <span>❌ <span class="wrong-count" id="wrongCount">0</span></span>
+        </div>
       </div>
-      <div class="answers-grid" id="answersGrid"></div>
-      <button class="next-btn" id="nextBtn" disabled onclick="nextQuestion()">Выбери ответ ↑</button>
-      <div class="progress-row">
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
-        <div class="progress-text" id="progressText">0/10</div>
-      </div>
-      <div class="score-row">
-        <span>✅ <span class="correct-count" id="correctCount">0</span></span>
-        <span>❌ <span class="wrong-count" id="wrongCount">0</span></span>
-      </div>
-    </div>
-    <div class="win-overlay" id="winOverlay">
-      <div class="win-stars" id="winStars">⭐⭐⭐</div>
-      <div class="win-title" id="winTitle">Кладовочка полная!</div>
-      <div class="win-subtitle" id="winSubtitle"></div>
-      <div class="win-btns">
-        <button class="restart-btn" onclick="restartGame()">Ещё раз! 🔄</button>
-        <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
+      <div class="win-overlay" id="winOverlay">
+        <div class="win-stars" id="winStars">⭐⭐⭐</div>
+        <div class="win-title" id="winTitle">Кладовочка полная!</div>
+        <div class="win-subtitle" id="winSubtitle"></div>
+        <div class="win-btns">
+          <button class="restart-btn" onclick="restartGame()">Ещё раз! 🔄</button>
+          <button class="restart-btn secondary" onclick="nextLevel()">Сложнее! ⬆️</button>
+        </div>
       </div>
     </div>
   </div>
@@ -258,7 +321,7 @@ let XI_VOICE_ID = localStorage.getItem(STORAGE_VOICE) || 'EXAVITQu4vr4xnSDxMaL';
 let soundOn = true, currentTaskText = '', currentAudio = null, voiceTimer = null;
 const audioCache = new Map();
 
-// ── Setup ─────────────────────────────────────────────
+// ── Setup ────────────────────────────────────────────
 async function saveApiKey() {
   const val   = document.getElementById('apiKeyInput').value.trim();
   const voice = document.getElementById('voiceSelect').value;
@@ -284,24 +347,29 @@ async function saveApiKey() {
 function reset(){ const b=document.getElementById('setupBtn'); b.textContent='Проверить и начать! 🐭'; b.disabled=false; }
 function showErr(m){ const b=document.getElementById('errBanner'); b.textContent=m; b.style.display='block'; }
 function hideErr(){ document.getElementById('errBanner').style.display='none'; }
-function startGame(){ document.getElementById('setupScreen').style.display='none'; document.getElementById('gameWrapper').style.display=''; generateQuestion(); }
-window.addEventListener('DOMContentLoaded',()=>{ if(XI_KEY)startGame(); else document.getElementById('setupScreen').style.display='flex'; });
 
-// ── ElevenLabs TTS ────────────────────────────────────
-// KEY FIX: speakNow now returns a Promise that resolves only when audio FINISHES playing.
-// This ensures phrases are spoken sequentially, never overlapping.
+function startGame(){
+  document.getElementById('setupScreen').style.display='none';
+  const gw = document.getElementById('gameWrapper');
+  gw.style.display='flex';
+  generateQuestion();
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  if(XI_KEY) startGame();
+  else document.getElementById('setupScreen').style.display='flex';
+});
+
+// ── ElevenLabs TTS ───────────────────────────────────
 async function speakNow(text) {
   if (!soundOn || !text) return;
-  stopVoice();
-  setSpeakUI(true);
+  stopVoice(); setSpeakUI(true);
   try {
     let url = audioCache.get(text);
     if (!url) {
       const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`, {
-        method: 'POST',
-        headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, model_id: XI_MODEL,
-          voice_settings: { stability:.4, similarity_boost:.8, style:.4, use_speaker_boost:true } }),
+        method:'POST', headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({text, model_id:XI_MODEL,
+          voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
       });
       if (!resp.ok) throw new Error(resp.status);
       const blob = await resp.blob();
@@ -310,39 +378,34 @@ async function speakNow(text) {
       audioCache.set(text, url);
     }
     currentAudio = new Audio(url);
-    // Wait until audio fully finishes before resolving
     await new Promise((resolve) => {
       currentAudio.onended = () => { setSpeakUI(false); resolve(); };
       currentAudio.onerror = () => { setSpeakUI(false); resolve(); };
       currentAudio.play().catch(() => { setSpeakUI(false); resolve(); });
     });
-  } catch(e) {
-    console.warn('XI error:', e.message);
-    setSpeakUI(false);
-  }
+  } catch(e) { console.warn('XI:', e.message); setSpeakUI(false); }
 }
-
-function speakAfter(text, ms) { clearTimeout(voiceTimer); voiceTimer = setTimeout(() => speakNow(text), ms); }
-function stopVoice() {
+function speakAfter(text,ms){ clearTimeout(voiceTimer); voiceTimer=setTimeout(()=>speakNow(text),ms); }
+function stopVoice(){
   clearTimeout(voiceTimer);
-  if (currentAudio) { currentAudio.onended = null; currentAudio.onerror = null; currentAudio.pause(); currentAudio = null; }
+  if(currentAudio){currentAudio.onended=null;currentAudio.onerror=null;currentAudio.pause();currentAudio=null;}
   setSpeakUI(false);
 }
-function setSpeakUI(on) {
+function setSpeakUI(on){
   const d=document.getElementById('speakingDots'); if(d)d.classList.toggle('active',on);
   const s=document.getElementById('mouseSvg'); if(!s)return;
   if(on){s._pm=s.getAttribute('data-mood');s.setAttribute('data-mood','speaking');}
   else{s.setAttribute('data-mood',s._pm||'thinking');s._pm=null;}
 }
-function toggleSound() {
+function toggleSound(){
   soundOn=!soundOn; if(!soundOn)stopVoice();
   document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
   document.getElementById('soundBtn').classList.toggle('muted',!soundOn);
   if(soundOn)speakNow('Звук включён!');
 }
-function readTaskAloud() { stopVoice(); speakNow(currentTaskText); }
+function readTaskAloud(){ stopVoice(); speakNow(currentTaskText); }
 
-// ── Game ──────────────────────────────────────────────
+// ── Game ─────────────────────────────────────────────
 const TOTAL=10;
 const LEVELS={
   1:{max:10,label:'Ур. 1',name:'до 10', crossTen:false},
@@ -350,43 +413,112 @@ const LEVELS={
   3:{max:50,label:'Ур. 3',name:'до 50', crossTen:true},
   4:{max:100,label:'Ур. 4',name:'до 100',crossTen:true},
 };
-let level=1,op='add',questionIndex=0,correctCount=0,wrongCount=0;
-let answered=false,correctAnswer=0,cheesePieces=0,streak=0;
+let level=1, op='both', questionIndex=0, correctCount=0, wrongCount=0;
+let answered=false, correctAnswer=0, cheesePieces=0, streak=0;
 
 const phrases={
-  ask:['Иван, помоги мне! Если правильно — дам сыр!','Думай-думай! Ты умный, я знаю!',
-    'Ой, как я хочу сыра... Посчитай, пожалуйста!','Нюсик очень голодный. Помоги найти ответ!',
-    'Ах, какой запах сыра! Скорее считай!','Ну-ка, Иван, покажи что умеешь!',
-    'Смотри внимательно! Ты точно справишься!','Нюсик верит в тебя! Какой ответ?',
-    'Раз, два, три — считаем вместе!','Это задание для такого умного мальчика — раз плюнуть!',
-    'Сыр так близко... только реши пример!','Нюсик зажмурил глазки и ждёт ответа!',
-    'Только ты можешь мне помочь, Иван!','Какое же тут правильное число? Думай!'],
-  correct:['Ура-ура-ура! Правильно! Нюсик прыгает от счастья!','Вот это да! Ты настоящий математик!',
-    'Молодец! Нюсик танцует и жуёт сыр!','Правильно! Ты мой любимый помощник!',
-    'Суперзвезда! Иван, ты лучший!','Именно так! Умница, какой умница!',
-    'Нюсик счастлив! Сыр достался нам двоим!','Блестяще! Просто блестяще!',
-    'Вот это мозги! Нюсик восхищается!','Правильно! Нюсик делает сальто от радости!',
-    'Ого-го! Какой умный Иван вырос!','Ты сделал это! Нюсик тебя обнимает!',
-    'Пять с плюсом! Нюсик ставит тебе пятёрку!','Гений за работой! Нюсик аплодирует!',
-    'Вот это результат! Нюсик в шоке от твоего ума!'],
-  wrong:['Ой, не угадал... Но не расстраивайся!','Нет, не то... Посмотри на правильный ответ!',
-    'Ошибочка вышла! Нюсик всё равно любит тебя!','Почти-почти! Но правильный другой.',
-    'Не расстраивайся! Ошибки помогают учиться!','Нюсик тоже иногда ошибается с сыром!',
-    'Бывает! Главное — не сдаваться!','Смотри внимательно на ответ — и запомни!',
-    'Ничего страшного! В следующий раз точно получится!','Нюсик верит — ты исправишься!',
-    'Упс! Но ты старался, и это главное!','Неверно, но ты молодец что думал!'],
-  streak3:['Три подряд правильно! Нюсик в восторге!','Три раза верно! Ты просто ракета!',
-    'Три правильных ответа! Нюсик танцует чечётку!'],
-  streak5:['Пять подряд! Нюсик не верит своим ушам!','Пять верных ответов! Ты супергерой математики!',
-    'Пять из пяти! Нюсик кричит от радости!'],
-  hint_cross:['Подсказка: сначала доберись до круглого числа!',
-    'Попробуй разбить на два шага — до десятки и дальше!','Совет от Нюсика: считай через десяток!'],
-  win3:['Нюсик в полном восторге! Ты настоящий математик!',
-    'Кладовочка полная! Спасибо тебе, Иван!','Блестящий результат! Нюсик тобой гордится!'],
-  win2:['Хорошая работа! Ещё немного потренируемся?',
-    'Нюсик доволен! Мы справились вместе!','Молодец! С каждым разом лучше и лучше!'],
-  win1:['Нюсик верит — в следующий раз будет лучше!',
-    'Не сдавайся! Попробуем ещё раз вместе!','Математика — это тренировка. Попробуем снова?'],
+  ask:[
+    'Иван, помоги мне! Если правильно — дам сыр!',
+    'Думай-думай! Ты умный, я знаю!',
+    'Ой, как я хочу сыра... Посчитай, пожалуйста!',
+    'Нюсик очень голодный. Помоги найти ответ!',
+    'Ах, какой запах сыра! Скорее считай!',
+    'Ну-ка, Иван, покажи что умеешь!',
+    'Смотри внимательно! Ты точно справишься!',
+    'Нюсик верит в тебя! Какой ответ?',
+    'Раз, два, три — считаем вместе!',
+    'Это задание для такого умного мальчика — раз плюнуть!',
+    'Сыр так близко... только реши пример!',
+    'Нюсик зажмурил глазки и ждёт ответа!',
+    'Только ты можешь мне помочь, Иван!',
+    'Какое же тут правильное число? Думай!',
+    'Нюсик машет лапкой! Считай скорее!',
+    'Шевели мозгами, Иван! Нюсик голодает!',
+    'Ой-ой-ой, живот урчит! Помоги мне!',
+    'Внимание, внимание! Задача для чемпиона!',
+    'Нюсик спрятался за сыром и ждёт ответа!',
+    'Это несложно для такого молодца как ты!',
+    'Посчитай пальчиками если нужно — Нюсик не подглядывает!',
+    'Сосредоточься! У тебя всё получится!',
+    'Нюсик держит кулачки! Давай, Иван!',
+  ],
+  correct:[
+    'Ура-ура-ура! Правильно! Нюсик прыгает от счастья!',
+    'Вот это да! Ты настоящий математик!',
+    'Молодец! Нюсик танцует и жуёт сыр!',
+    'Правильно! Ты мой любимый помощник!',
+    'Суперзвезда! Иван, ты лучший!',
+    'Именно так! Умница, какой умница!',
+    'Нюсик счастлив! Сыр достался нам двоим!',
+    'Блестяще! Просто блестяще!',
+    'Вот это мозги! Нюсик восхищается!',
+    'Правильно! Нюсик делает сальто от радости!',
+    'Ого-го! Какой умный Иван вырос!',
+    'Ты сделал это! Нюсик тебя обнимает!',
+    'Пять с плюсом! Нюсик ставит тебе пятёрку!',
+    'Гений за работой! Нюсик аплодирует!',
+    'Вот это результат! Нюсик в шоке от твоего ума!',
+    'Да ты просто волшебник цифр, Иван!',
+    'Нюсик кричит ура и бежит за добавкой сыра!',
+    'Точно в цель! Снайпер математики!',
+    'Правильно! Теперь Нюсик поёт от счастья!',
+    'Ты решил быстрее чем Нюсик успел моргнуть!',
+    'Сто баллов из ста! Нюсик горд тобой!',
+    'Вот это да! Нюсик снимает шляпу!',
+  ],
+  wrong:[
+    'Ой, не угадал... Но не расстраивайся!',
+    'Нет, не то... Посмотри на правильный ответ!',
+    'Ошибочка вышла! Нюсик всё равно любит тебя!',
+    'Почти-почти! Но правильный другой.',
+    'Не расстраивайся! Ошибки помогают учиться!',
+    'Нюсик тоже иногда ошибается с сыром!',
+    'Бывает! Главное — не сдаваться!',
+    'Смотри внимательно на ответ — и запомни!',
+    'Ничего страшного! В следующий раз точно получится!',
+    'Нюсик верит — ты исправишься!',
+    'Упс! Но ты старался, и это главное!',
+    'Неверно, но ты молодец что думал!',
+    'Не та цифра! Зато теперь точно запомнишь!',
+    'Нюсик грустит, но не сдаётся — и ты не сдавайся!',
+    'Ошибся? Не беда! Математики тоже ошибаются!',
+    'Мимо! Но следующий ответ будет верным, Нюсик уверен!',
+  ],
+  streak3:[
+    'Три подряд правильно! Нюсик в восторге!',
+    'Три раза верно! Ты просто ракета!',
+    'Три правильных ответа! Нюсик танцует чечётку!',
+    'Хет-трик! Нюсик подбрасывает сыр в воздух!',
+  ],
+  streak5:[
+    'Пять подряд! Нюсик не верит своим ушам!',
+    'Пять верных ответов! Ты супергерой математики!',
+    'Пять из пяти! Нюсик кричит от радости!',
+    'Пять подряд! Нюсик требует автограф!',
+  ],
+  hint_cross:[
+    'Подсказка: сначала доберись до круглого числа!',
+    'Попробуй разбить на два шага — до десятки и дальше!',
+    'Совет от Нюсика: считай через десяток!',
+  ],
+  win3:[
+    'Нюсик в полном восторге! Ты настоящий математик!',
+    'Кладовочка полная! Спасибо тебе, Иван!',
+    'Блестящий результат! Нюсик тобой гордится!',
+    'Вот это урок! Нюсик сыт и счастлив благодаря тебе!',
+  ],
+  win2:[
+    'Хорошая работа! Ещё немного потренируемся?',
+    'Нюсик доволен! Мы справились вместе!',
+    'Молодец! С каждым разом лучше и лучше!',
+    'Хороший результат! Нюсик верит что следующий раз будет ещё лучше!',
+  ],
+  win1:[
+    'Нюсик верит — в следующий раз будет лучше!',
+    'Не сдавайся! Попробуем ещё раз вместе!',
+    'Математика — это тренировка. Попробуем снова?',
+    'Нюсик говорит: главное не сдаваться! Попробуем ещё раз!',
+  ],
 };
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
 
@@ -403,39 +535,76 @@ function setMouseMood(mood){
   else{[pL,pR].forEach(p=>{p.setAttribute('cy','68');p.setAttribute('r','4');});
     gL.style.display=gR.style.display='';mouth.setAttribute('d','M 62 93 Q 70 99 78 93');cheese.style.display='none';}
 }
-function setLevel(l){level=l;document.querySelectorAll('.level-btn').forEach((b,i)=>b.classList.toggle('active',i+1===l));document.getElementById('levelBadge').textContent=LEVELS[l].label;restartGame();}
-function setOp(o){op=o;document.querySelectorAll('.op-btn').forEach((b,i)=>b.classList.toggle('active',['add','sub','both'][i]===o));restartGame();}
+
+function setLevel(l){
+  level=l;
+  document.querySelectorAll('.level-btn').forEach((b,i)=>b.classList.toggle('active',i+1===l));
+  document.getElementById('levelBadge').textContent=LEVELS[l].label;
+  restartGame();
+}
+function setOp(o){
+  op=o;
+  document.querySelectorAll('.op-btn').forEach((b,i)=>b.classList.toggle('active',['add','sub','both'][i]===o));
+  restartGame();
+}
 function nextLevel(){if(level<4)setLevel(level+1);else restartGame();}
 
 function generateQuestion(){
-  const cfg=LEVELS[level];let a,b,useAdd,hintText='',hintSpeech='';
+  const cfg=LEVELS[level];let a,b,useAdd,hintText='';
   if(op==='add')useAdd=true;else if(op==='sub')useAdd=false;else useAdd=Math.random()>.5;
   if(useAdd){
-    if(cfg.crossTen&&Math.random()>.4){const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;const rem=Math.floor(Math.random()*8)+1;a=dec+rem;const cross=10-rem;b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));if(b<=0)b=cross;}
-    else{a=Math.floor(Math.random()*(cfg.max-1))+1;b=Math.floor(Math.random()*(cfg.max-a))+1;}
+    if(cfg.crossTen&&Math.random()>.4){
+      const dec=Math.floor(Math.random()*Math.floor((cfg.max-10)/10))*10;
+      const rem=Math.floor(Math.random()*8)+1;
+      a=dec+rem;const cross=10-rem;
+      b=cross+Math.floor(Math.random()*Math.min(9,cfg.max-a-cross));
+      if(b<=0)b=cross;
+    } else {
+      a=Math.floor(Math.random()*(cfg.max-1))+1;
+      b=Math.floor(Math.random()*(cfg.max-a))+1;
+    }
     correctAnswer=a+b;
     if(correctAnswer>cfg.max){a=Math.max(1,cfg.max-9);b=Math.floor(Math.random()*9)+1;correctAnswer=a+b;}
-    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0){hintText='💡 Считай через десяток!';hintSpeech=rnd(phrases.hint_cross);}
-  }else{
-    if(cfg.crossTen&&Math.random()>.4){const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;a=dec+Math.floor(Math.random()*Math.min(9,cfg.max-dec));b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;if(a<=0||b<=0||b>=a){a=15;b=7;}}
-    else{a=Math.floor(Math.random()*(cfg.max-1))+2;b=Math.floor(Math.random()*(a-1))+1;}
+    if(cfg.crossTen&&correctAnswer>10&&a%10!==0&&b%10!==0) hintText='💡 Считай через десяток!';
+  } else {
+    if(cfg.crossTen&&Math.random()>.4){
+      const dec=(Math.floor(Math.random()*Math.floor(cfg.max/10))+1)*10;
+      a=dec+Math.floor(Math.random()*Math.min(9,cfg.max-dec));
+      b=Math.floor(Math.random()*(dec%10===0?Math.min(9,a-dec+1):a-(dec-10)))+1;
+      if(a<=0||b<=0||b>=a){a=15;b=7;}
+    } else {
+      a=Math.floor(Math.random()*(cfg.max-1))+2;
+      b=Math.floor(Math.random()*(a-1))+1;
+    }
     correctAnswer=a-b;if(correctAnswer<0){a=10;b=3;correctAnswer=7;}
   }
+
   document.getElementById('hint').textContent=hintText;
-  const opSign=useAdd?'+':'−',opWord=useAdd?'плюс':'минус';
+  const opSign=useAdd?'+':'−', opWord=useAdd?'плюс':'минус';
   currentTaskText=`${a} ${opWord} ${b} — сколько получится?`;
-  document.getElementById('taskExpr').innerHTML=`<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
+  document.getElementById('taskExpr').innerHTML=
+    `<span>${a}</span><span class="op"> ${opSign} </span><span>${b}</span><span class="eq"> = </span><span>?</span>`;
+
   const spread=cfg.max<=10?3:cfg.max<=20?5:10;
   const choices=new Set([correctAnswer]);let tries=0;
-  while(choices.size<4&&tries<100){tries++;const d=Math.floor(Math.random()*spread)+1;const w=correctAnswer+(Math.random()>.5?d:-d);if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);}
+  while(choices.size<4&&tries<100){
+    tries++;const d=Math.floor(Math.random()*spread)+1;
+    const w=correctAnswer+(Math.random()>.5?d:-d);
+    if(w>=0&&w<=cfg.max+5&&w!==correctAnswer)choices.add(w);
+  }
   while(choices.size<4)choices.add(correctAnswer+choices.size);
+
   const grid=document.getElementById('answersGrid');grid.innerHTML='';
-  [...choices].sort(()=>Math.random()-.5).forEach(n=>{const btn=document.createElement('button');btn.className='answer-btn';btn.textContent=n;btn.onclick=()=>checkAnswer(n,btn);grid.appendChild(btn);});
-  setMouseMood('thinking');const phrase=rnd(phrases.ask);setBubble(phrase,'');
+  [...choices].sort(()=>Math.random()-.5).forEach(n=>{
+    const btn=document.createElement('button');btn.className='answer-btn';btn.textContent=n;
+    btn.onclick=()=>checkAnswer(n,btn);grid.appendChild(btn);
+  });
+
+  setMouseMood('thinking');
+  const phrase=rnd(phrases.ask);setBubble(phrase,'');
   const nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Выбери ответ ↑';
   answered=false;stopVoice();
-  // Speak phrase, wait for it to finish, then speak the task
-  speakNow(phrase).then(() => speakNow(currentTaskText)).catch(()=>{});
+  speakNow(phrase).then(()=>speakNow(currentTaskText)).catch(()=>{});
 }
 
 function checkAnswer(chosen,btn){
@@ -446,40 +615,71 @@ function checkAnswer(chosen,btn){
     btn.classList.add('correct');correctCount++;cheesePieces++;streak++;
     document.getElementById('correctCount').textContent=correctCount;
     addCheese();setMouseMood('happy');
-    let phrase;if(streak===5)phrase=rnd(phrases.streak5);else if(streak===3)phrase=rnd(phrases.streak3);else phrase=rnd(phrases.correct);
+    let phrase;
+    if(streak===5)phrase=rnd(phrases.streak5);
+    else if(streak===3)phrase=rnd(phrases.streak3);
+    else phrase=rnd(phrases.correct);
     setBubble(phrase,'happy-bubble');speakNow(phrase);
-  }else{
+  } else {
     btn.classList.add('wrong');
     document.querySelectorAll('.answer-btn').forEach(b=>{if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');});
     wrongCount++;streak=0;document.getElementById('wrongCount').textContent=wrongCount;
     setMouseMood('sad');const phrase=rnd(phrases.wrong);setBubble(phrase,'sad-bubble');
-    // Speak wrong phrase, wait for finish, then speak correct answer
-    speakNow(phrase).then(() => speakNow(`Правильный ответ — ${correctAnswer}`)).catch(()=>{});
+    speakNow(phrase).then(()=>speakNow(`Правильный ответ — ${correctAnswer}`)).catch(()=>{});
   }
   questionIndex++;updateProgress();
-  if(questionIndex>=TOTAL){setTimeout(showWin,1400);}else{nb.disabled=false;nb.textContent='Дальше! →';}
+  if(questionIndex>=TOTAL){setTimeout(showWin,1400);}
+  else{nb.disabled=false;nb.textContent='Дальше! →';}
 }
+
 function nextQuestion(){generateQuestion();}
-function updateProgress(){document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;}
-function addCheese(){const s=document.createElement('span');s.className='cheese-piece';s.textContent='🧀';document.getElementById('cheeseRow').appendChild(s);}
-function setBubble(text,cls){const b=document.getElementById('bubble');if(b){b.textContent=text;b.className='bubble '+cls;}}
+function updateProgress(){
+  document.getElementById('progressFill').style.width=(questionIndex/TOTAL*100)+'%';
+  document.getElementById('progressText').textContent=questionIndex+'/'+TOTAL;
+}
+function addCheese(){
+  const s=document.createElement('span');s.className='cheese-piece';s.textContent='🧀';
+  document.getElementById('cheeseRow').appendChild(s);
+}
+function setBubble(text,cls){
+  const b=document.getElementById('bubble');if(b){b.textContent=text;b.className='bubble '+cls;}
+}
+
 function showWin(){
-  stopVoice();document.getElementById('taskSection').style.display='none';
-  document.getElementById('winOverlay').classList.add('visible');setMouseMood('happy');
-  const cfg=LEVELS[level];const pct=correctCount/TOTAL;let stars,title,sub,speech;
-  if(pct>=.9){stars='⭐⭐⭐';title='Кладовочка полная!';sub=`${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён!`;speech=`Ура! ${correctCount} из ${TOTAL}! `+rnd(phrases.win3);}
-  else if(pct>=.6){stars='⭐⭐';title='Хорошая работа!';sub=`${correctCount} из ${TOTAL}. Нюсик доволен!`;speech=`${correctCount} из ${TOTAL}. `+rnd(phrases.win2);}
-  else{stars='⭐';title='Нюсик верит в тебя!';sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;speech=rnd(phrases.win1);}
-  document.getElementById('winStars').textContent=stars;document.getElementById('winTitle').textContent=title;
+  stopVoice();
+  document.getElementById('taskSection').style.display='none';
+  document.getElementById('winOverlay').classList.add('visible');
+  setMouseMood('happy');
+  const cfg=LEVELS[level];const pct=correctCount/TOTAL;
+  let stars,title,sub,speech;
+  if(pct>=.9){
+    stars='⭐⭐⭐';title='Кладовочка полная!';
+    sub=`${correctCount} из ${TOTAL} правильно! Уровень «${cfg.name}» покорён!`;
+    speech=`Ура! ${correctCount} из ${TOTAL}! `+rnd(phrases.win3);
+  } else if(pct>=.6){
+    stars='⭐⭐';title='Хорошая работа!';
+    sub=`${correctCount} из ${TOTAL}. Нюсик доволен!`;
+    speech=`${correctCount} из ${TOTAL}. `+rnd(phrases.win2);
+  } else {
+    stars='⭐';title='Нюсик верит в тебя!';
+    sub=`${correctCount} из ${TOTAL}. Попробуем ещё раз!`;
+    speech=rnd(phrases.win1);
+  }
+  document.getElementById('winStars').textContent=stars;
+  document.getElementById('winTitle').textContent=title;
   document.getElementById('winSubtitle').textContent=sub;
   document.querySelector('.restart-btn.secondary').style.display=level>=4?'none':'';
   speakAfter(speech,400);
 }
+
 function restartGame(){
   stopVoice();questionIndex=0;correctCount=0;wrongCount=0;cheesePieces=0;streak=0;
-  document.getElementById('cheeseRow').innerHTML='';document.getElementById('correctCount').textContent='0';
-  document.getElementById('wrongCount').textContent='0';document.getElementById('taskSection').style.display='';
-  document.getElementById('winOverlay').classList.remove('visible');updateProgress();generateQuestion();
+  document.getElementById('cheeseRow').innerHTML='';
+  document.getElementById('correctCount').textContent='0';
+  document.getElementById('wrongCount').textContent='0';
+  document.getElementById('taskSection').style.display='';
+  document.getElementById('winOverlay').classList.remove('visible');
+  updateProgress();generateQuestion();
 }
 </script>
 </body>

@@ -2,22 +2,30 @@
 let _calWeekOffset2 = 0;
 let _calSettings = null;
 
-const SLOT_TYPE_COLORS = {
-  primary: { bg: '#d1fae5', text: '#065f46', label: 'Приём' },
-  short:   { bg: '#fef3c7', text: '#92400e', label: '15 мин' },
-  express: { bg: '#fce7f3', text: '#9d174d', label: 'Экспресс' },
+// px per minute — controls density
+const PX_PER_MIN = 1.1;
+const CAL_START_H = 8;  // grid starts at 08:00
+const CAL_END_H   = 20; // grid ends at 20:00
+
+const SLOT_DURATIONS = { primary: 60, short: 15, express: 30 };
+const SLOT_COLORS = {
+  primary: { bg: '#d1fae5', border: '#6ee7b7', text: '#065f46' },
+  short:   { bg: '#fef3c7', border: '#fcd34d', text: '#92400e' },
+  express: { bg: '#fce7f3', border: '#f9a8d4', text: '#9d174d' },
+  patient: { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a' },
+  ervin:   { bg: '#fde68a', border: '#fbbf24', text: '#92400e' },
 };
-function slotTypeColor(type){ return SLOT_TYPE_COLORS[type] || SLOT_TYPE_COLORS.primary; }
+
+function tmToMin(tm){ const [h,m]=tm.split(':').map(Number); return h*60+m; }
+function minToTm(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function minToPx(m){ return (m - CAL_START_H*60) * PX_PER_MIN; }
 
 function generateSlotTimes(s){
   const start=s.cal_start||'09:00', end=s.cal_end||'18:00';
   const dur=+(s.cal_duration||60), brk=+(s.cal_break||15), step=dur+brk;
-  const [sh,sm]=start.split(':').map(Number);
-  const endMin = +end.split(':')[0]*60 + +(+end.split(':')[1]||0);
-  const startMin=sh*60+sm;
+  const startMin=tmToMin(start), endMin=tmToMin(end);
   const times=[];
-  for(let m=startMin;m+dur<=endMin;m+=step)
-    times.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
+  for(let m=startMin;m+dur<=endMin;m+=step) times.push(minToTm(m));
   return times;
 }
 
@@ -42,187 +50,203 @@ async function renderSlots(){
     db.from('appointments').select('date,time,type,patient_id,patients(name),appointment_number').in('date',weekDays).neq('status','отменён').is('deleted_at',null)
   ]);
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
+  const calDur=+(s.cal_duration||60);
 
-  // Build maps keyed by "date|HH:MM"
-  const slotsByDay={};
+  // Index by date+time
+  const slotMap={};
+  (slots||[]).forEach(sl=>{ slotMap[`${sl.date}|${sl.start_time?.substr(0,5)}`]=sl; });
   const apptMap={};
-  weekDays.forEach(d=>{ slotsByDay[d]=[]; });
-  (slots||[]).forEach(sl=>{
-    const tm=sl.start_time?.substr(0,5);
-    if(sl.date && slotsByDay[sl.date]) slotsByDay[sl.date].push({...sl, _tm:tm});
-  });
   (appts||[]).forEach(a=>{ apptMap[`${a.date}|${a.time?.substr(0,5)}`]=a; });
 
-  // Merge: for each day collect items = slots + appointments not covered by a slot
-  function dayItems(d){
-    const items=[];
-    const slotTimes=new Set(slotsByDay[d].map(sl=>sl._tm));
+  const gridH = (CAL_END_H - CAL_START_H) * 60 * PX_PER_MIN;
+  const nowMin = now.getHours()*60+now.getMinutes();
 
-    // Add all slots first
-    slotsByDay[d].forEach(sl=>{
-      const appt=apptMap[`${d}|${sl._tm}`];
-      items.push({ tm:sl._tm, slot:sl, appt: appt||null });
-    });
-
-    // Add appointments that have no matching slot
-    (appts||[]).filter(a=>a.date===d).forEach(a=>{
-      const tm=a.time?.substr(0,5);
-      if(!slotTimes.has(tm)) items.push({ tm, slot:null, appt:a });
-    });
-
-    items.sort((a,b)=>a.tm.localeCompare(b.tm));
-    return items;
+  // Hour labels (left column)
+  let hourLabels='';
+  for(let h=CAL_START_H;h<=CAL_END_H;h++){
+    const top=minToPx(h*60);
+    hourLabels+=`<div class="cg2-hour-label" style="top:${top}px">${String(h).padStart(2,'0')}:00</div>`;
   }
 
-  // Render a single row card
-  const nowTimeStr=new Date().toTimeString().substr(0,5);
-  function renderItem(d, {tm, slot, appt}){
-    const isPast=d<todayStr||(d===todayStr&&tm<nowTimeStr);
-
-    if(appt){
-      const sc=slotTypeColor(slot?.slot_type||'primary');
-      return`<div class="cv-card cv-card-patient" onclick="openPatientCard('${appt.patient_id}')">
-        <div class="cv-time">${tm}</div>
-        <div class="cv-body">
-          <div class="cv-name">${appt.patients?.name||'—'}</div>
-          <div class="cv-sub">${apptTypeName(appt.type||'')||appt.appointment_number||''}</div>
-        </div>
-      </div>`;
-    }
-
-    if(slot && slot.booked_by==='ervin'){
-      const can=isErvin()||isAdmin();
-      return`<div class="cv-card cv-card-ervin">
-        <div class="cv-time">${tm}</div>
-        <div class="cv-body">
-          <div class="cv-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div>
-        </div>
-        ${can?`<button class="cv-btn cv-btn-del" onclick="unbookErvin('${slot.id}')" title="Отменить">🗑</button>`:''}
-      </div>`;
-    }
-
-    if(slot && !slot.is_booked){
-      const sc=slotTypeColor(slot.slot_type||'primary');
-      const typeLabel=sc.label;
-      if(isAdmin()) return`<div class="cv-card cv-card-free" style="background:${sc.bg};color:${sc.text}">
-        <div class="cv-time">${tm}</div>
-        <div class="cv-body">
-          <div class="cv-name">✓ Свободно</div>
-          <div class="cv-sub">${typeLabel}</div>
-        </div>
-        <div class="cv-actions">
-          <button class="cv-btn cv-btn-add" onclick="openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" title="Записать">✚ Записать</button>
-          <button class="cv-btn cv-btn-del" onclick="removeSlotDirect('${slot.id}')" title="Удалить слот">🗑</button>
-        </div>
-      </div>`;
-      if(isErvin()) return`<div class="cv-card cv-card-free" style="background:${sc.bg};color:${sc.text}">
-        <div class="cv-time">${tm}</div>
-        <div class="cv-body"><div class="cv-name">✓ Свободно</div></div>
-        <div class="cv-actions">
-          <button class="cv-btn cv-btn-add" onclick="bookErvinAt('${d}','${tm}','${slot.id}')">Zauzimi</button>
-          <button class="cv-btn cv-btn-del" onclick="removeSlotDirect('${slot.id}')">🗑</button>
-        </div>
-      </div>`;
-      return`<div class="cv-card cv-card-free" style="background:${sc.bg};color:${sc.text}">
-        <div class="cv-time">${tm}</div>
-        <div class="cv-body"><div class="cv-name">✓ Свободно</div></div>
-      </div>`;
-    }
-
-    return''; // no slot, no appointment
+  // Hour lines (background)
+  let hourLines='';
+  for(let h=CAL_START_H;h<=CAL_END_H;h++){
+    const top=minToPx(h*60);
+    hourLines+=`<div class="cg2-hline" style="top:${top}px"></div>`;
   }
 
-  // Build column HTML per day
-  const cols=weekDays.map(d=>{
+  // Build day columns
+  let dayCols='';
+  weekDays.forEach((d,ci)=>{
     const dt=new Date(d+'T12:00:00');
     const isToday=d===todayStr;
     const isWork=workDays.includes(dt.getDay());
-    const items=dayItems(d);
-    const isEmpty=items.length===0;
 
-    const addBtn=isAdmin()?`<button class="cv-add-slot-btn" onclick="openDaySlots('${d}')" title="Открыть слоты на день">+ слот</button>`
-                :isErvin()?`<button class="cv-add-slot-btn cv-add-slot-btn-ervin" onclick="openAddErvinBooking()" title="Занять слот">+ занять</button>`:'';
+    // Collect all events for this day
+    const events=[];
+    const seenTimes=new Set();
 
-    return`<div class="cv-col${isToday?' cv-col-today':''}${!isWork?' cv-col-nonwork':''}">
-      <div class="cv-col-head">
-        <div class="cv-dow">${DOW[dt.getDay()]}</div>
-        <div class="cv-date">${dt.getDate()}</div>
-        ${addBtn}
-      </div>
-      <div class="cv-cards">
-        ${items.map(it=>renderItem(d,it)).filter(Boolean).join('')}
-        ${isEmpty?`<div class="cv-empty">—</div>`:''}
-      </div>
+    (slots||[]).filter(sl=>sl.date===d).forEach(sl=>{
+      const tm=sl.start_time?.substr(0,5);
+      if(!tm)return;
+      seenTimes.add(tm);
+      const appt=apptMap[`${d}|${tm}`];
+      const slotType=sl.slot_type||'primary';
+      const dur = appt ? (SLOT_DURATIONS[slotType]||calDur) : (SLOT_DURATIONS[slotType]||calDur);
+      events.push({ tm, slot:sl, appt:appt||null, dur, slotType });
+    });
+
+    // Appointments without a slot
+    (appts||[]).filter(a=>a.date===d).forEach(a=>{
+      const tm=a.time?.substr(0,5);
+      if(!tm||seenTimes.has(tm))return;
+      events.push({ tm, slot:null, appt:a, dur:calDur, slotType:'primary' });
+    });
+
+    // Render each event as absolutely positioned block
+    let eventsHTML='';
+    events.forEach(({tm,slot,appt,dur,slotType})=>{
+      const startMin=tmToMin(tm);
+      const top=minToPx(startMin);
+      const height=Math.max(dur*PX_PER_MIN - 2, 18);
+      const isShort=height<36;
+
+      if(appt){
+        const c=SLOT_COLORS.patient;
+        const name=appt.patients?.name||'—';
+        const sub=apptTypeName(appt.type||'')||appt.appointment_number||'';
+        const delBtn=isAdmin()||isErvin()?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot?.id||''}','${appt.patient_id}')" title="Удалить">✕</button>`:'';
+        eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="openPatientCard('${appt.patient_id}')">
+          ${delBtn}
+          <div class="cg2-ev-time">${tm}</div>
+          ${!isShort?`<div class="cg2-ev-name">${name}</div><div class="cg2-ev-sub">${sub}</div>`:`<span class="cg2-ev-name" style="display:inline">${name}</span>`}
+        </div>`;
+      } else if(slot&&slot.booked_by==='ervin'){
+        const c=SLOT_COLORS.ervin;
+        const can=isErvin()||isAdmin();
+        eventsHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+          ${can?`<button class="cg2-del" onclick="event.stopPropagation();unbookErvin('${slot.id}')" title="Отменить">✕</button>`:''}
+          <div class="cg2-ev-time">${tm}</div>
+          ${!isShort?`<div class="cg2-ev-name">Ervin${slot.ervin_note?' — '+slot.ervin_note:''}</div>`:`<span class="cg2-ev-name" style="display:inline">Ervin</span>`}
+        </div>`;
+      } else if(slot&&!slot.is_booked){
+        const c=SLOT_COLORS[slotType]||SLOT_COLORS.primary;
+        const delBtn=isAdmin()?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot.id}',null)" title="Удалить слот">✕</button>`:'';
+        const addBtn=isAdmin()?`<button class="cg2-add-btn" onclick="event.stopPropagation();openAddAppointmentAtSlot('${d}','${tm}','${slot.id}')" title="Записать пациента">✚</button>`
+                   :isErvin()?`<button class="cg2-add-btn cg2-add-btn-ervin" onclick="event.stopPropagation();bookErvinAt('${d}','${tm}','${slot.id}')" title="Занять">✚</button>`:'';
+        eventsHTML+=`<div class="cg2-event cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
+          ${delBtn}${addBtn}
+          <div class="cg2-ev-time">${tm}</div>
+          ${!isShort?`<div class="cg2-ev-name">✓ Свободно</div>`:''}
+        </div>`;
+      }
+    });
+
+    // Current time indicator
+    const nowLine=(isToday&&nowMin>=CAL_START_H*60&&nowMin<CAL_END_H*60)
+      ?`<div class="cg2-now" style="top:${minToPx(nowMin)}px"></div>`:'';
+
+    // Click-to-add handler on empty area
+    const clickHandler=(isAdmin()||isErvin())
+      ?`onclick="cg2ClickAdd(event,'${d}',${CAL_START_H})"`:'';
+
+    dayCols+=`<div class="cg2-day${isToday?' cg2-day-today':''}${!isWork?' cg2-day-nonwork':''}" ${clickHandler} style="height:${gridH}px">
+      ${hourLines}
+      ${nowLine}
+      ${eventsHTML}
     </div>`;
-  }).join('');
+  });
+
+  // Header row
+  let headerCols='<div class="cg2-th-time"></div>';
+  weekDays.forEach(d=>{
+    const dt=new Date(d+'T12:00:00');
+    const isToday=d===todayStr;
+    const isWork=workDays.includes(dt.getDay());
+    headerCols+=`<div class="cg2-th${isToday?' cg2-th-today':''}${!isWork?' cg2-th-nonwork':''}">
+      <span class="cg2-th-dow">${DOW[dt.getDay()]}</span>
+      <span class="cg2-th-date">${dt.getDate()}</span>
+      ${isAdmin()?`<button class="cg2-openday-btn" onclick="openDaySlots('${d}')" title="Открыть слоты">+ слоты</button>`:''}
+    </div>`;
+  });
 
   document.querySelector('.content').innerHTML=`
   <style>
-    .cv-week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-width:700px;}
-    .cv-col{display:flex;flex-direction:column;gap:0;}
-    .cv-col-nonwork .cv-col-head{opacity:.45;}
-    .cv-col-today .cv-col-head{background:var(--accent-l);}
-    .cv-col-today .cv-date{color:var(--accent);}
-    .cv-col-head{
-      background:var(--surface2);border-radius:8px 8px 0 0;
-      text-align:center;padding:7px 4px 5px;
-      border-bottom:2px solid var(--border);
+    .cg2-wrap{overflow-x:auto;overflow-y:visible;}
+    .cg2-header{display:grid;grid-template-columns:44px repeat(7,1fr);background:white;border-bottom:2px solid var(--border);border-radius:10px 10px 0 0;min-width:600px;}
+    .cg2-th-time{padding:8px 0;}
+    .cg2-th{
+      text-align:center;padding:8px 4px 6px;border-left:1px solid var(--border);
       display:flex;flex-direction:column;align-items:center;gap:2px;
     }
-    .cv-dow{font-size:10px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.04em;}
-    .cv-date{font-size:22px;font-weight:800;color:var(--text);line-height:1.1;}
-    .cv-add-slot-btn{
+    .cg2-th-today{background:var(--accent-l);}
+    .cg2-th-nonwork{opacity:.5;}
+    .cg2-th-dow{font-size:10px;font-weight:600;color:var(--text-m);text-transform:uppercase;letter-spacing:.05em;}
+    .cg2-th-date{font-size:20px;font-weight:800;color:var(--text);line-height:1.1;}
+    .cg2-th-today .cg2-th-date{color:var(--accent);}
+    .cg2-openday-btn{
       border:none;border-radius:4px;cursor:pointer;font-family:inherit;
       background:var(--accent);color:#fff;font-size:10px;font-weight:700;
-      padding:3px 8px;margin-top:2px;transition:background .12s;
+      padding:2px 7px;transition:background .12s;
     }
-    .cv-add-slot-btn:hover{background:var(--accent-h,#155a9c);}
-    .cv-add-slot-btn-ervin{background:#d97706;}
-    .cv-add-slot-btn-ervin:hover{background:#b45309;}
-    .cv-cards{
-      background:white;border-radius:0 0 8px 8px;
-      border:1px solid var(--border);border-top:none;
-      display:flex;flex-direction:column;gap:4px;
-      padding:6px 5px;min-height:60px;
+    .cg2-openday-btn:hover{background:var(--accent-h,#155a9c);}
+    .cg2-body{display:grid;grid-template-columns:44px repeat(7,1fr);background:#e2e8f0;gap:1px;border-radius:0 0 10px 10px;min-width:600px;overflow:hidden;}
+    .cg2-time-col{background:white;position:relative;}
+    .cg2-hour-label{
+      position:absolute;right:4px;transform:translateY(-50%);
+      font-size:9px;font-weight:700;color:var(--text-l);
+      white-space:nowrap;pointer-events:none;
     }
-    .cv-empty{font-size:12px;color:var(--text-l);text-align:center;padding:12px 0;opacity:.5;}
-    .cv-card{
-      display:flex;align-items:center;gap:6px;
-      border-radius:7px;padding:7px 8px;
-      cursor:default;transition:filter .12s;
-      min-height:44px;
+    .cg2-day{
+      background:white;position:relative;cursor:default;
     }
-    .cv-card-patient{background:#dbeafe;color:#1e3a8a;cursor:pointer;}
-    .cv-card-patient:hover{filter:brightness(.95);}
-    .cv-card-ervin{background:#fde68a;color:#92400e;}
-    .cv-card-free{cursor:default;}
-    .cv-time{
-      font-size:12px;font-weight:800;
-      min-width:34px;letter-spacing:.02em;
-      line-height:1;flex-shrink:0;
+    .cg2-day-nonwork{background:#f8f8f8;}
+    .cg2-day-today{background:#fffdf5;}
+    .cg2-hline{position:absolute;left:0;right:0;border-top:1px solid #e2e8f0;pointer-events:none;}
+    .cg2-now{position:absolute;left:0;right:0;height:2px;background:#ef4444;pointer-events:none;z-index:5;}
+    .cg2-now::before{content:'';position:absolute;left:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:#ef4444;}
+    .cg2-event{
+      position:absolute;left:2px;right:2px;
+      border-radius:5px;padding:3px 6px;
+      font-size:11px;overflow:hidden;
+      cursor:pointer;z-index:3;
+      box-sizing:border-box;
+      transition:filter .1s;
     }
-    .cv-body{flex:1;min-width:0;}
-    .cv-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
-    .cv-sub{font-size:10px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .cv-actions{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
-    .cv-btn{
-      border:none;border-radius:4px;font-family:inherit;
+    .cg2-event:hover{filter:brightness(.94);}
+    .cg2-event-free{cursor:default;}
+    .cg2-ev-time{font-size:9.5px;font-weight:700;opacity:.7;line-height:1.2;white-space:nowrap;}
+    .cg2-ev-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+    .cg2-ev-sub{font-size:9.5px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .cg2-del{
+      position:absolute;top:2px;right:2px;
+      border:none;border-radius:3px;
+      background:rgba(220,38,38,.18);color:#b91c1c;
       font-size:10px;font-weight:700;
-      padding:3px 7px;cursor:pointer;white-space:nowrap;
+      width:18px;height:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      padding:0;line-height:1;
+      transition:background .12s;z-index:4;
+    }
+    .cg2-del:hover{background:rgba(220,38,38,.45);}
+    .cg2-add-btn{
+      position:absolute;bottom:2px;right:2px;
+      border:none;border-radius:3px;
+      background:rgba(0,0,0,.18);color:inherit;
+      font-size:11px;font-weight:700;
+      width:18px;height:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      padding:0;line-height:1;z-index:4;
       transition:background .12s;
     }
-    .cv-btn-add{background:rgba(0,0,0,.16);color:inherit;}
-    .cv-btn-add:hover{background:rgba(0,0,0,.3);}
-    .cv-btn-del{background:rgba(220,38,38,.15);color:#b91c1c;}
-    .cv-btn-del:hover{background:rgba(220,38,38,.35);}
-    @media(max-width:760px){
-      .cv-week{grid-template-columns:repeat(3,1fr);}
-    }
-    @media(max-width:500px){
-      .cv-week{grid-template-columns:repeat(2,1fr);}
+    .cg2-add-btn:hover{background:rgba(0,0,0,.35);}
+    .cg2-add-btn-ervin{background:rgba(217,119,6,.2);color:#92400e;}
+    @media(max-width:700px){
+      .cg2-header,.cg2-body{grid-template-columns:36px repeat(7,1fr);}
+      .cg2-th-date{font-size:15px;}
     }
   </style>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div class="flex gap-8 items-center">
       <button class="btn btn-ghost btn-sm" onclick="_calWeekOffset2--;renderSlots()">${t('back')}</button>
       <b style="font-size:15px;min-width:150px;text-align:center">${monthLabel}</b>
@@ -234,43 +258,80 @@ async function renderSlots(){
       ${isErvin()?`<button class="btn btn-accent btn-sm" onclick="openAddErvinBooking()">+ ${t('my_slot')}</button>`:''}
     </div>
   </div>
-  <div style="overflow-x:auto">
-    <div class="cv-week">${cols}</div>
+  <div class="cg2-wrap">
+    <div class="cg2-header">${headerCols}</div>
+    <div class="cg2-body">
+      <div class="cg2-time-col" style="height:${gridH}px">${hourLabels}</div>
+      ${dayCols}
+    </div>
   </div>
-  <div style="display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--text-m);flex-wrap:wrap;align-items:center">
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d1fae5;display:inline-block"></span>Приём (60 мин)</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;display:inline-block"></span>15 мин</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fce7f3;display:inline-block"></span>Экспресс</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#dbeafe;display:inline-block"></span>${t('patient')}</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fde68a;display:inline-block"></span>${t('slot_ervin')}</span>
+  <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-m);flex-wrap:wrap;align-items:center">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d1fae5;border-left:3px solid #6ee7b7;display:inline-block"></span>Приём (60 мин)</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;border-left:3px solid #fcd34d;display:inline-block"></span>15 мин</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fce7f3;border-left:3px solid #f9a8d4;display:inline-block"></span>Экспресс</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#dbeafe;border-left:3px solid #93c5fd;display:inline-block"></span>${t('patient')}</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fde68a;border-left:3px solid #fbbf24;display:inline-block"></span>${t('slot_ervin')}</span>
     ${isAdmin()?`· <a href="#" onclick="nav('settings')" style="color:var(--accent);font-size:11px">${t('schedule_settings')}</a>`:''}
   </div>`;
 }
 
-async function removeSlotDirect(id){
+// Click on empty grid area → add slot/appointment dialog
+function cg2ClickAdd(e, date, calStartH){
+  // Ignore if clicked on an event
+  if(e.target.closest('.cg2-event')) return;
+  const col=e.currentTarget;
+  const rect=col.getBoundingClientRect();
+  const clickY=e.clientY - rect.top + col.scrollTop;
+  const clickMin = Math.round(clickY / PX_PER_MIN / 15)*15 + calStartH*60;
+  const tm=minToTm(Math.max(calStartH*60, Math.min((CAL_END_H*60)-15, clickMin)));
+  if(isAdmin()) openAddSlotOrAppt(date, tm);
+  else if(isErvin()) bookErvinAt(date, tm, '');
+}
+
+function openAddSlotOrAppt(date, tm){
+  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить — ${fmt(date)} ${tm}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Дата</label><input type="date" id="cas-date" value="${date}"></div>
+      <div class="form-group" style="margin-top:8px"><label>Время</label><input type="time" id="cas-time" value="${tm}"></div>
+      <div class="form-group" style="margin-top:8px"><label>Тип</label>
+        <select id="cas-type">
+          <option value="primary">Основной приём (60 мин)</option>
+          <option value="short">15 мин (контроль / помощь)</option>
+          <option value="express">Экспресс-диагностика (30 мин)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-accent" onclick="_casSave()">Добавить слот</button>
+    </div>
+  </div>`);
+}
+async function _casSave(){
+  const date=document.getElementById('cas-date').value;
+  const time=document.getElementById('cas-time').value;
+  const slotType=document.getElementById('cas-type')?.value||'primary';
+  if(!date||!time)return;
+  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
+  toast(t('slot_added'));closeModal();renderSlots();
+}
+
+async function removeSlotDirect(slotId, patientId){
+  if(patientId){
+    if(!confirm('Удалить запись (слот останется свободным)?'))return;
+    // We don't delete the appointment here — just navigate if needed
+    // In practice admin would cancel via appointment card
+    if(slotId) await db.from('available_slots').update({is_booked:false,booked_by:null}).eq('id',slotId);
+    toast('Используй карту пациента для отмены записи','info');
+    renderSlots(); return;
+  }
   if(!confirm('Удалить слот?'))return;
-  await db.from('available_slots').delete().eq('id',id);
+  await db.from('available_slots').delete().eq('id',slotId);
   renderSlots();
 }
 
 async function addSlotAt(date,time){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Добавить слот — ${time} ${fmt(date)}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label>Тип слота</label>
-        <select id="as-type">
-          <option value="primary">Основной приём (60 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (акция)</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="_saveSlotAt('${date}','${time}')">+ Слот</button></div>
-  </div>`);
-}
-async function _saveSlotAt(date,time){
-  const slotType=document.getElementById('as-type')?.value||'primary';
-  await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
-  closeModal();renderSlots();
+  openAddSlotOrAppt(date,time);
 }
 
 async function removeSlot(id){
@@ -293,7 +354,7 @@ async function openWeekSlots(from,to){
         <select id="ws-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (акция)</option>
+          <option value="express">Экспресс-диагностика (30 мин)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
@@ -337,14 +398,14 @@ async function openDaySlots(date){
         <select id="ds-type">
           <option value="primary">Основной приём (60 мин)</option>
           <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (акция)</option>
+          <option value="express">Экспресс-диагностика (30 мин)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке)</label>
         <textarea id="ds-times" style="min-height:160px;font-family:monospace;font-size:14px">${times.join('\n')}</textarea>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-accent" onclick="saveDaySlots()">Otvori</button></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="saveDaySlots()">Otvori</button></div>
   </div>`);
 }
 async function saveDaySlots(){
@@ -358,26 +419,12 @@ async function saveDaySlots(){
 }
 
 function openAddCustomSlot(){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">${t('add_slot')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Дата</label><input type="date" id="cs-date" value="${today()}"></div>
-        <div class="form-group"><label>Время</label><input type="time" id="cs-time" value="09:00"></div>
-      </div>
-      <div class="form-group" style="margin-top:10px"><label>Тип слота</label>
-        <select id="cs-type">
-          <option value="primary">Основной приём (60 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (акция)</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Отмена</button><button class="btn btn-accent" onclick="saveCustomSlot()">Добавить</button></div>
-  </div>`);
+  openAddSlotOrAppt(today(),'09:00');
 }
 async function saveCustomSlot(){
-  const date=document.getElementById('cs-date').value, time=document.getElementById('cs-time').value;
-  const slotType=document.getElementById('cs-type')?.value||'primary';
+  const date=document.getElementById('cas-date')?.value||document.getElementById('cs-date')?.value;
+  const time=document.getElementById('cas-time')?.value||document.getElementById('cs-time')?.value;
+  const slotType=document.getElementById('cas-type')?.value||'primary';
   if(!date||!time)return;
   await db.from('available_slots').upsert({date,start_time:time,is_booked:false,booked_by:null,slot_type:slotType},{onConflict:'date,start_time'});
   toast(t('slot_added'));closeModal();renderSlots();

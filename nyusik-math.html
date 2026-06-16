@@ -249,10 +249,9 @@
 </div>
 
 <script>
-// Storage keys — v3 forces fresh setup
-const STORAGE_KEY     = 'nyusik_xi_key_v3';
-const STORAGE_VOICE   = 'nyusik_xi_voice_v3';
-const XI_MODEL        = 'eleven_multilingual_v2';
+const STORAGE_KEY   = 'nyusik_xi_key_v3';
+const STORAGE_VOICE = 'nyusik_xi_voice_v3';
+const XI_MODEL      = 'eleven_multilingual_v2';
 
 let XI_KEY      = localStorage.getItem(STORAGE_KEY)   || '';
 let XI_VOICE_ID = localStorage.getItem(STORAGE_VOICE) || 'EXAVITQu4vr4xnSDxMaL';
@@ -263,96 +262,85 @@ const audioCache = new Map();
 async function saveApiKey() {
   const val   = document.getElementById('apiKeyInput').value.trim();
   const voice = document.getElementById('voiceSelect').value;
-  if (!val.startsWith('sk_') || val.length < 20) {
-    showErr('Ключ должен начинаться с sk_ и быть длиннее 20 символов'); return;
-  }
+  if (!val.startsWith('sk_') || val.length < 20) { showErr('Ключ должен начинаться с sk_ и быть длиннее 20 символов'); return; }
   const btn = document.getElementById('setupBtn');
-  btn.textContent = 'Проверяем...'; btn.disabled = true;
-  hideErr();
+  btn.textContent = 'Проверяем...'; btn.disabled = true; hideErr();
   try {
-    const resp = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
-      { method:'POST',
-        headers:{'xi-api-key':val,'Content-Type':'application/json'},
-        body:JSON.stringify({text:'Привет!',model_id:XI_MODEL,
-          voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
-      }
-    );
-    if (resp.status===401){ showErr('Ключ неверный — проверь в кабинете ElevenLabs.'); reset(); return; }
-    if (resp.status===402){ showErr('402: лимит символов исчерпан или нужна подписка. Попробуй другой голос из списка или пополни баланс на elevenlabs.io.'); reset(); return; }
+    const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+      method:'POST', headers:{'xi-api-key':val,'Content-Type':'application/json'},
+      body:JSON.stringify({text:'Привет!',model_id:XI_MODEL,voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
+    });
+    if (resp.status===401){ showErr('Ключ неверный.'); reset(); return; }
+    if (resp.status===402){ showErr('402: лимит символов исчерпан. Попробуй другой голос или пополни баланс на elevenlabs.io.'); reset(); return; }
     if (resp.status===404){ showErr('Голос не найден. Выбери другой из списка.'); reset(); return; }
     if (!resp.ok){ showErr(`Ошибка ElevenLabs: ${resp.status}`); reset(); return; }
-
     const blob = await resp.blob();
-    const url  = URL.createObjectURL(blob);
-    new Audio(url).play().catch(()=>{});
-
+    new Audio(URL.createObjectURL(blob)).play().catch(()=>{});
     XI_KEY = val; XI_VOICE_ID = voice;
-    localStorage.setItem(STORAGE_KEY, val);
-    localStorage.setItem(STORAGE_VOICE, voice);
+    localStorage.setItem(STORAGE_KEY, val); localStorage.setItem(STORAGE_VOICE, voice);
     setTimeout(startGame, 1000);
-  } catch(e) {
-    showErr('Ошибка сети. Проверь соединение.'); reset();
-  }
+  } catch(e) { showErr('Ошибка сети.'); reset(); }
 }
-function reset(){ const btn=document.getElementById('setupBtn'); btn.textContent='Проверить и начать! 🐭'; btn.disabled=false; }
+function reset(){ const b=document.getElementById('setupBtn'); b.textContent='Проверить и начать! 🐭'; b.disabled=false; }
 function showErr(m){ const b=document.getElementById('errBanner'); b.textContent=m; b.style.display='block'; }
 function hideErr(){ document.getElementById('errBanner').style.display='none'; }
-
-function startGame(){
-  document.getElementById('setupScreen').style.display='none';
-  document.getElementById('gameWrapper').style.display='';
-  generateQuestion();
-}
-
-window.addEventListener('DOMContentLoaded',()=>{
-  if(XI_KEY){ startGame(); }
-  else{ document.getElementById('setupScreen').style.display='flex'; }
-});
+function startGame(){ document.getElementById('setupScreen').style.display='none'; document.getElementById('gameWrapper').style.display=''; generateQuestion(); }
+window.addEventListener('DOMContentLoaded',()=>{ if(XI_KEY)startGame(); else document.getElementById('setupScreen').style.display='flex'; });
 
 // ── ElevenLabs TTS ────────────────────────────────────
-async function speakNow(text){
-  if(!soundOn||!text)return;
-  stopVoice(); setSpeakUI(true);
-  try{
-    let url=audioCache.get(text);
-    if(!url){
-      const resp=await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,
-        {method:'POST',
-         headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
-         body:JSON.stringify({text,model_id:XI_MODEL,
-           voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
-        }
-      );
-      if(!resp.ok)throw new Error(resp.status);
-      const blob=await resp.blob();
-      url=URL.createObjectURL(blob);
-      if(audioCache.size>50)audioCache.delete(audioCache.keys().next().value);
-      audioCache.set(text,url);
+// KEY FIX: speakNow now returns a Promise that resolves only when audio FINISHES playing.
+// This ensures phrases are spoken sequentially, never overlapping.
+async function speakNow(text) {
+  if (!soundOn || !text) return;
+  stopVoice();
+  setSpeakUI(true);
+  try {
+    let url = audioCache.get(text);
+    if (!url) {
+      const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`, {
+        method: 'POST',
+        headers: { 'xi-api-key': XI_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, model_id: XI_MODEL,
+          voice_settings: { stability:.4, similarity_boost:.8, style:.4, use_speaker_boost:true } }),
+      });
+      if (!resp.ok) throw new Error(resp.status);
+      const blob = await resp.blob();
+      url = URL.createObjectURL(blob);
+      if (audioCache.size > 50) audioCache.delete(audioCache.keys().next().value);
+      audioCache.set(text, url);
     }
-    currentAudio=new Audio(url);
-    currentAudio.onended=()=>setSpeakUI(false);
-    currentAudio.onerror=()=>setSpeakUI(false);
-    await currentAudio.play();
-  }catch(e){
-    console.warn('XI error:',e.message);
+    currentAudio = new Audio(url);
+    // Wait until audio fully finishes before resolving
+    await new Promise((resolve) => {
+      currentAudio.onended = () => { setSpeakUI(false); resolve(); };
+      currentAudio.onerror = () => { setSpeakUI(false); resolve(); };
+      currentAudio.play().catch(() => { setSpeakUI(false); resolve(); });
+    });
+  } catch(e) {
+    console.warn('XI error:', e.message);
     setSpeakUI(false);
   }
 }
-function speakAfter(text,ms){ clearTimeout(voiceTimer); voiceTimer=setTimeout(()=>speakNow(text),ms); }
-function stopVoice(){ clearTimeout(voiceTimer); if(currentAudio){currentAudio.pause();currentAudio=null;} setSpeakUI(false); }
-function setSpeakUI(on){
+
+function speakAfter(text, ms) { clearTimeout(voiceTimer); voiceTimer = setTimeout(() => speakNow(text), ms); }
+function stopVoice() {
+  clearTimeout(voiceTimer);
+  if (currentAudio) { currentAudio.onended = null; currentAudio.onerror = null; currentAudio.pause(); currentAudio = null; }
+  setSpeakUI(false);
+}
+function setSpeakUI(on) {
   const d=document.getElementById('speakingDots'); if(d)d.classList.toggle('active',on);
   const s=document.getElementById('mouseSvg'); if(!s)return;
   if(on){s._pm=s.getAttribute('data-mood');s.setAttribute('data-mood','speaking');}
   else{s.setAttribute('data-mood',s._pm||'thinking');s._pm=null;}
 }
-function toggleSound(){ soundOn=!soundOn; if(!soundOn)stopVoice();
+function toggleSound() {
+  soundOn=!soundOn; if(!soundOn)stopVoice();
   document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
   document.getElementById('soundBtn').classList.toggle('muted',!soundOn);
-  if(soundOn)speakNow('Звук включён!'); }
-function readTaskAloud(){ stopVoice(); speakNow(currentTaskText); }
+  if(soundOn)speakNow('Звук включён!');
+}
+function readTaskAloud() { stopVoice(); speakNow(currentTaskText); }
 
 // ── Game ──────────────────────────────────────────────
 const TOTAL=10;
@@ -446,7 +434,8 @@ function generateQuestion(){
   setMouseMood('thinking');const phrase=rnd(phrases.ask);setBubble(phrase,'');
   const nb=document.getElementById('nextBtn');nb.disabled=true;nb.textContent='Выбери ответ ↑';
   answered=false;stopVoice();
-  speakNow(phrase).then(()=>speakAfter(currentTaskText,500)).catch(()=>{});
+  // Speak phrase, wait for it to finish, then speak the task
+  speakNow(phrase).then(() => speakNow(currentTaskText)).catch(()=>{});
 }
 
 function checkAnswer(chosen,btn){
@@ -464,7 +453,8 @@ function checkAnswer(chosen,btn){
     document.querySelectorAll('.answer-btn').forEach(b=>{if(parseInt(b.textContent)===correctAnswer)b.classList.add('correct');});
     wrongCount++;streak=0;document.getElementById('wrongCount').textContent=wrongCount;
     setMouseMood('sad');const phrase=rnd(phrases.wrong);setBubble(phrase,'sad-bubble');
-    speakNow(phrase).then(()=>speakAfter(`Правильный ответ — ${correctAnswer}`,400)).catch(()=>{});
+    // Speak wrong phrase, wait for finish, then speak correct answer
+    speakNow(phrase).then(() => speakNow(`Правильный ответ — ${correctAnswer}`)).catch(()=>{});
   }
   questionIndex++;updateProgress();
   if(questionIndex>=TOTAL){setTimeout(showWin,1400);}else{nb.disabled=false;nb.textContent='Дальше! →';}

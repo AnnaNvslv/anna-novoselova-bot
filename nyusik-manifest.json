@@ -1,0 +1,26 @@
+{
+  "name": "Нюсик и математика",
+  "short_name": "Нюсик",
+  "description": "Математика для первого класса с мышонком Нюсиком",
+  "start_url": "/anna-novoselova-bot/nyusik-math.html",
+  "scope": "/anna-novoselova-bot/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFF8F0",
+  "theme_color": "#F5C842",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "nyusik-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "nyusik-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -150,6 +150,7 @@ function _anRenderReport(){
     <div class="card mb-12">
       <div class="card-header">
         <span class="card-title">🛍️ Заказы (${fmt(from)} — ${fmt(to)})</span>
+        <button class="btn btn-ghost btn-sm" onclick="_anPrintReport()">🖨️ Печать отчёта</button>
       </div>
       <div class="filter-bar mb-12">
         <button class="filter-btn${_anOrderTypeFilter==='all'?' active':''}" onclick="_anOrderTypeFilter='all';_anRenderReport()">Все (${orders.length})</button>
@@ -158,13 +159,14 @@ function _anRenderReport(){
       </div>
       <div class="table-wrap"><table>
         <thead><tr>
-          <th>${t('date')}</th><th>${t('patient')}</th><th>Тип</th>
+          <th>${t('date')}</th><th>№ заказа</th><th>${t('patient')}</th><th>Тип</th>
           <th>Код / цена оправы</th><th>Линзы / цена</th><th>Работа</th>
           <th>${t('total')}</th><th>${t('status')}</th><th>Преглед</th>
         </tr></thead>
         <tbody>${list.length ? list.map(o=>`
           <tr>
             <td class="text-m">${fmt(_anOrderDate(o))}</td>
+            <td><span class="badge badge-gray" style="font-size:11px">${o.order_number||'—'}</span></td>
             <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span></td>
             <td class="text-m">${o.type||'—'}</td>
             <td><div class="fw-6" style="font-size:13px">${o.frame_code||'—'}</div><div class="text-sm text-m">${o.frame_price?fmtMoney(o.frame_price):'—'}</div></td>
@@ -174,7 +176,7 @@ function _anRenderReport(){
             <td><span class="badge ${STATUS_BADGE[o.status]||'badge-gray'}">${statusLabel(o.status)}</span></td>
             <td style="text-align:center">${_anHadVisit(o)?'✅':''}</td>
           </tr>
-        `).join('') : `<tr><td colspan="9"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
+        `).join('') : `<tr><td colspan="10"><div class="empty"><p>${t('no_orders')}</p></div></td></tr>`}
         </tbody>
       </table></div>
       <div class="divider"></div>
@@ -257,4 +259,101 @@ async function _anRecalcSalary(){
   ]);
   document.getElementById('an-salary-card').innerHTML = _anSalaryHtml();
   toast('Зарплата пересчитана ✓');
+}
+
+// ═══ PRINT REPORT ═══
+function _anPrintReport(){
+  if (!_anReportData) { toast('Сначала сформируйте отчёт','error'); return; }
+  const {from, to, orders, appts} = _anReportData;
+
+  const glassesOrders = orders.filter(o=>!_anIsCL(o));
+  const clOrders = orders.filter(o=>_anIsCL(o));
+  const sumGlasses = glassesOrders.reduce((s,o)=>s+orderTotal(o),0);
+  const sumCL = clOrders.reduce((s,o)=>s+orderTotal(o),0);
+
+  const eligible = _anThresholdOn ? glassesOrders.filter(o=>orderTotal(o) > _anThresholdVal) : glassesOrders;
+  const sumEligible = eligible.reduce((s,o)=>s+orderTotal(o),0);
+  const salaryFromOrders = Math.round(sumEligible * _anPercent / 100);
+  const salaryFromAppts = appts.reduce((s,a)=>s+(+a.consultation_price||0),0);
+  const totalSalary = salaryFromOrders + salaryFromAppts;
+
+  const apptsPaid = appts.filter(a=>(+a.consultation_price||0)>0);
+  const sumAppts = appts.reduce((s,a)=>s+(+a.consultation_price||0),0);
+
+  const ordersRows = orders.length ? orders.map(o=>`
+    <tr>
+      <td>${fmt(_anOrderDate(o))}</td>
+      <td>${o.order_number||'—'}</td>
+      <td>${o.patients?.name||'—'}</td>
+      <td>${o.type||'—'}</td>
+      <td>${o.frame_code||'—'} / ${o.frame_price?fmtMoney(o.frame_price):'—'}</td>
+      <td>${o.lens_name||'—'} / ${o.lens_price?fmtMoney(o.lens_price):'—'}</td>
+      <td>${o.work_price?fmtMoney(o.work_price):'—'}</td>
+      <td><b>${fmtMoney(orderTotal(o))}</b></td>
+      <td>${statusLabel(o.status)}</td>
+      <td>${_anHadVisit(o)?'✓':''}</td>
+    </tr>`).join('') : '<tr><td colspan="10" style="text-align:center;color:#999">Нет заказов</td></tr>';
+
+  const apptsRows = appts.length ? appts.map(a=>`
+    <tr>
+      <td>${fmt(a.date)}</td>
+      <td>${a.patients?.name||'—'}</td>
+      <td>${apptTypeName(a.type)||'—'}</td>
+      <td>${fmtMoney(a.consultation_price)}</td>
+      <td>${(+a.consultation_price||0)>0?'Платный':'Бесплатный'}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#999">Нет прегледов</td></tr>';
+
+  const html = `<div class="print-card">
+    <div class="pc-bar"></div>
+    <div class="pc-header">
+      <div>
+        <div class="pc-doctor">Ana Novoselova</div>
+        <div class="pc-doctor-sub">Optometrista · Novi Sad, Srbija · Optika Ginter</div>
+      </div>
+      <div class="pc-meta">
+        <div class="pc-meta-num">Отчёт по аналитике</div>
+        <div>${fmt(from)} — ${fmt(to)}</div>
+      </div>
+    </div>
+    <div class="pc-title">Отчёт за период ${fmt(from)} — ${fmt(to)}</div>
+
+    <div class="pc-sec">
+      <div class="pc-sec-label">Заказы (${orders.length})</div>
+      <table class="pc-table" style="font-size:7.5pt">
+        <tr><th>Дата</th><th>№ заказа</th><th>Пациент</th><th>Тип</th><th>Оправа</th><th>Линзы</th><th>Работа</th><th>Итого</th><th>Статус</th><th>Преглед</th></tr>
+        ${ordersRows}
+      </table>
+      <div style="margin-top:6pt;font-size:8.5pt">
+        <div><b>Сумма по очкам / прочим заказам</b> (${glassesOrders.length}): ${fmtMoney(sumGlasses)}</div>
+        <div><b>Сумма по контактным линзам</b> (${clOrders.length}, не в зарплате): ${fmtMoney(sumCL)}</div>
+      </div>
+    </div>
+
+    <div class="pc-sec">
+      <div class="pc-sec-label">Прегледы (${appts.length})</div>
+      <table class="pc-table" style="font-size:8pt">
+        <tr><th>Дата</th><th>Пациент</th><th>Тип</th><th>Цена</th><th>Оплата</th></tr>
+        ${apptsRows}
+      </table>
+      <div style="margin-top:6pt;font-size:8.5pt">
+        <div>Всего: ${appts.length}, платных: ${apptsPaid.length}. Сумма: ${fmtMoney(sumAppts)}</div>
+      </div>
+    </div>
+
+    <div class="pc-sec">
+      <div class="pc-sec-label">Расчёт зарплаты</div>
+      <div style="font-size:9pt;line-height:1.8">
+        <div>База для % (${eligible.length} заказ(ов)${_anThresholdOn?' дороже '+fmtMoney(_anThresholdVal):''}): ${fmtMoney(sumEligible)}</div>
+        <div>${_anPercent}% от суммы заказов: ${fmtMoney(salaryFromOrders)}</div>
+        <div>Стоимость прегледов (100%): ${fmtMoney(salaryFromAppts)}</div>
+        <div style="font-weight:800;font-size:11pt;color:#1B4F72;margin-top:4pt">Итого к зарплате: ${fmtMoney(totalSalary)}</div>
+      </div>
+    </div>
+
+    <div class="pc-footer">
+      <div class="pc-note">Сформировано автоматически в CRM Optike Ginter. Конфиденциально.</div>
+    </div>
+  </div>`;
+
+  _openPrintWindow('Отчёт ' + fmt(from) + ' — ' + fmt(to), html);
 }

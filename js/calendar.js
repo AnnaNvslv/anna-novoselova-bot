@@ -3,8 +3,8 @@ let _calWeekOffset2 = 0;
 let _calSettings = null;
 
 const PX_PER_MIN = 1.1;
-const CAL_START_H = 8;
-const CAL_END_H   = 20;
+const CAL_START_H = 9;
+const CAL_END_H   = 19;
 
 const SLOT_DURATIONS = { primary: 60, short: 15, express: 30 };
 const SLOT_COLORS = {
@@ -144,7 +144,7 @@ async function renderSlots(){
           // Narrow: single colored stripe, click → popup
           const popupBtns=[{label:'Открыть карту',fn:`openPatientCard('${appt.patient_id}')`,bg:'#dbeafe',color:'#1e3a8a'}];
           if(canDel) popupBtns.push({label:'Удалить запись',fn:`removeSlotDirect('${slot?.id||''}','${appt.patient_id}')`,bg:'#fee2e2',color:'#b91c1c'});
-          const popupJson=JSON.stringify({title:`${tm} · ${fullName}`,buttons:popupBtns}).replace(/'/g,'&#39;');
+          const popupJson=JSON.stringify({title:`${tm} · ${fullName}`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
           evHTML+=`<div class="cg2-event cg2-event-narrow" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="cg2SlotPopup(event,${popupJson})">
             <span class="cg2-ev-time-nano">${tm}</span><span class="cg2-ev-nano-name">${lastName(fullName)}</span>
           </div>`;
@@ -160,7 +160,7 @@ async function renderSlots(){
           </div>`;
         } else {
           const popupBtns=can?[{label:'Отменить бронь',fn:`unbookErvin('${slot.id}')`,bg:'#fee2e2',color:'#b91c1c'}]:[];
-          const popupJson=JSON.stringify({title:`${tm} · Ervin${note}`,buttons:popupBtns}).replace(/'/g,'&#39;');
+          const popupJson=JSON.stringify({title:`${tm} · Ervin${note}`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
           evHTML+=`<div class="cg2-event cg2-event-narrow" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="cg2SlotPopup(event,${popupJson})">
             <span class="cg2-ev-time-nano">${tm}</span><span class="cg2-ev-nano-name">Ervin${note}</span>
           </div>`;
@@ -179,7 +179,7 @@ async function renderSlots(){
           const popupBtns=[];
           if(addFn) popupBtns.push({label:isErvin()&&!isAdmin()?'Zauzimi':'✚ Записать пациента',fn:addFn,bg:c.bg,color:c.text});
           if(isAdmin()) popupBtns.push({label:'Удалить слот',fn:delFn,bg:'#fee2e2',color:'#b91c1c'});
-          const popupJson=JSON.stringify({title:`${tm} · Свободно`,buttons:popupBtns}).replace(/'/g,'&#39;');
+          const popupJson=JSON.stringify({title:`${tm} · Свободно`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
           evHTML+=`<div class="cg2-event cg2-event-narrow cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="cg2SlotPopup(event,${popupJson})">
             <span class="cg2-ev-time-nano">${tm}</span><span class="cg2-ev-nano-name">✓</span>
           </div>`;

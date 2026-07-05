@@ -1,5 +1,5 @@
 // Service Worker for Нюсик и математика
-const CACHE = 'nyusik-v1';
+const CACHE = 'nyusik-v2';
 const ASSETS = [
   '/anna-novoselova-bot/nyusik-math.html',
   '/anna-novoselova-bot/nyusik-manifest.json',
@@ -18,8 +18,17 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first: always try to fetch the latest version first, and only fall
+// back to the cached copy if the network request fails (offline). This is
+// what previously caused a stale/broken build to keep being served forever
+// after a fix was pushed, even on hard refresh - cache-first ignored the new
+// version until the cache name changed.
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request).then(resp => {
+      const copy = resp.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy));
+      return resp;
+    }).catch(() => caches.match(e.request))
   );
 });

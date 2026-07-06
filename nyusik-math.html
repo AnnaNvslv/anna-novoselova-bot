@@ -438,7 +438,14 @@ async function speakNow(text){
         method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({text,model_id:XI_MODEL,voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
       });
-      if(!resp.ok)throw new Error(resp.status);
+      if(!resp.ok){
+        let detail='';
+        try{const j=await resp.clone().json();detail=(j&&j.detail&&(j.detail.status||j.detail.message))||JSON.stringify(j);}catch(e2){}
+        const msg=resp.status+(detail?(' '+detail):'');
+        console.error('XI ERROR:',msg);
+        window.__lastXiError=msg;
+        throw new Error(msg);
+      }
       const blob=await resp.blob();url=URL.createObjectURL(blob);
       if(audioCache.size>50)audioCache.delete(audioCache.keys().next().value);
       audioCache.set(text,url);

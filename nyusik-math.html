@@ -265,6 +265,9 @@
     </select>
     <button class="setup-btn" id="setupBtn" onclick="saveApiKey()">Проверить и начать! 🐭</button>
     <div class="err-banner" id="errBanner"></div>
+    <button class="setup-btn" id="prepBtn" style="background:var(--green);font-size:.85rem;padding:9px 0;" onclick="prepareAllPhrases()">🎙 Подготовить все фразы заранее</button>
+    <div id="prepStatus" style="font-size:.75rem;color:var(--grey-dark);min-height:16px;"></div>
+    <button class="restart-btn secondary" id="closeSetupBtn" style="display:none;width:100%;" onclick="closeSettings()">← Назад к игре</button>
     <p class="setup-note">Ключ хранится только на этом устройстве. Его никто не увидит.</p>
   </div>
 </div>
@@ -275,6 +278,7 @@
   <!-- Header -->
   <div class="header">
     <h1>🧀 Нюсик и <span>математика</span></h1>
+    <button class="sound-btn" id="settingsBtn" style="left:0;right:auto;" onclick="openSettings()">⚙️</button>
     <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
   </div>
 
@@ -383,6 +387,54 @@ let XI_VOICE_ID=localStorage.getItem(STORAGE_VOICE)||'EXAVITQu4vr4xnSDxMaL';
 let soundOn=true, currentTaskText='', currentAudio=null, voiceTimer=null;
 const audioCache=new Map();
 
+// ── Persistent voice cache (IndexedDB) ──────────────────────────────
+// Canned phrases repeat constantly across sessions. Without persistence,
+// every page reload wipes the in-memory Map and re-fetches every phrase
+// from ElevenLabs again, burning through the character quota fast. This
+// stores the actual audio Blob in the browser's IndexedDB so a phrase is
+// only ever generated once, ever (until the user clears site data).
+const IDB_NAME='nyusikVoiceCache', IDB_STORE='phrases';
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(IDB_NAME,1);
+    req.onupgradeneeded=()=>{req.result.createObjectStore(IDB_STORE,{keyPath:'text'});};
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+async function idbGet(text){
+  try{
+    const db=await idbOpen();
+    return await new Promise((res)=>{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const req=tx.objectStore(IDB_STORE).get(text);
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>res(null);
+    });
+  }catch(e){return null;}
+}
+async function idbSet(text,blob){
+  try{
+    const db=await idbOpen();
+    return await new Promise((res)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put({text,blob});
+      tx.oncomplete=()=>res(true);
+      tx.onerror=()=>res(false);
+    });
+  }catch(e){return false;}
+}
+async function idbCount(){
+  try{
+    const db=await idbOpen();
+    return await new Promise((res)=>{
+      const req=db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).count();
+      req.onsuccess=()=>res(req.result);
+      req.onerror=()=>res(0);
+    });
+  }catch(e){return 0;}
+}
+
 async function saveApiKey(){
   const val=document.getElementById('apiKeyInput').value.trim();
   const voice=document.getElementById('voiceSelect').value;
@@ -413,6 +465,19 @@ function startGame(){
   document.getElementById('gameWrapper').style.display='flex';
   generateQuestion();
 }
+function openSettings(){
+  stopVoice();
+  const w=document.getElementById('setupWrap');
+  w.style.position='fixed';w.style.inset='0';w.style.background='rgba(0,0,0,.4)';w.style.zIndex='999';
+  w.style.display='flex';
+  document.getElementById('apiKeyInput').style.display='none';
+  document.getElementById('voiceSelect').style.display='none';
+  document.getElementById('setupBtn').style.display='none';
+  document.getElementById('closeSetupBtn').style.display='block';
+}
+function closeSettings(){
+  document.getElementById('setupWrap').style.display='none';
+}
 window.addEventListener('DOMContentLoaded',()=>{
   if(XI_KEY)startGame();
   // else setupWrap already visible (no display:none on it)
@@ -434,6 +499,10 @@ async function speakNow(text){
   try{
     let url=audioCache.get(text);
     if(!url){
+      const cached=await idbGet(text);
+      if(cached&&cached.blob){url=URL.createObjectURL(cached.blob);audioCache.set(text,url);}
+    }
+    if(!url){
       const resp=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,{
         method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({text,model_id:XI_MODEL,voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
@@ -449,6 +518,7 @@ async function speakNow(text){
       const blob=await resp.blob();url=URL.createObjectURL(blob);
       if(audioCache.size>50)audioCache.delete(audioCache.keys().next().value);
       audioCache.set(text,url);
+      idbSet(text,blob);
     }
     if(currentAudio!==audio)return;
     audio.src=url;
@@ -536,6 +606,43 @@ const phrases={
     'Математика — это тренировка. Попробуем снова?','Главное не сдаваться! Попробуем ещё раз!'],
 };
 function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+
+async function prepareAllPhrases(){
+  const btn=document.getElementById('prepBtn');
+  const status=document.getElementById('prepStatus');
+  const all=new Set();
+  Object.values(phrases).forEach(arr=>arr.forEach(p=>all.add(p)));
+  all.add('Звук включён!');
+  const list=[...all];
+  btn.disabled=true;
+  let done=0,skipped=0;
+  for(const text of list){
+    status.textContent=`Готовим фразы: ${done+skipped+1}/${list.length}...`;
+    const cached=await idbGet(text);
+    if(cached){skipped++;continue;}
+    try{
+      const resp=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${XI_VOICE_ID}`,{
+        method:'POST',headers:{'xi-api-key':XI_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({text,model_id:XI_MODEL,voice_settings:{stability:.4,similarity_boost:.8,style:.4,use_speaker_boost:true}}),
+      });
+      if(!resp.ok){
+        let detail='';
+        try{const j=await resp.clone().json();detail=(j&&j.detail&&(j.detail.status||j.detail.message))||JSON.stringify(j);}catch(e2){}
+        status.textContent=`Остановлено на ${done+skipped+1}/${list.length}: ошибка ${resp.status} ${detail}. Готово фраз: ${done} (пропущено уже готовых: ${skipped}). Попробуй ещё раз позже — прогресс сохранён.`;
+        btn.disabled=false;return;
+      }
+      const blob=await resp.blob();
+      await idbSet(text,blob);
+      done++;
+      await new Promise(r=>setTimeout(r,250)); // small pause between requests
+    }catch(e){
+      status.textContent=`Ошибка сети на фразе ${done+skipped+1}/${list.length}. Прогресс сохранён, можно продолжить позже.`;
+      btn.disabled=false;return;
+    }
+  }
+  status.textContent=`Готово! ${done} новых фраз озвучено, ${skipped} уже были готовы. Всего фраз в базе: ${list.length}.`;
+  btn.disabled=false;
+}
 
 function setMouseMood(mood){
   const s=document.getElementById('mouseSvg');if(!s)return;

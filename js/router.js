@@ -7,5 +7,5 @@ function nav(s) {
   render();
 }
 function render() {
-  ({dashboard:renderDashboard,patients:renderPatients,appointments:renderAppointments,orders:renderOrders,analytics:renderAnalytics,slots:renderSlots,settings:renderSettings,trash:renderTrash}[curSection]||renderDashboard)();
+  ({dashboard:renderDashboard,patients:renderPatients,appointments:renderAppointments,orders:renderOrders,analytics:renderAnalytics,slots:renderSlots,settings:renderSettings,trash:renderTrash,bookinglog:renderBookingLog}[curSection]||renderDashboard)();
 }

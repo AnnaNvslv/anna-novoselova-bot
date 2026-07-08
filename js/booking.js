@@ -104,9 +104,26 @@ const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
 let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='';
 
+// ═══ BOOKING LOG (диагностика брошенных/неудачных записей) ═══
+const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
+let _blogDone=false,_blogReachedForm=false;
+function blogName(){return((v('f-lastname')||'')+' '+(v('f-firstname')||'')).trim()||null;}
+function blog(event,extra){
+  try{
+    db.from('booking_log').insert(Object.assign({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null},extra||{})).then(()=>{},()=>{});
+  }catch(e){}
+}
+function blogBeacon(event){
+  try{
+    fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,patient_name:blogName(),telegram:v('f-tg')||null})});
+  }catch(e){}
+}
+window.addEventListener('pagehide',()=>{if(!_blogDone&&_blogReachedForm)blogBeacon('abandoned');});
+
 document.addEventListener('DOMContentLoaded',async()=>{
   initDobSelects();
   applyLang();renderTypes();
+  blog('started');
   const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');if(r&&r[0])botUsername=r[0].value;}catch(e){}
   const today=now.toISOString().split('T')[0];const future=new Date(now);future.setDate(future.getDate()+60);
@@ -204,9 +221,10 @@ async function submitBooking(){
   if(isHealth&&!chips('ch-loads').length){alert(T('errLoads'));return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');btn.disabled=true;btn.textContent=T('submitting');
+  blog('submit_attempt',{patient_name:name,telegram:tg});
   try{
     const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
-    if(slotCheck?.is_booked){alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
+    if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
     const{data:p,error:pe}=await db.from('patients').insert({name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,visit_reason:chips('ch-reason'),complaints:isHealth?chips('ch-complaints'):[],correction_types:isHealth?chips('ch-correction'):[],approx_diopters:v('f-diop')||null,eye_diseases:isHealth?chips('ch-eye'):[],general_diseases:isHealth?chips('ch-general'):[],visual_loads:isHealth?chips('ch-loads'):[],pre_notes:v('f-notes')||null,source:v('f-source')||null,promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true}).select().single();
     if(pe)throw pe;
     const num=await genNum(selectedSlot.date);
@@ -215,8 +233,14 @@ async function submitBooking(){
     if(ae)throw ae;
     await db.from('available_slots').update({is_booked:true,appointment_id:a.id}).eq('id',selectedSlot.id);
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
+    _blogDone=true;
+    blog('success',{patient_name:name,telegram:tg,appointment_id:a.id});
     showConfirm(a.id);
-  }catch(e){console.error(e);alert(T('errBook'));btn.disabled=false;btn.textContent=T('submit');}
+  }catch(e){
+    console.error(e);
+    blog('error',{patient_name:name,telegram:tg,error_text:(e&&(e.message||e.details||JSON.stringify(e)))||'unknown_error'});
+    alert(T('errBook'));btn.disabled=false;btn.textContent=T('submit');
+  }
 }
 
 async function genNum(date){const m=date.substr(5,2),y=date.substr(2,2),pref='OG-'+m+y;const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',pref+'-%');return pref+'-'+String((count||0)+1).padStart(2,'0');}
@@ -254,4 +278,4 @@ function resetBooking(){
   goPage('type');
 }
 
-function goPage(n){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));document.getElementById('pg-'+n).classList.add('on');window.scrollTo(0,0);}
+function goPage(n){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));document.getElementById('pg-'+n).classList.add('on');window.scrollTo(0,0);if(n==='form'&&!_blogReachedForm){_blogReachedForm=true;blog('reached_form');}}

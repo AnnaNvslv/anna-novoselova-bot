@@ -5,7 +5,7 @@ const TRANSLATIONS = {
   ru: {
     // NAV
     nav_dashboard: 'Главная', nav_patients: 'Пациенты', nav_appointments: 'Приёмы',
-    nav_orders: 'Заказы', nav_analytics: 'Аналитика', nav_slots: 'Расписание', nav_settings: 'Настройки',
+    nav_orders: 'Заказы', nav_analytics: 'Аналитика', nav_slots: 'Расписание', nav_settings: 'Настройки', nav_bookinglog: 'Лог записи',
     role_admin: 'Администратор', role_staff: 'Сотрудник', role_ervin: 'Ervin',
     // COMMON
     loading: 'Загрузка...', save: 'Сохранить', cancel: 'Отмена', close: 'Закрыть',
@@ -119,7 +119,7 @@ const TRANSLATIONS = {
   sr: {
     // NAV
     nav_dashboard: 'Početna', nav_patients: 'Pacijenti', nav_appointments: 'Pregledi',
-    nav_orders: 'Porudžbine', nav_analytics: 'Analitika', nav_slots: 'Raspored', nav_settings: 'Podešavanja',
+    nav_orders: 'Porudžbine', nav_analytics: 'Analitika', nav_slots: 'Raspored', nav_settings: 'Podešavanja', nav_bookinglog: 'Log zakazivanja',
     role_admin: 'Administrator', role_staff: 'Zaposleni', role_ervin: 'Ervin',
     // COMMON
     loading: 'Učitavanje...', save: 'Sačuvaj', cancel: 'Otkaži', close: 'Zatvori',
@@ -264,7 +264,7 @@ function switchLang(lang) {
 
 function _refreshStaticUI() {
   const navMap = {dashboard:'nav_dashboard',patients:'nav_patients',appointments:'nav_appointments',
-    orders:'nav_orders',analytics:'nav_analytics',slots:'nav_slots',settings:'nav_settings',trash:'nav_trash'};
+    orders:'nav_orders',analytics:'nav_analytics',slots:'nav_slots',settings:'nav_settings',trash:'nav_trash',bookinglog:'nav_bookinglog'};
   Object.entries(navMap).forEach(([section, key]) => {
     const el = document.querySelector('#nav-'+section+' .sb-label');
     if (el) el.textContent = t(key);

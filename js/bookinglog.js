@@ -9,6 +9,7 @@ const BLOG_EVENT_LABEL={
 };
 function _blogEventLabel(ev){return(BLOG_EVENT_LABEL[ev]||{})[_lang==='sr'?'sr':'ru']||ev;}
 function _blogTime(iso){if(!iso)return'—';const d=new Date(iso);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function _blogSlotFmt(date,time){if(!date)return'—';const[y,m,d]=date.split('-');return d+'.'+m+(time?' '+time.substr(0,5):'');}
 
 async function renderBookingLog(){
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${_lang==='sr'?'Log zakazivanja':'Лог онлайн-записи'}</h1></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
@@ -27,12 +28,14 @@ async function renderBookingLog(){
   // Группировка по session_id
   const sessions={};
   (rows||[]).forEach(r=>{
-    const s=sessions[r.session_id]||(sessions[r.session_id]={events:[],start:null,name:null,tg:null,type_id:null,error_text:null});
+    const s=sessions[r.session_id]||(sessions[r.session_id]={events:[],start:null,name:null,tg:null,type_id:null,error_text:null,slot_date:null,slot_time:null});
     s.events.push(r);
     if(!s.start||r.created_at<s.start)s.start=r.created_at;
     if(r.patient_name)s.name=r.patient_name;
     if(r.telegram)s.tg=r.telegram;
     if(r.type_id)s.type_id=r.type_id;
+    if(r.slot_date)s.slot_date=r.slot_date;
+    if(r.slot_time)s.slot_time=r.slot_time;
     if(r.event==='error'&&r.error_text)s.error_text=r.error_text;
   });
 
@@ -80,9 +83,10 @@ async function renderBookingLog(){
       <td><span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;background:${meta.bg};color:${meta.color}">${meta.label}</span></td>
       <td style="font-size:13.5px">${nameOrTg}${errTxt}</td>
       <td style="font-size:13px;color:var(--text-m)">${s.type_id||'—'}</td>
+      <td style="font-size:13px;color:var(--text-m);white-space:nowrap">${_blogSlotFmt(s.slot_date,s.slot_time)}</td>
       <td style="font-size:13px;color:var(--text-m)">${_blogEventLabel(s.last_event)}</td>
     </tr>`;
-  }).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-m)">${t('no_data')}</td></tr>`;
+  }).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-m)">${t('no_data')}</td></tr>`;
 
   document.getElementById('content').innerHTML=`
 <div class="topbar"><h1>${_lang==='sr'?'Log zakazivanja':'Лог онлайн-записи'}</h1></div>
@@ -100,6 +104,7 @@ async function renderBookingLog(){
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Status':'Статус'}</th>
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Pacijent / Telegram':'Пациент / Telegram'}</th>
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Vrsta':'Вид приёма'}</th>
+        <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Žele termin':'Дата приёма'}</th>
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Poslednji korak':'Последний шаг'}</th>
       </tr></thead>
       <tbody>${rowsHtml}</tbody>

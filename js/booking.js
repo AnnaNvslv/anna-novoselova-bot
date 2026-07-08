@@ -110,12 +110,13 @@ let _blogDone=false,_blogReachedForm=false;
 function blogName(){return((v('f-lastname')||'')+' '+(v('f-firstname')||'')).trim()||null;}
 function blog(event,extra){
   try{
-    db.from('booking_log').insert(Object.assign({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null},extra||{})).then(()=>{},()=>{});
+    const base={session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null};
+    db.from('booking_log').insert(Object.assign(base,extra||{})).then(()=>{},()=>{});
   }catch(e){}
 }
 function blogBeacon(event){
   try{
-    fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,patient_name:blogName(),telegram:v('f-tg')||null})});
+    fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null,patient_name:blogName(),telegram:v('f-tg')||null})});
   }catch(e){}
 }
 window.addEventListener('pagehide',()=>{if(!_blogDone&&_blogReachedForm)blogBeacon('abandoned');});

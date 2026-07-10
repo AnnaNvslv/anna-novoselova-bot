@@ -107,7 +107,7 @@ async function saveAppt(id){
   let apptNum='';
   try {
     if(id){
-      const{data:dupCheck}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('id',id);
+      const{data:dupCheck}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('status','отменён').neq('id',id);
       if(dupCheck?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
       await db.from('available_slots').update({is_booked:false,appointment_id:null}).eq('appointment_id',id);
       const{error:updErr}=await db.from('appointments').update(data).eq('id',id);
@@ -119,7 +119,7 @@ async function saveAppt(id){
       }
       toast(t('appt_updated'));
     } else {
-      const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null);
+      const{data:existing}=await db.from('appointments').select('id').eq('patient_id',patient_id).eq('date',date).eq('time',time).is('deleted_at',null).neq('status','отменён');
       if(existing?.length){toast('Pregled već postoji u to vreme!','error');if(btn)btn.disabled=false;return;}
       if(window._pickedSlotId){
         const{data:slotChk}=await db.from('available_slots').select('is_booked,booked_by').eq('id',window._pickedSlotId).single();

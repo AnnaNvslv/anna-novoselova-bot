@@ -57,6 +57,11 @@ async function renderBookingLog(){
   const successCount=recent.filter(x=>x.status==='success').length;
   const inProgressCount=list.filter(x=>x.status==='in_progress').length;
 
+  // Уникальные пользователи по visitor_id (постоянный ID в localStorage — в отличие от session_id, не меняется между визитами)
+  const rows7=(rows||[]).filter(r=>new Date(r.created_at).getTime()>=days7);
+  const uniqueVisitors7=new Set(rows7.map(r=>r.visitor_id).filter(Boolean)).size;
+  const uniqueVisitors30=new Set((rows||[]).map(r=>r.visitor_id).filter(Boolean)).size;
+
   const STATUS_META={
     success:{color:'#16a34a',bg:'#dcfce7',label:_lang==='sr'?'Uspešno':'Успешно'},
     error:{color:'#dc2626',bg:'#fee2e2',label:_lang==='sr'?'Greška':'Ошибка'},
@@ -95,6 +100,8 @@ async function renderBookingLog(){
     <div class="stat-card"><div class="stat-label">${_lang==='sr'?'Problemi (7 dana)':'Проблемы (7 дней)'}</div><div class="stat-value" style="color:${problemCount?'#dc2626':'inherit'}">${problemCount}</div></div>
     <div class="stat-card stat-green"><div class="stat-label">${_lang==='sr'?'Uspešno (7 dana)':'Успешно (7 дней)'}</div><div class="stat-value">${successCount}</div></div>
     <div class="stat-card stat-accent"><div class="stat-label">${_lang==='sr'?'U toku sada':'Сейчас в процессе'}</div><div class="stat-value">${inProgressCount}</div></div>
+    <div class="stat-card"><div class="stat-label">${_lang==='sr'?'Unikatnih korisnika (7 dana)':'Уникальных пользователей (7 дней)'}</div><div class="stat-value">${uniqueVisitors7}</div></div>
+    <div class="stat-card"><div class="stat-label">${_lang==='sr'?'Unikatnih korisnika (30 dana)':'Уникальных пользователей (30 дней)'}</div><div class="stat-value">${uniqueVisitors30}</div></div>
   </div>
   ${alertHtml}
   <div class="card" style="padding:0;overflow:hidden">

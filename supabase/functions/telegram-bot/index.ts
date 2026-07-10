@@ -13,6 +13,22 @@ const DAYS_FULL = ['воскресенье','понедельник','вторн
 
 const CRM_URL = 'https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html'
 
+// Длительность приёма по виду записи (совпадает с apptName из TYPES_DATA в js/booking.js)
+const DURATION_MAP: Record<string, string> = {
+  'Первичный приём (подбор очков/МКЛ)': '1 час',
+  'Повторный приём': '1 час',
+  'Подбор КЛ с обучением': '90–120 минут',
+  'Контрольный визит': '15 минут',
+  'Помощь в оптике': '15 минут',
+  'Экспресс-диагностика': '15 минут',
+}
+function getDuration(type: string): string {
+  return DURATION_MAP[type] || '1 час'
+}
+
+// Для этих видов приёма не нужна инструкция про прекращение зрительной нагрузки за 30 минут до приёма
+const NO_PREP_NOTE_TYPES = new Set(['Помощь в оптике'])
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00')
   return `${d.getDate()} ${MONTHS_G[d.getMonth()]}, ${DAYS_FULL[d.getDay()]}`
@@ -57,6 +73,11 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
   const firstName = (patient.name || '').split(' ')[1] || patient.name || ''
   const dateLabel = formatDate(appt.date)
   const time = (appt.time || '').substr(0, 5)
+  const apptType = appt.type as string
+  const duration = getDuration(apptType)
+  const prepNote = NO_PREP_NOTE_TYPES.has(apptType)
+    ? ''
+    : '\n\nЗа 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут до.'
 
   const text =
 `Здравствуйте, ${firstName}!
@@ -69,15 +90,13 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
 📍Адрес: Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)
 https://maps.app.goo.gl/LJerB2rskqhnhES48
 
-Продолжительность приёма — 1 час
+Продолжительность приёма — ${duration}
 Номер записи: ${appt.appointment_number}
 
 ➡️ Стоимость приёма: ${appt.consultation_price} динар.
 Оплата — только наличными (Очки можно оплатить картой)
 
-📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).
-
-За 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут до.
+📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).${prepNote}
 
 ❤️‍🩹 Если планы изменятся — сообщите, пожалуйста, заранее Анне: @AnnaNvslv
 

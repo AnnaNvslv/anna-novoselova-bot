@@ -1,20 +1,23 @@
 // ═══ EXAMINATION FORM ═══
 let _autosaveTimer = null;
 let _currentExamId = null;
+let _currentApptType = '';
 async function openExamForm(apptId,patientId){
-  _examTab='anamn';_examData={corrections:[]};_currentExamId=null;
+  _examTab='anamn';_examData={corrections:[]};_currentExamId=null;_currentApptType='';
   if(_autosaveTimer) clearInterval(_autosaveTimer);
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span class="modal-title">Загрузка...</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
-  const[{data:p},{data:exams},{data:cnt}]=await Promise.all([
+  const[{data:p},{data:exams},{data:cnt},{data:appt}]=await Promise.all([
     db.from('patients').select('*').eq('id',patientId).single(),
     db.from('examinations').select('*').eq('appointment_id',apptId).order('created_at',{ascending:false}).limit(1),
-    db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',patientId)
+    db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',patientId),
+    db.from('appointments').select('type').eq('id',apptId).single()
   ]);
   const ex = exams?.[0] || null;
   const e=ex||{};const visitNum=e.visit_number||(cnt||0)+1;
   _currentExamId = e.id || null;
+  _currentApptType = appt?.type || '';
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;
-  _drawExam(p,e,visitNum,apptId);
+  _drawExam(p,e,visitNum,apptId,_currentApptType);
   _autosaveTimer = setInterval(()=>{
     if(_modalDirty && document.getElementById('e-complaints')){
       saveExam(_currentExamId||'',apptId,patientId,visitNum).then(()=>{
@@ -27,9 +30,15 @@ async function openExamView(examId,pid){
   _examTab='anamn';
   const{data:e}=await db.from('examinations').select('*').eq('id',examId).single();
   const{data:p}=await db.from('patients').select('*').eq('id',pid).single();
+  let apptType='';
+  if(e?.appointment_id){
+    const{data:appt}=await db.from('appointments').select('type').eq('id',e.appointment_id).single();
+    apptType=appt?.type||'';
+  }
+  _currentApptType=apptType;
   _examData.corrections=e?.current_corrections||[];
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span></span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
-  _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'');
+  _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'',apptType);
 }
 // ── RX SELECT HELPERS ──
 // Sph: первым — (пустой, selected по дефолту).
@@ -163,13 +172,19 @@ const DEFAULT_RECS = `Контроль остроты зрения через 1 
 Адаптация может длиться до 2 недель.
 При сохранении дискомфорта через 2 недели — контрольный приём (напишите @AnnaNvslv)`;
 
-function _drawExam(p,e,visitNum,apptId){
+function _drawExam(p,e,visitNum,apptId,apptType){
   const ge=f=>e?.[f]||'';
   const apptNum = e?.appointment_number || '';
   const pid = p?.id||'';
   const patientCode = p?.patient_code || '';
   const age = p?.dob ? calcAge(p.dob) : '';
   const dobStr = p?.dob ? fmt(p.dob) : '';
+  const isExpress = /Экспресс/i.test(apptType||'');
+  // Объединяем фиксированный список причин с тем, что пациент реально выбрал в анкете онлайн-записи —
+  // чтобы галочка гарантированно стояла именно на его причине, даже если формулировка отличается от VISIT_REASONS
+  const bookingReasons = (p?.visit_reason||[]).filter(Boolean);
+  const reasonOptions = [...VISIT_REASONS];
+  bookingReasons.forEach(br=>{ if(!reasonOptions.includes(br)) reasonOptions.push(br); });
   document.getElementById('modal-container').innerHTML=`
   <div class="modal modal-xl">
     <div class="modal-header">
@@ -177,6 +192,7 @@ function _drawExam(p,e,visitNum,apptId){
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
           ${apptNum?`<span class="badge badge-accent">${apptNum}</span>`:`<span class="badge badge-accent">${t('visit')}${visitNum}</span>`}
+          ${isExpress?`<span class="badge" style="background:#dcfce7;color:#16a34a;font-weight:700">🎁 Экспресс-преглед</span>`:''}
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:2px">
           ${age?`<span style="font-size:12px;color:var(--text-muted,#64748b)">👤 ${age} лет${dobStr?' ('+dobStr+')':''}</span>`:''}
@@ -195,10 +211,9 @@ function _drawExam(p,e,visitNum,apptId){
           <div class="form-group full">
             <label>Причина обращения (можно несколько)</label>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-              ${VISIT_REASONS.map(r=>{
+              ${reasonOptions.map(r=>{
                 const savedReasons=(ge('visit_reason')||'').split(', ');
-                const bookingReasons=(p?.visit_reason||[]);
-                const sel=savedReasons.includes(r)||bookingReasons.some(br=>br&&r&&(br.includes(r.substr(0,12))||r.includes(br.substr(0,12))));
+                const sel=savedReasons.includes(r)||bookingReasons.includes(r);
                 return`<label style="display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:500;cursor:pointer;background:var(--surface2);padding:5px 10px;border-radius:6px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'}">
                   <input type="checkbox" name="visit_reason" value="${r}" ${sel?'checked':''} style="width:auto;accent-color:var(--accent)" onchange="_modalDirty=true"> ${r}
                 </label>`;
@@ -624,8 +639,11 @@ async function _buildPrintCard(examId) {
 }
 
 async function printExam(examId){
-  await _buildPrintCard(examId);
-  setTimeout(()=>window.print(),300);
+  const {e,p} = await _buildPrintCard(examId);
+  const date=fmt((e?.created_at||today()).split('T')[0]);
+  const title=`${t('exam_card')} — ${p?.name||'pacijent'} — ${date}`;
+  const html=document.getElementById('print-area').innerHTML;
+  _openPrintWindow(title, html);
 }
 
 async function emailExam(examId,target){

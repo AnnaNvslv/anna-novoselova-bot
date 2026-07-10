@@ -133,6 +133,28 @@ function filterPatientsUI(q) {
   _sortAndRenderPatients(f);
 }
 
+// ═══ АНКЕТА ОНЛАЙН-ЗАПИСИ (данные, которые пациент указал при бронировании на booking.html) ═══
+function _bookingSurveyHtml(p) {
+  const rows = [];
+  const arr = v => Array.isArray(v) && v.length ? v.join(', ') : '';
+  if (arr(p.visit_reason))      rows.push(['Причина обращения', arr(p.visit_reason)]);
+  if (arr(p.complaints))        rows.push(['Жалобы', arr(p.complaints)]);
+  if (arr(p.correction_types))  rows.push(['Коррекция зрения', arr(p.correction_types)]);
+  if (p.approx_diopters)        rows.push(['Диоптрии (со слов)', p.approx_diopters]);
+  if (arr(p.eye_diseases))      rows.push(['Глазные заболевания', arr(p.eye_diseases)]);
+  if (arr(p.general_diseases))  rows.push(['Общие заболевания', arr(p.general_diseases)]);
+  if (arr(p.visual_loads))      rows.push(['Зрительные нагрузки', arr(p.visual_loads)]);
+  if (p.pre_notes)              rows.push(['Примечание пациента', p.pre_notes]);
+  if (p.promo_code)             rows.push(['Промокод', p.promo_code]);
+  if (!rows.length) return '';
+  return '<div class="mb-12" style="background:var(--surface2,#f1f5f9);border-radius:8px;padding:10px 12px">'+
+    '<div style="font-size:11px;font-weight:700;color:var(--text-m,#64748b);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 Из анкеты онлайн-записи</div>'+
+    rows.map(([label,val]) =>
+      '<div style="font-size:12.5px;margin-bottom:3px"><span style="color:var(--text-m,#64748b)">'+label+':</span> '+val+'</div>'
+    ).join('')+
+  '</div>';
+}
+
 // ═══ PATIENT CARD ═══
 async function openPatientCard(pid) {
   _cardTab = 'appts';
@@ -184,6 +206,7 @@ async function _renderPatientCard(pid) {
           '<div class="info-item"><label>'+t('in_base')+'</label><p>'+fmt((p.created_at||'').split('T')[0])+'</p></div>'+
         '</div>'+
         (p.notes ? '<div class="mb-12 text-m text-sm">'+p.notes+'</div>' : '')+
+        _bookingSurveyHtml(p)+
         '<div class="divider"></div>'+
         '<div class="tab-bar">'+
           '<div class="tab'+(_cardTab==='appts'?' active':'')+'" onclick="_cardTab=\'appts\';_renderPatientCard(\''+pid+'\')">'+ t('appointments')+' ('+(appts||[]).length+')</div>'+

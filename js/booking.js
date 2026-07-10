@@ -106,17 +106,25 @@ let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear
 
 // ═══ BOOKING LOG (диагностика брошенных/неудачных записей) ═══
 const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
+// visitor_id — постоянный ID в localStorage, переживает перезагрузки/новые визиты (для подсчёта уникальных людей, в отличие от session_id — он новый при каждом заходе)
+const BLOG_VISITOR=(function(){
+  try{
+    let id=localStorage.getItem('blog_visitor_id');
+    if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem('blog_visitor_id',id);}
+    return id;
+  }catch(e){return null;}
+})();
 let _blogDone=false,_blogReachedForm=false;
 function blogName(){return((v('f-lastname')||'')+' '+(v('f-firstname')||'')).trim()||null;}
 function blog(event,extra){
   try{
-    const base={session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null};
+    const base={session_id:BLOG_SESSION,visitor_id:BLOG_VISITOR,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null};
     db.from('booking_log').insert(Object.assign(base,extra||{})).then(()=>{},()=>{});
   }catch(e){}
 }
 function blogBeacon(event){
   try{
-    fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null,patient_name:blogName(),telegram:v('f-tg')||null})});
+    fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,visitor_id:BLOG_VISITOR,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null,patient_name:blogName(),telegram:v('f-tg')||null})});
   }catch(e){}
 }
 window.addEventListener('pagehide',()=>{if(!_blogDone&&_blogReachedForm)blogBeacon('abandoned');});

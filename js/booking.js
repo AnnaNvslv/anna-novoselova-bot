@@ -209,7 +209,7 @@ function typeExtraHtml(t){
     const resultHtml=t.resultNote?'<div class="type-result">'+(t.resultNote[_lang]||t.resultNote.ru)+'</div>':'';
     const noteHtml=t.note?'<div class="type-note">'+(t.note[_lang]||t.note.ru)+'</div>':'';
     const label=_lang==='sr'?'Šta je uključeno':(t.id==='express'?'Что входит':'Что входит в приём');
-    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b"><ul>'+items+'</ul>'+resultHtml+noteHtml+'</div></div>';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b"><ul>'+items+'</ul>'+resultHtml+noteHtml+'</div></div>';
   }
   if(t.fitGroups){
     const groups=t.fitGroups.map(g=>{
@@ -218,12 +218,12 @@ function typeExtraHtml(t){
       return '<div class="type-group '+g.tone+'"><span class="type-group-t">'+gt+'</span><ul>'+gi+'</ul></div>';
     }).join('');
     const label=_lang==='sr'?'Da li mi odgovara ekspres provera?':'Подходит ли мне экспресс-проверка?';
-    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b">'+groups+'</div></div>';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b">'+groups+'</div></div>';
   }
   if(t.helpList){
     const items=(t.helpList[_lang]||t.helpList.ru).map(i=>'<li>'+i+'</li>').join('');
     const label=_lang==='sr'?'U čemu mogu da pomognem':'Чем могу помочь';
-    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b"><ul>'+items+'</ul></div></div>';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b"><ul>'+items+'</ul></div></div>';
   }
   if(t.tgLink){
     const label=_lang==='sr'?'O tome kako izgleda pregled →':'О том, как проходит приём →';

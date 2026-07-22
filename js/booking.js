@@ -158,7 +158,7 @@ const SB_URL='https://ncfqiznpilikwmpqhapb.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
 const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
-let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='';
+let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='@optometrist_novoselova_bot';
 
 const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
 const BLOG_VISITOR=(function(){
@@ -188,7 +188,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
   applyLang();renderTypes();
   blog('started');
   const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
-  try{const{data:r}=await db.from('settings').select('key,value').eq('key','bot_username');if(r&&r[0])botUsername=r[0].value;}catch(e){}
   const today=now.toISOString().split('T')[0];const future=new Date(now);future.setDate(future.getDate()+60);
   const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
   allSlots=slots||[];
@@ -328,7 +327,9 @@ async function submitBooking(){
     if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
     const{data:p,error:pe}=await db.from('patients').insert({name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,visit_reason:chips('ch-reason'),complaints:isHealth?chips('ch-complaints'):[],correction_types:isHealth?chips('ch-correction'):[],approx_diopters:v('f-diop')||null,eye_diseases:isHealth?chips('ch-eye'):[],general_diseases:isHealth?chips('ch-general'):[],visual_loads:isHealth?chips('ch-loads'):[],pre_notes:v('f-notes')||null,source:v('f-source')||null,promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true}).select().single();
     if(pe)throw pe;
-    const num=await genNum(selectedSlot.date);
+    const{data:numData,error:numErr}=await db.rpc('get_next_appointment_number',{date_str:selectedSlot.date});
+    if(numErr)throw numErr;
+    const num=numData;
     const td=TYPES_DATA.find(t=>t.id===selectedType.id);
     const{data:a,error:ae}=await db.from('appointments').insert({patient_id:p.id,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:td?.ru?.apptName||selectedType.id,status:'запланирован',appointment_number:num,consultation_price:td?.consult||0}).select().single();
     if(ae)throw ae;
@@ -344,18 +345,13 @@ async function submitBooking(){
   }
 }
 
-async function genNum(date){const m=date.substr(5,2),y=date.substr(2,2),pref='OG-'+m+y;const{count}=await db.from('appointments').select('id',{count:'exact',head:true}).like('appointment_number',pref+'-%');return pref+'-'+String((count||0)+1).padStart(2,'0');}
-
 async function notifyAnna(name,date,time,num,typeName){
   try{
-    const{data:r}=await db.from('settings').select('key,value').in('key',['bot_token','my_chat_id']);
-    const s={};(r||[]).forEach(x=>s[x.key]=x.value);
-    if(!s.bot_token||!s.my_chat_id)return;
-    const dt=new Date(date+'T12:00:00');
-    const mG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-    const dF=['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-    const msg='📋 Новая запись онлайн!\n\nПациент: '+name+'\nВид: '+typeName+'\n📅 '+dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()]+'\n⏰ '+time+'\nНомер: '+num;
-    await fetch('https://api.telegram.org/bot'+s.bot_token+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:s.my_chat_id,text:msg,parse_mode:'HTML'})});
+    await fetch(SB_URL+'/functions/v1/notify-new-booking',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,date,time,num,typeName})
+    });
   }catch(e){}
 }
 

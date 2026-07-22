@@ -37,21 +37,64 @@ function onDobChange(){
   }
 }
 
-const REASONS={primary:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},{t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},{t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],repeat:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},{t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},{t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],cl:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор КЛ с обучением',s:'Izbor KS s obukom'},{t:'Сложности с адаптацией к очкам/КЛ',s:'Teškoće s adaptacijom na naočare/KS'},{t:'Консультация по гигиене зрения и ношению очков/КЛ',s:'Konsultacija o higijeni vida i nošenju naočara/KS'}],control:[{t:'Контроль после подбора очков',s:'Kontrola nakon izbora naočara'},{t:'Контроль после подбора КЛ',s:'Kontrola nakon izbora KS'},{t:'Контроль адаптации к прогрессивным линзам',s:'Kontrola adaptacije na progresivna sočiva'},{t:'Другое',s:'Ostalo'}],help:[{t:'Помощь в оформлении заказа на очки/КЛ',s:'Pomoć pri formiranju porudžbine za naočare/KS'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'}],express:[{t:'Хочу проверить зрение',s:'Želim da proverim vid'},{t:'Не уверен/а, нужны ли очки',s:'Nisam siguran/na da li su mi potrebne naočare'},{t:'Давно не проверял/а зрение',s:'Dugo nisam proveravao/la vid'},{t:'Хочу узнать, нужно ли менять коррекцию',s:'Želim da saznam da li treba da promenim korekciju'}]};
+const REASONS={primary:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],repeat:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],cl:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'}],control:[{t:'Контроль после подбора очков',s:'Kontrola nakon izbora naočara'},{t:'Контроль после подбора контактных линз',s:'Kontrola nakon izbora kontaktnih sočiva'},{t:'Контроль адаптации к прогрессивным линзам',s:'Kontrola adaptacije na progresivna sočiva'},{t:'Другое',s:'Ostalo'}],help:[{t:'Помощь в оформлении заказа на очки/контактные линзы',s:'Pomoć pri formiranju porudžbine za naočare/kontaktna sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'}],express:[{t:'Хочу проверить зрение',s:'Želim da proverim vid'},{t:'Не уверен/а, нужны ли очки',s:'Nisam siguran/na da li su mi potrebne naočare'},{t:'Давно не проверял/а зрение',s:'Dugo nisam proveravao/la vid'},{t:'Хочу узнать, нужно ли менять коррекцию',s:'Želim da saznam da li treba da promenim korekciju'}]};
 
 const BK={ru:{hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',hdrWriteLabel:'Написать Анне',hdrChannel:'Канал',hdrMap:'Карта',step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',reason:'Причина обращения',contacts:'Контактные данные',complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',diop:'Диоптрии',diopHint:'(если знаете, примерно)',eye:'Заболевания глаз',general:'Общие заболевания',loads:'Зрительные нагрузки',notes:'Что хотели бы сообщить перед приёмом?',source:'Откуда вы узнали о нас?',promo:'Промокод',promoHint:'(если есть)',lblTg:'Telegram',lblLastname:'Фамилия (латиницей)',lblFirstname:'Имя (латиницей)',lblDob:'Дата рождения',lblPhone:'Телефон',hintLastname:'Пример: Ivanova',hintFirstname:'Пример: Maria',dobDay:'ДД',dobMonth:'Месяц',dobYear:'Год',submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',back:'← Назад',nextForm:'Далее — заполнить анкету →',confTitle:'Последний шаг!',confSub:'Напишите боту в Telegram — это подтвердит вашу запись и вы получите напоминания о приёме.',tgPrompt:'Напишите боту, чтобы подтвердить запись и получать напоминания:',tgBtn:'Написать боту в Telegram',tgFallback:'По вопросам пишите: @AnnaNvslv',addrLabel:'Адрес:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Открыть на карте',againBtn:'⊕ Ещё одна запись',ad10t:'⛔ Приём детей до 10 лет не проводится',ad10:'Оптометрист не осматривает детей младше 10 лет.',ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Присутствие родителя или законного представителя на приёме обязательно.',ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',srcPlaceholder:'— выберите —',srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],consent:'Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',selType:'Выбранный вид приёма',selSlot:'Ваша запись',months:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],monthsG:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],chooseTime:'Выберите время — ',phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация...',phPromo:'Введите промокод',errReason:'Пожалуйста, укажите причину обращения',errTg:'Пожалуйста, укажите Telegram username',errLastname:'Пожалуйста, введите фамилию',errFirstname:'Пожалуйста, введите имя',errDob:'Пожалуйста, укажите дату рождения',errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',errSlot:'Слот уже занят. Выберите другое время.',errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv'},sr:{hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',hdrWriteLabel:'Pisati Ani',hdrChannel:'Kanal',hdrMap:'Mapa',step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',reason:'Razlog dolaska',contacts:'Kontaktni podaci',complaints:'Tegobe',correction:'Da li koristite korekciju vida?',diop:'Dioptrija',diopHint:'(ako znate, otprilike)',eye:'Bolesti oka',general:'Opšte bolesti',loads:'Vizuelna opterećenja',notes:'Šta biste voleli da nam saopštite pre pregleda?',source:'Kako ste saznali za nas?',promo:'Promo kod',promoHint:'(ako imate)',lblTg:'Telegram',lblLastname:'Prezime (latinicom)',lblFirstname:'Ime (latinicom)',lblDob:'Datum rođenja',lblPhone:'Telefon',hintLastname:'Primer: Ivanova',hintFirstname:'Primer: Maria',dobDay:'DD',dobMonth:'Mesec',dobYear:'Godina',submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',back:'← Nazad',nextForm:'Dalje — popunite anketu →',confTitle:'Poslednji korak!',confSub:'Pišite botu na Telegram — to će potvrditi vaš termin i dobićete podsetnik pre pregleda.',tgPrompt:'Pišite botu da biste potvrdili termin i primali podsetnik:',tgBtn:'Pisati botu na Telegram',tgFallback:'Za pitanja pišite: @AnnaNvslv',addrLabel:'Adresa:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Otvori na mapi',againBtn:'⊕ Još jedno zakazivanje',ad10t:'⛔ Pregled dece do 10 godina nije dostupan',ad10:'Optometrista ne pregleda decu mlađu od 10 godina.',ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',ad17:'Pregled je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Prisustvo roditelja ili zakonskog staratelja na pregledu je obavezno.',ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',srcPlaceholder:'— izaberite —',srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],consent:'Klikom na "Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram bota.',selType:'Izabrana vrsta pregleda',selSlot:'Vaš termin',months:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],monthsG:['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],days:['Ne','Po','Ut','Sr','Če','Pe','Su'],daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],chooseTime:'Izaberite vreme — ',phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija...',phPromo:'Unesite promo kod',errReason:'Molimo navedite razlog dolaska',errTg:'Molimo navedite Telegram korisničko ime',errLastname:'Molimo unesite prezime',errFirstname:'Molimo unesite ime',errDob:'Molimo navedite datum rođenja',errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',errCorrection:'Molimo navedite da li koristite korekciju vida',errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv'}};
+
+const CL_NOTE={ru:'На приёме оптометриста не проводится циклоплегия (расширение зрачка), осмотр глазного дна и измерение внутриглазного давления. Это делает офтальмолог — врач, который также диагностирует и лечит глазные заболевания (катаракту, глаукому, патологии сетчатки и т.п.).',sr:'Na pregledu kod optometriste se ne vrši cikloplegija (širenje zenice), pregled očnog dna niti merenje očnog pritiska. To radi oftalmolog — lekar koji takođe dijagnostikuje i leči očna oboljenja (kataraktu, glaukom, bolesti mrežnjače i sl.).'};
+const TG_POST='https://t.me/optometrist_anna_ns/12';
 
 // slotType в available_slots: 'primary' | 'short' | 'express'
 // 'express' — только для акционной диагностики, ставится вручную
 // старые слоты без slot_type считаются 'short'
 // noAgeLimit:true — для этих видов приёма возрастные дисклеймеры/ограничения не показываются вообще (помощь и контроль)
 const TYPES_DATA=[
-  {id:'express',icon:'🎁',health:false,slotType:'express',badge:'Акция',ru:{name:'Экспресс-диагностика зрения',sub:'Ограниченное число мест',dur:'15 минут',price:'Бесплатно',apptName:'Экспресс-диагностика'},sr:{name:'Ekspres dijagnostika vida',sub:'Ograničen broj mesta',dur:'15 minuta',price:'Besplatno',apptName:'Ekspres dijagnostika'},consult:0},
-  {id:'primary',icon:'👁',health:true,slotType:'primary',ru:{name:'Проверка зрения, подбор очков / КЛ',sub:'Первичный приём',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/МКЛ)'},sr:{name:'Provera vida, izbor naočara / KS',sub:'Primarni pregled',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},consult:3000},
-  {id:'repeat',icon:'🔄',health:true,slotType:'primary',ru:{name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём'},sr:{name:'Ponovni pregled',sub:'U roku od 6 meseci od primarnog',dur:'60 minuta',price:'2000 din.',apptName:'Ponovni pregled'},consult:2000},
-  {id:'cl',icon:'🔬',health:true,slotType:'primary',ru:{name:'Проверка зрения, подбор и обучение КЛ',sub:'Включает обучение ношению линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор КЛ с обучением'},sr:{name:'Provera vida, izbor i obuka KS',sub:'Uključuje obuku za nošenje sočiva',dur:'90–120 minuta',price:'3500 din.',apptName:'Izbor KS s obukom'},consult:3500},
-  {id:'control',icon:'✅',health:false,slotType:'short',noAgeLimit:true,ru:{name:'Контрольный визит',sub:'Контрольный визит после получения очков',dur:'15 минут',price:'Бесплатно',apptName:'Контрольный визит'},sr:{name:'Kontrolni pregled',sub:'Kontrolni pregled nakon preuzimanja naočara',dur:'15 minuta',price:'Besplatno',apptName:'Kontrolni pregled'},consult:0},
-  {id:'help',icon:'🛍',health:false,slotType:'short',noAgeLimit:true,ru:{name:'Помощь при оформлении заказа',sub:'При наличии свободных окошек',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике'},sr:{name:'Pomoć pri formiranju porudžbine',sub:'Uz dostupnost slobodnog termina',dur:'15 minuta',price:'Besplatno',apptName:'Pomoć u optici'},consult:0}
+  {id:'primary',icon:'👁',health:true,slotType:'primary',
+    ru:{name:'Проверка зрения, подбор очков и контактных линз',sub:'Часовая консультация с обследованием и подбором очков и контактных линз',dur:'60 минут',price:'3000 дин.',apptName:'Первичный приём (подбор очков/КЛ)'},
+    sr:{name:'Provera vida, izbor naočara i kontaktnih sočiva',sub:'Jednočasovna konsultacija sa pregledom i izborom naočara i kontaktnih sočiva',dur:'60 minuta',price:'3000 din.',apptName:'Primarni pregled (izbor naočara/KS)'},
+    consult:3000,
+    includes:{ru:['Подробный сбор анамнеза','Обследование на авторефкератометре (объективная рефракция)','Проверка остроты зрения','Субъективная проверка рефракции пробным набором линз','Подбор очков с учётом особенностей зрительной работы','Рекомендации и разъяснения по вашей ситуации','Сопровождение в оптике при заказе очков'],
+             sr:['Detaljno prikupljanje anamneze','Pregled na autorefraktometru (objektivna refrakcija)','Provera oštrine vida','Subjektivna provera refrakcije probnim setom sočiva','Izbor naočara prema vašim vizuelnim potrebama','Preporuke i objašnjenje vaše situacije','Praćenje u optici prilikom poručivanja naočara']},
+    note:CL_NOTE,
+    tgLink:TG_POST},
+  {id:'cl',icon:'🔬',health:true,slotType:'primary',
+    ru:{name:'Проверка зрения, подбор и обучение контактных линз',sub:'Включает практическое обучение надеванию и снятию линз',dur:'90–120 минут',price:'3500 дин.',apptName:'Подбор контактных линз с обучением'},
+    sr:{name:'Provera vida, izbor i obuka za kontaktna sočiva',sub:'Uključuje praktičnu obuku za stavljanje i skidanje sočiva',dur:'90–120 minuta',price:'3500 din.',apptName:'Izbor kontaktnih sočiva s obukom'},
+    consult:3500,
+    includes:{ru:['Подробный сбор анамнеза','Обследование на авторефкератометре','Проверка остроты зрения','Субъективная проверка рефракции, подбор параметров линз','Теоретическая часть: правила безопасного ношения контактных линз','Специалист покажет на себе, как надевать и снимать линзу, затем наденет линзу вам','Вы будете тренироваться сами под контролем специалиста, пока не начнёт получаться уверенно'],
+             sr:['Detaljno prikupljanje anamneze','Pregled na autorefraktometru','Provera oštrine vida','Subjektivna provera refrakcije, izbor parametara sočiva','Teorijski deo: pravila bezbednog nošenja kontaktnih sočiva','Specijalista će na sebi pokazati kako se sočivo stavlja i skida, a zatim će vam staviti sočivo','Sami ćete vežbati uz nadzor specijaliste, dok ne budete sigurni u stavljanju/skidanju']},
+    note:CL_NOTE,
+    tgLink:TG_POST},
+  {id:'control',icon:'✅',health:false,slotType:'short',noAgeLimit:true,
+    ru:{name:'Контрольный визит',sub:'Контрольный визит после получения очков',dur:'15 минут',price:'Бесплатно',apptName:'Контрольный визит'},
+    sr:{name:'Kontrolni pregled',sub:'Kontrolni pregled nakon preuzimanja naočara',dur:'15 minuta',price:'Besplatno',apptName:'Kontrolni pregled'},
+    consult:0},
+  {id:'help',icon:'🛍',health:false,slotType:'short',noAgeLimit:true,
+    ru:{name:'Помощь при оформлении заказа',sub:'Если есть рецепт на очки, но нужна помощь в оптике, в том числе с детскими очками',dur:'15 минут',price:'Бесплатно',apptName:'Помощь в оптике'},
+    sr:{name:'Pomoć pri formiranju porudžbine',sub:'Ako imate recept za naočare, ali vam je potrebna pomoć u optici, uključujući i dečije naočare',dur:'15 minuta',price:'Besplatno',apptName:'Pomoć u optici'},
+    consult:0,
+    helpList:{ru:['Помощь в подборе оправы','Рекомендации по посадке, качеству и техническим ограничениям в соответствии с вашим рецептом','Помощь с выбором очковых линз — объясню разницу, подберу варианты под ваш бюджет','Ремонт очков','Проверка соответствия изготовленных очков вашему рецепту'],
+              sr:['Pomoć pri izboru okvira','Preporuke o pristajanju, kvalitetu i tehničkim ograničenjima u skladu s vašim receptom','Pomoć pri izboru sočiva za naočare — objasniću razlike i pomoći da izaberete opciju prema budžetu','Popravka naočara','Provera da li izrađene naočare odgovaraju vašem receptu']}},
+  {id:'repeat',icon:'🔄',health:true,slotType:'primary',
+    ru:{name:'Повторный приём',sub:'В течение 6 месяцев после первичного',dur:'60 минут',price:'2000 дин.',apptName:'Повторный приём'},
+    sr:{name:'Ponovni pregled',sub:'U roku od 6 meseci od primarnog',dur:'60 minuta',price:'2000 din.',apptName:'Ponovni pregled'},
+    consult:2000},
+  {id:'express',icon:'🎁',health:false,slotType:'express',
+    ru:{name:'Экспресс-диагностика зрения',sub:'Экспресс-чекап: нужны ли новые очки (не полноценная проверка зрения)',dur:'15 минут',price:'Бесплатно',apptName:'Экспресс-диагностика'},
+    sr:{name:'Ekspres dijagnostika vida',sub:'Ekspres-čekap: da li su vam potrebne nove naočare (nije kompletna provera vida)',dur:'15 minuta',price:'Besplatno',apptName:'Ekspres dijagnostika'},
+    consult:0,
+    includes:{ru:['Авторефрактометрия (проверка на аппарате)','Проверка остроты зрения без коррекции','Проверка остроты зрения в ваших очках','Рекомендации: нужны ли новые очки'],
+              sr:['Autorefraktometrija (provera na aparatu)','Provera oštrine vida bez korekcije','Provera oštrine vida u vašim naočarima','Preporuka: da li su potrebne nove naočare']},
+    resultNote:{ru:'В результате вы получите: понимание, пора ли заказывать первые очки или менять старые, направление к офтальмологу при необходимости, общие рекомендации по состоянию зрения.',
+                sr:'Nakon pregleda ćete saznati: da li je vreme za prve naočare ili zamenu starih, dobićete uput kod oftalmologa ako je potrebno, i opšte preporuke o stanju vida.'},
+    fitGroups:[
+      {tone:'green',title:{ru:'Подойдёт, если',sr:'Odgovara vam, ako:'},
+        items:{ru:['Зрение начало портиться, но не уверены — нужны ли очки','Очки стали слабоваты','Хотите проверить, что очки подобраны верно'],
+               sr:['Vid je počeo da slabi, ali niste sigurni da li su potrebne naočare','Naočare su postale preslabe','Želite da proverite da li su naočare pravilno izabrane']}},
+      {tone:'blue',title:{ru:'Нужен полноценный приём, если',sr:'Potreban vam je pun pregled, ako:'},
+        items:{ru:['Нужен подбор очков/контактных линз, в т.ч. прогрессивных/офисных','Давно не проверяли зрение, были сложности с подбором','Есть астигматизм, амблиопия, анизометропия и т.п.','Пациент младше 20 лет'],
+               sr:['Potreban vam je izbor naočara/kontaktnih sočiva, uključujući progresivna/kancelarijska sočiva','Dugo niste proveravali vid, imali ste poteškoća pri izboru','Imate astigmatizam, ambliopiju, anizometropiju i sl.','Pacijent je mlađi od 20 godina']}}
+    ]}
 ];
 
 function T(k){return BK[_lang]?.[k]??BK.ru[k]??k;}
@@ -101,7 +144,6 @@ function checkAge(dob){
   const age=calcAge(dob);
   const btn=document.getElementById('submit-btn');
   if(selectedType&&selectedType.noAgeLimit){
-    // Помощь в оптике / Контрольный визит — без возрастных ограничений
     document.getElementById('age-disc-10').style.display='none';
     document.getElementById('age-disc-17').style.display='none';
     if(btn)btn.disabled=false;
@@ -118,9 +160,7 @@ const{createClient}=window.supabase;
 const db=createClient(SB_URL,SB_KEY);
 let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='';
 
-// ═══ BOOKING LOG (диагностика брошенных/неудачных записей) ═══
 const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-// visitor_id — постоянный ID в localStorage, переживает перезагрузки/новые визиты (для подсчёта уникальных людей, в отличие от session_id — он новый при каждом заходе)
 const BLOG_VISITOR=(function(){
   try{
     let id=localStorage.getItem('blog_visitor_id');
@@ -154,11 +194,49 @@ document.addEventListener('DOMContentLoaded',async()=>{
   allSlots=slots||[];
 });
 
+function toggleAcc(h,e){
+  if(e)e.stopPropagation();
+  const b=h.nextElementSibling;
+  const open=b.style.display==='block';
+  b.style.display=open?'none':'block';
+  h.classList.toggle('open',!open);
+}
+
+function typeExtraHtml(t){
+  let extra='';
+  if(t.includes){
+    const items=(t.includes[_lang]||t.includes.ru).map(i=>'<li>'+i+'</li>').join('');
+    const resultHtml=t.resultNote?'<div class="type-result">'+(t.resultNote[_lang]||t.resultNote.ru)+'</div>':'';
+    const noteHtml=t.note?'<div class="type-note">'+(t.note[_lang]||t.note.ru)+'</div>':'';
+    const label=_lang==='sr'?'Šta je uključeno':(t.id==='express'?'Что входит':'Что входит в приём');
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b"><ul>'+items+'</ul>'+resultHtml+noteHtml+'</div></div>';
+  }
+  if(t.fitGroups){
+    const groups=t.fitGroups.map(g=>{
+      const gi=(g.items[_lang]||g.items.ru).map(i=>'<li>'+i+'</li>').join('');
+      const gt=g.title[_lang]||g.title.ru;
+      return '<div class="type-group '+g.tone+'"><span class="type-group-t">'+gt+'</span><ul>'+gi+'</ul></div>';
+    }).join('');
+    const label=_lang==='sr'?'Da li mi odgovara ekspres provera?':'Подходит ли мне экспресс-проверка?';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b">'+groups+'</div></div>';
+  }
+  if(t.helpList){
+    const items=(t.helpList[_lang]||t.helpList.ru).map(i=>'<li>'+i+'</li>').join('');
+    const label=_lang==='sr'?'U čemu mogu da pomognem':'Чем могу помочь';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <i class="ti ti-chevron-down chev"></i></div><div class="type-acc-b"><ul>'+items+'</ul></div></div>';
+  }
+  if(t.tgLink){
+    const label=_lang==='sr'?'O tome kako izgleda pregled →':'О том, как проходит приём →';
+    extra+='<div class="type-tg"><a href="'+t.tgLink+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+label+'</a></div>';
+  }
+  return extra;
+}
+
 function renderTypes(){
   document.getElementById('type-list').innerHTML=TYPES_DATA.map(t=>{
     const loc=t[_lang]||t.ru;
-    const badge=t.badge?'<span style="display:inline-block;background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle">'+t.badge+'</span>':'';
-    return '<div class="type-card" onclick="selectType(\''+t.id+'\')" ><div class="type-icon">'+t.icon+'</div><div style="flex:1"><div class="type-name">'+loc.name+badge+'</div><div class="type-sub">'+loc.sub+'</div><div class="type-meta"><span class="type-dur">⏱ '+loc.dur+'</span><span class="type-price">'+loc.price+'</span></div></div></div>';
+    const extra=typeExtraHtml(t);
+    return '<div class="type-card" onclick="selectType(\''+t.id+'\')" ><div class="type-icon">'+t.icon+'</div><div style="flex:1"><div class="type-name">'+loc.name+'</div><div class="type-sub">'+loc.sub+'</div><div class="type-meta"><span class="type-dur">⏱ '+loc.dur+'</span><span class="type-price">'+loc.price+'</span></div>'+extra+'</div></div>';
   }).join('');
 }
 function selectType(id){
@@ -175,7 +253,6 @@ function getSlotsForType(){
   if(!selectedType)return allSlots;
   const st=selectedType.slotType||'primary';
   return allSlots.filter(s=>{
-    // express — строго только 'express'; short — null/undefined/'short'; primary — 'primary'
     const t=s.slot_type||'short';
     if(st==='express') return t==='express';
     if(st==='short') return t==='short';

@@ -1,1 +1,159 @@
-&lt;placeholder&gt;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Запись к оптометристу — Анна Новосёлова</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="css/booking.css?v=5">
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-main">
+      <div class="hdr-name" id="hdr-title">Запись на приём к оптометристу Анне Новосёловой</div>
+      <div class="hdr-role">Optika Ginter · Trg Republike 25, Novi Sad</div>
+      <div class="hdr-links">
+        <a class="hdr-pill hdr-pill-site" href="https://annanvslv.github.io" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span id="hdr-site-text">Сайт</span>
+        </a>
+        <a class="hdr-pill hdr-pill-map" href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="hdr-map-text">Карта</span>
+        </a>
+        <a class="hdr-pill hdr-pill-tg" href="https://t.me/AnnaNvslv" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.069-2.02 9.52c-.148.658-.54.818-1.092.508l-3.02-2.228-1.458 1.403c-.162.162-.298.298-.612.298l.218-3.085 5.618-5.073c.244-.218-.054-.338-.378-.12L7.12 13.77l-2.98-.93c-.648-.205-.662-.648.136-.96L17.13 7.22c.54-.195 1.012.132.432.849z"/></svg>
+          <span id="hdr-write-label">Написать Анне</span>
+        </a>
+        <a class="hdr-pill hdr-pill-ig" href="https://www.instagram.com/optika_ginter/" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          Instagram
+        </a>
+      </div>
+    </div>
+    <div class="lang-sw"><button id="btn-ru" class="act" onclick="setLang('ru')">RU</button><button id="btn-sr" onclick="setLang('sr')">SR</button></div>
+  </div>
+</div>
+
+<div class="pg on" id="pg-type">
+  <div style="padding:16px 0 8px">
+    <div style="font-size:19px;font-weight:800" id="step1-title">Выберите вид приёма</div>
+    <div style="font-size:13px;color:var(--tm);margin-top:3px" id="step1-sub">Шаг 1 из 3</div>
+  </div>
+  <div id="type-list"></div>
+</div>
+
+<div class="pg" id="pg-cal">
+  <button class="btn-back" id="back-from-cal" onclick="goPage('type')">← Назад</button>
+  <div id="type-sel-sum"></div>
+  <div class="card" style="padding:16px">
+    <div class="cal-nav"><button class="cal-nav-btn" onclick="calMove(-1)">&#8249;</button><h3 id="cal-label"></h3><button class="cal-nav-btn" onclick="calMove(1)">&#8250;</button></div>
+    <div class="cal-grid"><div class="cal-head" id="dh0">Пн</div><div class="cal-head" id="dh1">Вт</div><div class="cal-head" id="dh2">Ср</div><div class="cal-head" id="dh3">Чт</div><div class="cal-head" id="dh4">Пт</div><div class="cal-head" id="dh5">Сб</div><div class="cal-head" id="dh6">Вс</div></div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div id="times-section" style="display:none">
+    <div class="times-wrap"><div class="times-title" id="times-title"></div><div class="times-grid" id="times-grid"></div></div>
+    <button class="btn-next" id="btn-to-form" onclick="goPage('form')" disabled>Далее — заполнить анкету →</button>
+  </div>
+</div>
+
+<div class="pg" id="pg-form">
+  <button class="btn-back" id="back-from-form" onclick="goPage('cal')">← Назад к расписанию</button>
+  <div id="form-slot-sum"></div>
+
+  <div class="card"><div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div><div class="chips" id="ch-reason"></div></div>
+
+  <div class="card">
+    <div class="card-title" id="rc-contacts">Контактные данные</div>
+    <div class="fg"><label id="lbl-tg">Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label><input id="f-tg" type="text" placeholder="@username"></div>
+    <div class="fg"><label id="lbl-lastname">Фамилия (латиницей) <span class="req">*</span></label><input id="f-lastname" type="text" placeholder="Ivanova" autocomplete="family-name"><div class="hint" id="hint-lastname">Пример: Ivanova</div></div>
+    <div class="fg"><label id="lbl-firstname">Имя (латиницей) <span class="req">*</span></label><input id="f-firstname" type="text" placeholder="Maria" autocomplete="given-name"><div class="hint" id="hint-firstname">Пример: Maria</div></div>
+    <div class="fg">
+      <label id="lbl-dob">Дата рождения <span class="req">*</span></label>
+      <div class="dob-row">
+        <select id="dob-d" onchange="onDobChange()"><option value="">ДД</option></select>
+        <select id="dob-m" onchange="onDobChange()"><option value="">Месяц</option></select>
+        <select id="dob-y" onchange="onDobChange()"><option value="">Год</option></select>
+      </div>
+    </div>
+    <div id="age-disc-10" class="disc disc-block" style="display:none"><h3 id="ad10-title">⛔ Приём детей до 10 лет не проводится</h3><p id="ad10-text">Оптометрист не осматривает детей младше 10 лет.</p><p>По вопросам: <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a></p></div>
+    <div id="age-disc-17" class="disc disc-warn" style="display:none"><h3 id="ad17-title">⚠️ Важно для пациентов от 10 до 17 лет</h3><p id="ad17-text">Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев).</p><p id="ad17-check" style="font-size:13.5px;color:#92400e;font-weight:600;margin-top:8px">Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.</p></div>
+    <div class="fg"><label id="lbl-phone">Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"></div>
+  </div>
+
+  <div id="health-section">
+    <div class="card"><div class="card-title" id="rc-complaints">Жалобы <span class="req">*</span></div><div class="chips" id="ch-complaints">
+      <div class="chip" onclick="tog(this)" data-ru="Снижение остроты зрения вдаль" data-sr="Slabljenje vida na daljinu">Снижение остроты зрения вдаль</div>
+      <div class="chip" onclick="tog(this)" data-ru="Снижение остроты зрения вблизи" data-sr="Slabljenje vida na blizinu">Снижение остроты зрения вблизи</div>
+      <div class="chip" onclick="tog(this)" data-ru="Усталость глаз" data-sr="Zamor očiju">Усталость глаз</div>
+      <div class="chip" onclick="tog(this)" data-ru="Головные боли" data-sr="Glavobolje">Головные боли</div>
+      <div class="chip" onclick="tog(this)" data-ru="Двоение" data-sr="Dvostruki vid">Двоение</div>
+      <div class="chip" onclick="tog(this)" data-ru="Дискомфорт в очках" data-sr="Nelagodnost u naočarima">Дискомфорт в очках</div>
+      <div class="chip" onclick="tog(this)" data-ru="Мушки / точки перед глазами" data-sr="Muhe / tačke pred očima">Мушки / точки перед глазами</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет выраженных жалоб" data-sr="Nema izraženih tegoba">Нет выраженных жалоб</div>
+    </div></div>
+    <div class="card"><div class="card-title" id="rc-correction">Используете ли вы коррекцию зрения? <span class="req">*</span></div><div class="chips" id="ch-correction">
+      <div class="chip" onclick="tog(this)" data-ru="Пользуюсь очками" data-sr="Nosim naočare">Пользуюсь очками</div>
+      <div class="chip" onclick="tog(this)" data-ru="Пользуюсь контактными линзами" data-sr="Nosim kontaktna sočiva">Пользуюсь контактными линзами</div>
+      <div class="chip" onclick="tog(this)" data-ru="Не пользуюсь" data-sr="Ne koristim">Не пользуюсь</div>
+    </div></div>
+    <div class="card"><div class="card-title" id="rc-diop">Диоптрии <span style="font-size:13px;font-weight:400;color:var(--tm)">(если знаете, примерно)</span></div><input id="f-diop" type="text" placeholder="Например: OD -2.5, OS -2.0"></div>
+    <div class="card"><div class="card-title" id="rc-eye">Заболевания глаз <span class="req">*</span></div><div class="chips" id="ch-eye">
+      <div class="chip" onclick="tog(this)" data-ru="Катаракта" data-sr="Katarakta">Катаракта</div>
+      <div class="chip" onclick="tog(this)" data-ru="Глаукома" data-sr="Glaukom">Глаукома</div>
+      <div class="chip" onclick="tog(this)" data-ru="Косоглазие" data-sr="Razrokost">Косоглазие</div>
+      <div class="chip" onclick="tog(this)" data-ru="Амблиопия" data-sr="Ambliопija">Амблиопия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Заболевания сетчатки" data-sr="Bolesti mrežnjače">Заболевания сетчатки</div>
+      <div class="chip" onclick="tog(this)" data-ru="Макулодистрофия" data-sr="Makularna degeneracija">Макулодистрофия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Кератоконус" data-sr="Keratokonus">Кератоконус</div>
+      <div class="chip" onclick="tog(this)" data-ru="Синдром сухого глаза" data-sr="Sindrom suvog oka">Синдром сухого глаза</div>
+      <div class="chip" onclick="tog(this)" data-ru="Частые воспаления (конъюктивит, блефарит)" data-sr="Česte upale (konjunktivitis, blefaritis)">Частые воспаления</div>
+      <div class="chip" onclick="tog(this)" data-ru="Операции на глазах (LASIK, PRK, замена хрусталика)" data-sr="Operacije oka (LASIK, PRK, zamena sočiva)">Операции на глазах</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
+    </div></div>
+    <div class="card"><div class="card-title" id="rc-general">Общие заболевания <span class="req">*</span></div><div class="chips" id="ch-general">
+      <div class="chip" onclick="tog(this)" data-ru="Повышенное / нестабильное артериальное давление" data-sr="Povišen / nestabilan krvni pritisak">Повышенное / нестабильное артериальное давление</div>
+      <div class="chip" onclick="tog(this)" data-ru="Заболевания щитовидной железы" data-sr="Bolesti štitne žlezde">Заболевания щитовидной железы</div>
+      <div class="chip" onclick="tog(this)" data-ru="Сахарный диабет или преддиабет" data-sr="Dijabetes ili predijabetes">Сахарный диабет или преддиабет</div>
+      <div class="chip" onclick="tog(this)" data-ru="Мигрень (с аурой)" data-sr="Migrena (sa aurom)">Мигрень (с аурой)</div>
+      <div class="chip" onclick="tog(this)" data-ru="Черепно-мозговые травмы / сотрясения" data-sr="Povrede glave / potres mozga">Черепно-мозговые травмы / сотрясения</div>
+      <div class="chip" onclick="tog(this)" data-ru="Эпилепсия" data-sr="Epilepsija">Эпилепсия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Инсульт" data-sr="Moždani udar">Инсульт</div>
+      <div class="chip" onclick="tog(this)" data-ru="Операция на голове" data-sr="Operacija glave">Операция на голове</div>
+      <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
+    </div></div>
+    <div class="card"><div class="card-title" id="rc-loads">Зрительные нагрузки <span class="req">*</span></div><div class="chips" id="ch-loads">
+      <div class="chip" onclick="tog(this)" data-ru="Работа за монитором более 5–6 часов" data-sr="Rad za monitorom više od 5–6 sati">Работа за монитором более 5–6 часов</div>
+      <div class="chip" onclick="tog(this)" data-ru="Частое использование смартфона" data-sr="Često korišćenje pametnog telefona">Частое использование смартфона</div>
+      <div class="chip" onclick="tog(this)" data-ru="Вождение в тёмное время суток" data-sr="Vožnja noću">Вождение в тёмное время суток</div>
+      <div class="chip" onclick="tog(this)" data-ru="Специфические занятия (вышивание, ювелирное дело и др.)" data-sr="Specifične aktivnosti (vezenje, juvelirstvo i sl.)">Специфические занятия</div>
+      <div class="chip" onclick="tog(this)" data-ru="Ночные смены" data-sr="Noćne smene">Ночные смены</div>
+      <div class="chip" onclick="tog(this)" data-ru="Ничего из перечисленного" data-sr="Ništa od navedenog">Ничего из перечисленного</div>
+    </div></div>
+  </div>
+
+  <div class="card"><div class="card-title" id="rc-notes">Что хотели бы сообщить перед приёмом?</div><textarea id="f-notes" placeholder="Любая важная информация..."></textarea></div>
+  <div class="card"><div class="card-title" id="rc-source">Откуда вы узнали о нас?</div><select id="f-source"><option value="">— выберите —</option><option>Посоветовали друзья / знакомые</option><option>Посоветовали коллеги</option><option>Из чата в ТГ</option><option>Из рекламного поста</option><option>Личное знакомство</option><option>Другое</option></select></div>
+  <div class="card"><div class="card-title" id="rc-promo">Промокод <span style="font-size:13px;font-weight:400;color:var(--tm)">(если есть)</span></div><input id="f-promo" type="text" placeholder="Введите промокод"></div>
+  <div style="font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;padding:0 4px;margin-top:8px" id="consent-text">Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.</div>
+  <button class="btn-next" id="submit-btn" onclick="submitBooking()">Записаться →</button>
+</div>
+
+<div class="pg" id="pg-confirm">
+  <div class="conf-icon"><svg width="64" height="64" viewBox="0 0 24 24" fill="#2AABEE"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.069-2.02 9.52c-.148.658-.54.818-1.092.508l-3.02-2.228-1.458 1.403c-.162.162-.298.298-.612.298l.218-3.085 5.618-5.073c.244-.218-.054-.338-.378-.12L7.12 13.77l-2.98-.93c-.648-.205-.662-.648.136-.96L17.13 7.22c.54-.195 1.012.132.432.849z"/></svg></div>
+  <div class="conf-title" id="conf-title">Последний шаг!</div>
+  <div class="conf-sub" id="conf-sub">Напишите боту в Telegram — это подтвердит вашу запись и вы получите напоминания о приёме.</div>
+  <div class="tgbox" id="tg-hint"></div>
+  <div class="card" style="font-size:13px;color:var(--tm);text-align:center;line-height:1.7">
+    <b id="addr-label">Адрес:</b> Trg Republike 25<br><span id="addr-note">(Riblja pijaca, Noćni bazar)</span><br>
+    <a href="https://maps.app.goo.gl/yWk6KdcNb85GWRdC8" target="_blank" rel="noopener" style="color:var(--a);text-decoration:none">📍 <span id="map-link-text">Открыть на карте</span></a>
+  </div>
+  <a class="prep-link" id="prep-link" href="https://annanvslv.github.io/priem.html#podgotovka" target="_blank" rel="noopener">📖 <span id="prep-link-text">Как подготовиться к приёму</span> →</a>
+  <button class="btn-again" id="btn-again" onclick="resetBooking()">⊕ Ещё одна запись</button>
+</div>
+
+<script src="js/booking.js?v=6"></script>
+</body>
+</html>

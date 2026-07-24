@@ -14,6 +14,8 @@ body{font-family:'Inter','Segoe UI',Helvetica,sans-serif;background:var(--bg);co
 .hdr-pill-map:hover,.hdr-pill-ig:hover{background:var(--al);border-color:var(--a);color:var(--ad)}
 .hdr-pill-tg{background:#2AABEE;border-color:#2AABEE;color:#fff}
 .hdr-pill-tg:hover{background:#1a9bde;border-color:#1a9bde}
+.hdr-pill-site{height:34px;padding:0 16px;background:var(--a);border-color:var(--a);color:#fff;font-weight:700;box-shadow:0 2px 8px rgba(31,94,156,.28)}
+.hdr-pill-site:hover{background:var(--ad);border-color:var(--ad)}
 .hdr-pill svg{flex-shrink:0;display:block}
 .lang-sw{display:flex;gap:4px;flex-shrink:0}
 .lang-sw button{background:none;border:1.5px solid var(--b);border-radius:7px;color:var(--tm);font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
@@ -91,6 +93,8 @@ textarea{resize:none;min-height:80px}
 .btn-next:disabled{background:#94a3b8;cursor:not-allowed}
 .btn-again{width:100%;padding:13px;background:none;color:var(--a);border:2px solid var(--a);border-radius:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:all .15s}
 .btn-again:hover{background:var(--a);color:#fff}
+.prep-link{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;text-align:center;background:var(--al);border:1.5px solid var(--a);color:var(--ad);border-radius:16px;padding:13px 16px;font-size:14px;font-weight:700;text-decoration:none;margin-top:4px;transition:all .15s;box-sizing:border-box}
+.prep-link:hover{background:#cfe6fb}
 .btn-back{background:none;border:none;color:var(--a);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px;padding:2px 0;display:block}
 .conf-icon{text-align:center;margin:16px 0 10px}
 .conf-title{font-family:'Manrope','Segoe UI',Helvetica,sans-serif;font-size:22px;font-weight:800;color:var(--p);text-align:center;margin-bottom:6px}
@@ -110,6 +114,7 @@ textarea{resize:none;min-height:80px}
   .hdr-name{font-size:17px}
   .hdr-role{font-size:12px;margin-bottom:11px}
   .hdr-pill{font-size:12px;height:30px;padding:0 11px}
+  .hdr-pill-site{height:32px;padding:0 13px}
   .pg{padding:12px 12px 60px}
   .card{padding:14px;margin-bottom:10px}
   input,select,textarea{font-size:16px}

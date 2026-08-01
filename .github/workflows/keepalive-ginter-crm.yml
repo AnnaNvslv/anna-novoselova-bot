@@ -1,0 +1,14 @@
+name: Keep Ginter-CRM Supabase Awake
+
+on:
+  schedule:
+    - cron: '0 6 */5 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Ginter-CRM Supabase project
+        run: |
+          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" "https://flxewreibnkyfoccfjtg.supabase.co/rest/v1/settings?select=key&limit=1" -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZseGV3cmVpYm5reWZvY2NmanRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NjQyNDQsImV4cCI6MjA5OTQ0MDI0NH0.grdCsJCrnfQMK78XhCggqkHl_-aASowTt4QBe_ah7hU" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZseGV3cmVpYm5reWZvY2NmanRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NjQyNDQsImV4cCI6MjA5OTQ0MDI0NH0.grdCsJCrnfQMK78XhCggqkHl_-aASowTt4QBe_ah7hU"

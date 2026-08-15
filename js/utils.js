@@ -46,7 +46,32 @@ function openModal(html) {
       el.addEventListener('input',()=>_modalDirty=true);
       el.addEventListener('change',()=>_modalDirty=true);
     });
+    initEnterNavigation();
   },200);
+}
+// ═══ ENTER → следующее поле ═══
+// В модалках нет тега <form> (модалки — просто div-ы), поэтому работаем
+// по всем полям внутри #modal-container в DOM-порядке.
+// Textarea и кнопки не трогаем — Enter в textarea должен давать перенос строки.
+function initEnterNavigation() {
+  const root = document.getElementById('modal-container');
+  if (!root) return;
+  root.querySelectorAll('input, select').forEach(el => {
+    if (el.dataset.enterBound) return;
+    el.dataset.enterBound = '1';
+    el.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const fields = Array.from(root.querySelectorAll('input, select, textarea'))
+        .filter(f => f.type !== 'hidden' && !f.disabled && f.offsetParent !== null);
+      const idx = fields.indexOf(el);
+      const next = fields[idx + 1];
+      if (next) {
+        next.focus();
+        if (typeof next.select === 'function') next.select();
+      }
+    });
+  });
 }
 function closeModal() { _modalDirty=false; if(_autosaveTimer){clearInterval(_autosaveTimer);_autosaveTimer=null;} document.getElementById('overlay').classList.add('hidden'); }
 function overlayClick(e) {

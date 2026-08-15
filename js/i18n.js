@@ -22,7 +22,7 @@ const TRANSLATIONS = {
     done: 'Завершён', issue: 'Выдать', notify: 'Оповестить',
     // PATIENTS
     patients: 'Пациенты', patient: 'Пациент', new_patient: 'Новый пациент', edit_patient: 'Редактировать пациента',
-    full_name: 'ФИО', phone: 'Телефон', email: 'Email', age: 'Возраст',
+    full_name: 'ФИО', last_name: 'Фамилия', first_name: 'Имя', phone: 'Телефон', email: 'Email', age: 'Возраст',
     dob: 'Дата рождения', source: 'Откуда узнал', notes: 'Заметки',
     card: 'Профиль',
     patient_profile: 'Профиль пациента',
@@ -79,7 +79,7 @@ const TRANSLATIONS = {
     analytics: 'Аналитика', admin_only: 'Только для администратора',
     revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
     my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
-    appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
+    appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
     currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
     // SETTINGS
@@ -136,7 +136,7 @@ const TRANSLATIONS = {
     done: 'Završen', issue: 'Preuzmi', notify: 'Obavesti',
     // PATIENTS
     patients: 'Pacijenti', patient: 'Pacijent', new_patient: 'Novi pacijent', edit_patient: 'Uredi pacijenta',
-    full_name: 'Ime i prezime', phone: 'Telefon', email: 'Email', age: 'Starost',
+    full_name: 'Ime i prezime', last_name: 'Prezime', first_name: 'Ime', phone: 'Telefon', email: 'Email', age: 'Starost',
     dob: 'Datum rođenja', source: 'Kako je saznao', notes: 'Napomene',
     card: 'Profil',
     patient_profile: 'Profil pacijenta',
@@ -173,7 +173,7 @@ const TRANSLATIONS = {
     order_status_new: 'kreirana', order_status_work: 'u izradi', order_status_ready: 'spreman',
     order_status_issued: 'izdata', order_status_cancelled: 'otkazana', order_status_return: 'povrat', order_status_redo: 'prepravka',
     no_orders: 'Nema porudžbina', confirm_delete_order: 'Obrisati porudžbinu?', issue_confirm: 'Ostatak %s. Preuzeti?',
-    order_type_glasses: 'Naočare', order_type_cl: 'Kontaktna sočiva', order_type_repair: 'Popravka',
+    order_type_glasses: 'Naocare', order_type_cl: 'Kontaktna sočiva', order_type_repair: 'Popravka',
     order_number: 'Br. porudžbine',
     // examTab
     exam_no_data: 'Parametri nisu uneseni',
@@ -193,7 +193,7 @@ const TRANSLATIONS = {
     analytics: 'Analitika', admin_only: 'Samo za administratora',
     revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
     my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
-    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
+    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
     currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
     // SETTINGS

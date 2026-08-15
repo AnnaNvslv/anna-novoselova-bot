@@ -4,6 +4,13 @@ let _lastAddedPatientId = null;
 let _patientMeta = {};
 let _patientSort = 'name_az'; // name_az | name_za | date_new | date_old | dob
 
+// Разбивает старое единое поле name ("Фамилия Имя") на части — нужно только
+// как запасной вариант для карточек, у которых ещё не сохранены first_name/last_name.
+function _splitName(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  return { last: parts[0] || '', first: parts.slice(1).join(' ') || '' };
+}
+
 async function renderPatients() {
   document.getElementById('content').innerHTML = '<div class="topbar"><h1>'+t('patients')+'</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="'+t('search')+'" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">'+t('add_patient_short')+'</button></div></div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
   const [{data:patients},{data:appts},{data:orders},{data:exams}] = await Promise.all([
@@ -305,13 +312,19 @@ function _orderTab(orders, pid) {
 function openAddPatient() { _patientForm(null); }
 async function openEditPatient(id) { const {data:p} = await db.from('patients').select('*').eq('id',id).single(); _patientForm(p); }
 function _patientForm(p) {
+  // first_name/last_name — отдельные столбцы (см. миграцию patients_name_split.sql).
+  // Для карточек, сохранённых до миграции, — запасной разбор старого name.
+  const splitFallback = p && !p.last_name && !p.first_name ? _splitName(p.name) : {last:'', first:''};
+  const lastVal = (p && p.last_name) || splitFallback.last || '';
+  const firstVal = (p && p.first_name) || splitFallback.first || '';
   openModal(
     '<div class="modal modal-lg">'+
       '<div class="modal-header"><span class="modal-title">'+(p ? t('edit_patient') : t('new_patient'))+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
       '<div class="modal-body">'+
         '<div class="form-grid">'+
           (p && p.patient_code ? '<div class="form-group"><label>ID</label><input value="'+p.patient_code+'" disabled style="background:var(--surface2);color:var(--text-m)"></div>' : '')+
-          '<div class="form-group full"><label>'+t('full_name')+' *</label><input id="p-name" value="'+(p&&p.name||'')+'"></div>'+
+          '<div class="form-group"><label>'+t('last_name')+' *</label><input id="p-lastname" value="'+lastVal+'"></div>'+
+          '<div class="form-group"><label>'+t('first_name')+' *</label><input id="p-firstname" value="'+firstVal+'"></div>'+
           '<div class="form-group"><label>'+t('phone')+'</label><input id="p-phone" value="'+(p&&p.phone||'')+'"></div>'+
           '<div class="form-group"><label>Email</label><input id="p-email" value="'+(p&&p.email||'')+'"></div>'+
           '<div class="form-group">'+
@@ -339,20 +352,45 @@ function showAgeHint(dob) {
   document.getElementById('age-hint').textContent = a ? a+' '+t('years') : '';
 }
 async function savePatient(id) {
-  const name = v('p-name'); if (!name) { alert(t('enter_name')); return; }
+  const lastName = v('p-lastname'), firstName = v('p-firstname');
+  if (!lastName && !firstName) { alert(t('enter_name')); return; }
+  const name = [lastName, firstName].filter(Boolean).join(' ');
   const tgIdRaw = v('p-tgid');
   const telegram_chat_id = tgIdRaw ? +tgIdRaw : null;
-  const data = {name, phone:v('p-phone'), email:v('p-email'), dob:v('p-dob')||null,
+  const data = {name, last_name:lastName||null, first_name:firstName||null, phone:v('p-phone'), email:v('p-email'), dob:v('p-dob')||null,
     telegram_username:v('p-tguser'), telegram_chat_id, source:v('p-source'), notes:v('p-notes')};
   try {
+    let np;
+    try {
+      if (id) {
+        const {error} = await db.from('patients').update(data).eq('id',id);
+        if (error) throw error;
+      } else {
+        const res = await db.from('patients').insert(data).select().single();
+        if (res.error) throw res.error;
+        np = res.data;
+      }
+    } catch (err) {
+      // На случай если миграция patients_name_split.sql ещё не запущена в Supabase —
+      // столбцов last_name/first_name пока нет. Сохраняем без них (имя всё равно в поле name).
+      if (err.message && err.message.includes('last_name') || err.message && err.message.includes('first_name')) {
+        delete data.last_name; delete data.first_name;
+        if (id) {
+          const {error} = await db.from('patients').update(data).eq('id',id);
+          if (error) throw error;
+        } else {
+          const res = await db.from('patients').insert(data).select().single();
+          if (res.error) throw res.error;
+          np = res.data;
+        }
+      } else {
+        throw err;
+      }
+    }
     if (id) {
-      const {error} = await db.from('patients').update(data).eq('id',id);
-      if (error) throw error;
       toast(t('updated')); _lastAddedPatientId = null;
       closeModal(); openPatientCard(id);
     } else {
-      const {data:np, error} = await db.from('patients').insert(data).select().single();
-      if (error) throw error;
       _lastAddedPatientId = np && np.id;
       toast(t('added'));
       closeModal();

@@ -14,6 +14,9 @@ var RX_SELECT_FIELDS =
 
 var _ordersSort = 'date_new'; // date_new | date_old | total_desc | total_asc | promised
 var _allOrders = [];
+var _ordersSearchQuery = '';
+var _ordersExamMap = {}; // examination_id -> examination row, для отображения диоптрий рецепта в списке заказов
+var RX_LABEL_TO_TYPE = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl'};
 
 function _nz(val) {
   return (val != null && val !== '' && val !== '0.00' && val !== '0') ? String(val) : null;
@@ -97,7 +100,28 @@ function _ordersSortBarHtml() {
 }
 
 function _filteredOrders() {
-  return orderFilter==='все' ? _allOrders : _allOrders.filter(o => o.status===orderFilter);
+  let list = orderFilter==='все' ? _allOrders : _allOrders.filter(o => o.status===orderFilter);
+  const q = (_ordersSearchQuery||'').trim().toLowerCase();
+  if (q) {
+    list = list.filter(o =>
+      ((o.patients&&o.patients.name)||'').toLowerCase().includes(q) ||
+      (o.order_number||'').toLowerCase().includes(q) ||
+      (o.frame_code||'').toLowerCase().includes(q) ||
+      (o.lens_name||'').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+function filterOrdersUI(q) { _ordersSearchQuery = q; _renderOrdersTable(_filteredOrders()); }
+
+// Строка с диоптриями рецепта, по которому оформлен заказ — вычисляется из
+// examination_id заказа и справочника меток prescription_label → тип рецепта.
+function _orderRxDiopters(o) {
+  if (!o.examination_id || !o.prescription_label) return '';
+  const type = RX_LABEL_TO_TYPE[o.prescription_label];
+  const e = _ordersExamMap[o.examination_id];
+  if (!type || !e) return '';
+  return _rxDioptStr(e, type);
 }
 
 function _sortOrders(list) {
@@ -118,12 +142,22 @@ function _sortOrders(list) {
 async function renderOrders() {
   document.getElementById('content').innerHTML =
     '<div class="topbar"><h1>'+t('orders')+'</h1>'+
-    (isAdmin() ? '<div class="topbar-actions"><button class="btn btn-accent" onclick="openAddOrder()">+ '+t('new_order')+'</button></div>' : '')+
-    '</div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
+    '<div class="topbar-actions"><div class="search-wrap"><input type="text" id="osearch" placeholder="'+t('search')+'" oninput="filterOrdersUI(this.value)"></div>'+
+    (isAdmin() ? '<button class="btn btn-accent" onclick="openAddOrder()">+ '+t('new_order')+'</button>' : '')+
+    '</div></div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
   const {data:orders} = await db.from('orders')
     .select('*, patients(name,telegram_chat_id)')
     .is('deleted_at', null);
   _allOrders = orders || [];
+
+  // Подтягиваем рецепты, на которые ссылаются заказы, чтобы показать диоптрии в списке
+  const examIds = [...new Set(_allOrders.map(o => o.examination_id).filter(Boolean))];
+  _ordersExamMap = {};
+  if (examIds.length) {
+    const {data: exs} = await db.from('examinations').select(RX_SELECT_FIELDS).in('id', examIds);
+    (exs||[]).forEach(e => { _ordersExamMap[e.id] = e; window._examCache[e.id] = e; });
+  }
+
   _renderOrdersTable(_filteredOrders());
 }
 
@@ -160,7 +194,10 @@ function _renderOrdersTable(list) {
         '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span></td>'+
         '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span>'+(o.is_redo ? ' <span class="badge badge-warn" style="font-size:10px">&#8635;</span>' : '')+'</td>'+
         '<td><div class="fw-6" style="font-size:13.5px">'+(o.frame_code||'—')+'</div><div class="text-sm text-m">'+(o.lens_name||'—')+'</div></td>'+
-        '<td style="color:var(--text-l);font-size:12px">'+(o.prescription_label||'—')+'</td>'+
+        '<td style="color:var(--text-l);font-size:13px;max-width:220px">'+
+          (o.prescription_label ? '<div style="font-weight:600;color:var(--text-m)">'+o.prescription_label+'</div>' : '—')+
+          (_orderRxDiopters(o) ? '<div style="margin-top:2px;color:var(--text)">'+_orderRxDiopters(o)+'</div>' : '')+
+        '</td>'+
         '<td class="money">'+fmtMoney(orderTotal(o))+'</td>'+
         '<td class="text-m">'+(o.promised_date ? fmt(o.promised_date) : '—')+'</td>'+
         '<td onclick="event.stopPropagation()">'+
@@ -188,6 +225,19 @@ async function openOrderCard(id) {
   if (!o) return;
   const bal = orderBalance(o);
   const displayDate = fmt(o.order_date || (o.created_at||'').split('T')[0]);
+
+  // Диоптрии рецепта, по которому оформлен заказ — подтягиваем отдельно,
+  // т.к. карточку заказа можно открыть и не из списка «Заказы» (например, из карточки пациента).
+  let rxDiopters = '';
+  if (o.examination_id && o.prescription_label) {
+    let e = window._examCache && window._examCache[o.examination_id];
+    if (!e) {
+      const {data:ed} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('id',o.examination_id).single();
+      e = ed; if (e) window._examCache[e.id] = e;
+    }
+    const rxType = RX_LABEL_TO_TYPE[o.prescription_label];
+    if (e && rxType) rxDiopters = _rxDioptStr(e, rxType);
+  }
   openModal(
     '<div class="modal modal-lg">'+
       '<div class="modal-header">'+
@@ -207,7 +257,7 @@ async function openOrderCard(id) {
         '<div class="info-grid mb-12">'+
           '<div class="info-item"><label>'+t('order_num_label')+'</label><p style="font-weight:700;font-size:15px">'+(o.order_number||'—')+'</p></div>'+
           '<div class="info-item"><label>'+t('order_type')+'</label><p>'+o.type+'</p></div>'+
-          '<div class="info-item"><label>'+t('prescription')+'</label><p style="color:var(--text-m)">'+(o.prescription_label||'—')+'</p></div>'+
+          '<div class="info-item"><label>'+t('prescription')+'</label><p style="color:var(--text-m)">'+(o.prescription_label||'—')+(rxDiopters?' <span style="color:var(--text);font-weight:600">— '+rxDiopters+'</span>':'')+'</p></div>'+
           '<div class="info-item"><label>'+t('promised_date')+'</label><p>'+(o.promised_date ? fmt(o.promised_date) : '—')+'</p></div>'+
           '<div class="info-item"><label>'+t('order_date_label')+'</label><p>'+displayDate+'</p></div>'+
         '</div>'+
@@ -626,7 +676,7 @@ async function notifyOrderReady(id) {
   const paymentText = bal > 0
     ? 'Ostatak po vašoj porudžbini: '+fmtMoney(bal)+'.\nPlačanje karticom ili gotovinom.'
     : 'Porudžbina je u potpunosti plaćena.';
-  const msg = 'Zdravo!\n\nNaočare za '+o.patients.name+' su spremne!\n\n'+paymentText+'\n\nMožete ih preuzeti u bilo koje vreme koje vam odgovara.\n\nRadno vreme optike Ginter:\nradnim danima — 09:00–19:00\nsubota — 09:00–13:00\nnedelja — neradan dan.\n\nAko imate pitanja — obratite se Ani @AnnaNvslv 😊\n\nLep dan!';
+  const msg = 'Zdravo!\n\nNaocare za '+o.patients.name+' su spremne!\n\n'+paymentText+'\n\nMožete ih preuzeti u bilo koje vreme koje vam odgovara.\n\nRadno vreme optike Ginter:\nradnim danima — 09:00–19:00\nsubota — 09:00–13:00\nnedelja — neradan dan.\n\nAko imate pitanja — obratite se Ani @AnnaNvslv 😊\n\nLep dan!';
   const ok = await tgSend(o.patients.telegram_chat_id, msg);
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }
@@ -634,7 +684,7 @@ async function sendFollowUpSurvey(orderId) {
   const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',orderId).single();
   if (!o || !o.patients || !o.patients.telegram_chat_id) { toast(t('error'), 'error'); return; }
   const firstName = o.patients.name.split(' ')[0];
-  const msg = 'Zdravo, '+firstName+'! 👋\n\nProšle su dve nedelje od kada ste preuzeli naočare. Zanimalo me kako se snalazite 🙂\n\n1️⃣ Kako ste sa novim naočarima?\n😊 Odlično\n🤔 Navikavam se\n😕 Imam pitanja\n\n2️⃣ Da li vam okvir odgovara?\n👍 Da\n👎 Ne\n\nNapišite direktno u odgovor na ovu poruku — Ana @AnnaNvslv će vam se javiti lično.\n\nHvala! 🙏';
+  const msg = 'Zdravo, '+firstName+'! 👋\n\nProšle su dve nedelje od kada ste preuzeli naocare. Zanimalo me kako se snalazite 🙂\n\n1️⃣ Kako ste sa novim naocarima?\n😊 Odlično\n🤔 Navikavam se\n😕 Imam pitanja\n\n2️⃣ Da li vam okvir odgovara?\n👍 Da\n👎 Ne\n\nNapišite direktno u odgovor na ovu poruku — Ana @AnnaNvslv će vam se javiti lično.\n\nHvala! 🙏';
   const ok = await tgSend(o.patients.telegram_chat_id, msg);
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }

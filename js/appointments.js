@@ -1,11 +1,20 @@
 // ═══ APPOINTMENTS ═══
+let _allAppts = [];
+let _apptSearchQuery = '';
 async function renderAppointments() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><button class="btn btn-accent" onclick="openAddAppointment()">+ ${t('appointments')||'Pregledi'}</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="asearch" placeholder="${t('search')}" oninput="filterAppointmentsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddAppointment()">+ ${t('appointments')||'Pregledi'}</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
   const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('date',{ascending:false}).order('time');
-  const filtered=apptFilter==='все'?appts||[]:(appts||[]).filter(a=>a.status===apptFilter);
+  _allAppts = appts||[];
+  _renderApptTable();
+}
+function filterAppointmentsUI(q){ _apptSearchQuery=q; _renderApptTable(); }
+function _renderApptTable(){
+  let filtered=apptFilter==='все'?_allAppts:_allAppts.filter(a=>a.status===apptFilter);
+  const q=_apptSearchQuery.trim().toLowerCase();
+  if(q) filtered=filtered.filter(a=>((a.patients&&a.patients.name)||'').toLowerCase().includes(q)||(a.appointment_number||'').toLowerCase().includes(q)||(a.type||'').toLowerCase().includes(q));
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
-      <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';renderAppointments()">${{'все':t('all'),'запланирован':t('status_planned'),'завершён':t('status_done'),'отменён':t('status_cancelled')}[f]||f}</button>`).join('')}</div>
+      <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';_renderApptTable()">${{'все':t('all'),'запланирован':t('status_planned'),'завершён':t('status_done'),'отменён':t('status_cancelled')}[f]||f}</button>`).join('')}</div>
     </div>
     <div class="card"><div class="table-wrap"><table>
       <thead><tr><th>${t('patient')}</th><th>№ приёма</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>

@@ -11,6 +11,45 @@ function _blogEventLabel(ev){return(BLOG_EVENT_LABEL[ev]||{})[_lang==='sr'?'sr':
 function _blogTime(iso){if(!iso)return'—';const d=new Date(iso);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function _blogSlotFmt(date,time){if(!date)return'—';const[y,m,d]=date.split('-');return d+'.'+m+(time?' '+time.substr(0,5):'');}
 
+let _blogList = [];
+let _blogQuery = '';
+function _blogStatusMeta(){
+  return {
+    success:{color:'#16a34a',bg:'#dcfce7',label:_lang==='sr'?'Uspešno':'Успешно'},
+    error:{color:'#dc2626',bg:'#fee2e2',label:_lang==='sr'?'Greška':'Ошибка'},
+    abandoned:{color:'#d97706',bg:'#fef3c7',label:_lang==='sr'?'Napušteno':'Не закончил(а)'},
+    incomplete:{color:'#d97706',bg:'#fef3c7',label:_lang==='sr'?'Nezavršeno':'Не завершено'},
+    in_progress:{color:'#2563eb',bg:'#dbeafe',label:_lang==='sr'?'U toku':'В процессе'}
+  };
+}
+function _blogRowsHtml(list){
+  const STATUS_META=_blogStatusMeta();
+  return list.length?list.map(s=>{
+    const meta=STATUS_META[s.status];
+    const nameOrTg=s.name||s.tg||'—';
+    const errTxt=s.status==='error'&&s.error_text?`<div style="font-size:12px;color:#991b1b;margin-top:2px">${s.error_text}</div>`:'';
+    return`<tr>
+      <td style="white-space:nowrap;font-size:13px">${_blogTime(s.last_at)}</td>
+      <td><span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;background:${meta.bg};color:${meta.color}">${meta.label}</span></td>
+      <td style="font-size:13.5px">${nameOrTg}${errTxt}</td>
+      <td style="font-size:13px;color:var(--text-m)">${s.type_id||'—'}</td>
+      <td style="font-size:13px;color:var(--text-m);white-space:nowrap">${_blogSlotFmt(s.slot_date,s.slot_time)}</td>
+      <td style="font-size:13px;color:var(--text-m)">${_blogEventLabel(s.last_event)}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-m)">${t('no_data')}</td></tr>`;
+}
+function filterBookingLogUI(q){
+  _blogQuery=q;
+  const qq=q.trim().toLowerCase();
+  const filtered=!qq?_blogList:_blogList.filter(s=>
+    (s.name||'').toLowerCase().includes(qq) ||
+    (s.tg||'').toLowerCase().includes(qq) ||
+    (s.type_id||'').toLowerCase().includes(qq)
+  );
+  const tbody=document.getElementById('blog-tbody');
+  if(tbody) tbody.innerHTML=_blogRowsHtml(filtered);
+}
+
 async function renderBookingLog(){
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${_lang==='sr'?'Log zakazivanja':'Лог онлайн-записи'}</h1></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
 
@@ -62,13 +101,7 @@ async function renderBookingLog(){
   const uniqueVisitors7=new Set(rows7.map(r=>r.visitor_id).filter(Boolean)).size;
   const uniqueVisitors30=new Set((rows||[]).map(r=>r.visitor_id).filter(Boolean)).size;
 
-  const STATUS_META={
-    success:{color:'#16a34a',bg:'#dcfce7',label:_lang==='sr'?'Uspešno':'Успешно'},
-    error:{color:'#dc2626',bg:'#fee2e2',label:_lang==='sr'?'Greška':'Ошибка'},
-    abandoned:{color:'#d97706',bg:'#fef3c7',label:_lang==='sr'?'Napušteno':'Не закончил(а)'},
-    incomplete:{color:'#d97706',bg:'#fef3c7',label:_lang==='sr'?'Nezavršeno':'Не завершено'},
-    in_progress:{color:'#2563eb',bg:'#dbeafe',label:_lang==='sr'?'U toku':'В процессе'}
-  };
+  _blogList = list;
 
   const alertHtml=problemCount>0
     ?`<div class="card" style="padding:16px;background:#fef2f2;border:1px solid #fecaca;margin-bottom:16px">
@@ -79,22 +112,8 @@ async function renderBookingLog(){
         <div style="font-weight:700;color:#166534;font-size:14px">✅ ${_lang==='sr'?'Nema problema u poslednjih 7 dana':'Проблем за последние 7 дней нет'}</div>
       </div>`;
 
-  const rowsHtml=list.length?list.map(s=>{
-    const meta=STATUS_META[s.status];
-    const nameOrTg=s.name||s.tg||'—';
-    const errTxt=s.status==='error'&&s.error_text?`<div style="font-size:12px;color:#991b1b;margin-top:2px">${s.error_text}</div>`:'';
-    return`<tr>
-      <td style="white-space:nowrap;font-size:13px">${_blogTime(s.last_at)}</td>
-      <td><span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;background:${meta.bg};color:${meta.color}">${meta.label}</span></td>
-      <td style="font-size:13.5px">${nameOrTg}${errTxt}</td>
-      <td style="font-size:13px;color:var(--text-m)">${s.type_id||'—'}</td>
-      <td style="font-size:13px;color:var(--text-m);white-space:nowrap">${_blogSlotFmt(s.slot_date,s.slot_time)}</td>
-      <td style="font-size:13px;color:var(--text-m)">${_blogEventLabel(s.last_event)}</td>
-    </tr>`;
-  }).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-m)">${t('no_data')}</td></tr>`;
-
   document.getElementById('content').innerHTML=`
-<div class="topbar"><h1>${_lang==='sr'?'Log zakazivanja':'Лог онлайн-записи'}</h1></div>
+<div class="topbar"><h1>${_lang==='sr'?'Log zakazivanja':'Лог онлайн-записи'}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="blogsearch" placeholder="${t('search')}" oninput="filterBookingLogUI(this.value)"></div></div></div>
 <div class="content">
   <div class="stats-grid" style="margin-bottom:16px">
     <div class="stat-card"><div class="stat-label">${_lang==='sr'?'Problemi (7 dana)':'Проблемы (7 дней)'}</div><div class="stat-value" style="color:${problemCount?'#dc2626':'inherit'}">${problemCount}</div></div>
@@ -114,7 +133,7 @@ async function renderBookingLog(){
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Žele termin':'Дата приёма'}</th>
         <th style="padding:10px 12px;font-size:12px;color:var(--text-m)">${_lang==='sr'?'Poslednji korak':'Последний шаг'}</th>
       </tr></thead>
-      <tbody>${rowsHtml}</tbody>
+      <tbody id="blog-tbody">${_blogRowsHtml(list)}</tbody>
     </table>
   </div>
   <div style="font-size:12px;color:var(--text-m);margin-top:10px">${_lang==='sr'?'Prikaz poslednjih 30 dana, grupisano po sesiji.':'Показаны последние 30 дней, сгруппировано по сессии.'}</div>

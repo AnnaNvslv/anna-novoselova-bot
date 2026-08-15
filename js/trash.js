@@ -1,6 +1,9 @@
 // ═══ TRASH (KORPA) ═══
+let _trashData = null;
+let _trashQuery = '';
+
 async function renderTrash() {
-  document.getElementById('content').innerHTML=`<div class="topbar"><h1>🗑 ${t('nav_trash')||'Korpa'}</h1></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
+  document.getElementById('content').innerHTML=`<div class="topbar"><h1>🗑 ${t('nav_trash')||'Korpa'}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="trsearch" placeholder="${t('search')}" oninput="filterTrashUI(this.value)"></div></div></div><div class="content"><div class="spinner">${t('loading')}</div></div>`;
 
   const [
     {data:patients},
@@ -14,7 +17,22 @@ async function renderTrash() {
     db.from('examinations').select('*,patients(name)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
   ]);
 
-  const total = (patients||[]).length+(appts||[]).length+(orders||[]).length+(exams||[]).length;
+  _trashData = {patients:patients||[], appts:appts||[], orders:orders||[], exams:exams||[]};
+  _renderTrashLists();
+}
+function filterTrashUI(q){ _trashQuery=q; _renderTrashLists(); }
+
+function _renderTrashLists() {
+  const q = _trashQuery.trim().toLowerCase();
+  const match = name => !q || (name||'').toLowerCase().includes(q);
+
+  const patients = _trashData.patients.filter(p=>match(p.name));
+  const appts = _trashData.appts.filter(a=>match(a.patients?.name));
+  const orders = _trashData.orders.filter(o=>match(o.patients?.name));
+  const exams = _trashData.exams.filter(e=>match(e.patients?.name));
+
+  const rawTotal = _trashData.patients.length+_trashData.appts.length+_trashData.orders.length+_trashData.exams.length;
+  const total = patients.length+appts.length+orders.length+exams.length;
 
   const section = (title, icon, items, renderRow) => {
     if(!items?.length) return '';
@@ -27,9 +45,16 @@ async function renderTrash() {
   const rowStyle = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)';
   const restoreBtn = (fn, id) => `<button class="btn btn-accent btn-sm" onclick="${fn}('${id}')">${t('restore')||'Vrati'}</button>`;
 
-  document.querySelector('.content').innerHTML = total === 0
-    ? `<div class="empty"><p>${t('trash_empty')||'Korpa je prazna'}</p></div>`
-    : `
+  if (rawTotal === 0) {
+    document.querySelector('.content').innerHTML = `<div class="empty"><p>${t('trash_empty')||'Korpa je prazna'}</p></div>`;
+    return;
+  }
+  if (total === 0) {
+    document.querySelector('.content').innerHTML = `<div class="empty"><p>${t('no_data')}</p></div>`;
+    return;
+  }
+
+  document.querySelector('.content').innerHTML = `
     <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
       ${isAdmin()?`<button class="btn btn-danger btn-sm" onclick="emptyTrash()">🗑 ${t('empty_trash')||'Isprazni korpu'}</button>`:''}
     </div>
@@ -49,7 +74,7 @@ async function renderTrash() {
         </div>
         ${isAdmin()?restoreBtn('restoreAppt',a.id):''}
       </div>`)}
-    ${section(t('orders')||'Porudžbine','🛍', orders, o=>`
+    ${section(t('orders')||'Porudžbine','🛒', orders, o=>`
       <div style="${rowStyle}">
         <div>
           <b>${o.patients?.name||'—'}</b> · ${o.type||'—'} · ${fmtMoney(orderTotal(o))}<br>

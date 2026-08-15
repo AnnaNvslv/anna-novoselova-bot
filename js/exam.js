@@ -40,101 +40,24 @@ async function openExamView(examId,pid){
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span></span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'',apptType);
 }
-// ── RX SELECT HELPERS ──
-// Sph: первым — (пустой, selected по дефолту).
-// Порядок списка: минуса (-0.25..-13), 0.00, плюса (+0.25..+13).
-// При открытии JS скроллит к 0.00 — так он оказывается посередине.
-function _genOptsSph(vals, saved) {
-  const s = String(saved||'');
-  let html = `<option value=""${s===''?' selected':''}>—</option>`;
-  vals.forEach(v => { html += `<option value="${v}" ${String(v)===s&&s!==''?'selected':''}>${v}</option>`; });
-  if(s && s!=='' && !vals.map(String).includes(s))
-    html += `<option value="${s}" selected>${s}</option>`;
-  return html;
-}
-// Для остальных: первый option — пустой (—)
-function _genOpts(vals, saved) {
-  const s = String(saved||'');
-  let html = '<option value="">—</option>';
-  vals.forEach(v => { html += `<option value="${v}" ${String(v)===s?'selected':''}>${v}</option>`; });
-  if(s && s!=='' && !vals.map(String).includes(s))
-    html += `<option value="${s}" selected>${s}</option>`;
-  return html;
-}
-// Sph: минуса (-0.25..-13), 0.00, плюса (+0.25..+13)
-// При открытии JS скроллит к 0.00 — он в центре видимой области
-function _sphVals() {
-  const minus=[];
-  for(let i=25;i<=1300;i+=25) minus.push('-'+(i/100).toFixed(2));
-  const plus=[];
-  for(let i=25;i<=1300;i+=25) plus.push('+'+(i/100).toFixed(2));
-  // порядок: минуса по убыванию (-0.25 сверху, -13 внизу)... нет, по возрастанию (-13 сверху, -0.25 перед 0)
-  return [...minus.slice().reverse(),'0.00',...plus];
-}
-// Cyl: только минуса, без 0.00, дефолт —
-function _cylVals() {
-  const v=[];
-  for(let i=25;i<=600;i+=25) v.push('-'+(i/100).toFixed(2));
-  return v;
-}
-function _axVals() { return Array.from({length:181},(_,i)=>i); }
-// PD: default 62
-function _pdVals() {
-  const vals=Array.from({length:31},(_,i)=>i+50);
-  const idx=vals.indexOf(62);
-  return [vals[idx],...vals.slice(0,idx),...vals.slice(idx+1)];
-}
-function _addVals() { const v=[]; for(let i=25;i<=400;i+=25) v.push((i/100).toFixed(2)); return v; }
-function _bcVals() { const v=[]; for(let i=83;i<=90;i++) v.push((i/10).toFixed(1)); return v; }
-function _diaVals() { const v=[]; for(let i=140;i<=150;i++) v.push((i/10).toFixed(1)); return v; }
+// ── RX ПОЛЯ ──
+// Раньше Sph/Cyl/Ax/PD/ADD/BC/DIA были выпадающими списками. По просьбе Анны
+// заменены на обычные текстовые поля — быстрее вводить с клавиатуры, меньше кликов.
+// Имена функций (_rs/_rsNoBtn) и id полей оставлены прежними, чтобы не трогать
+// остальной код (saveExam, печать, order-форму), который на них ссылается.
+const RX_PLACEHOLDER = {
+  sph: '−1.25', cyl: '−0.50', ax: '90', pd: '62',
+  add: '1.50', degr: '1.50', bc: '8.6', dia: '14.2'
+};
+const SN = 'padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;width:100%;min-width:60px;text-align:center;background:#fff;color:var(--text)';
 
-const SS = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:100%;background:#fff;color:var(--t)';
-const SN = 'padding:4px 3px;border:1.5px solid var(--border);border-radius:5px;font-size:12.5px;width:72px;background:#fff;color:var(--t)';
-
-// Скролл к 0.00 при открытии списка sph (через mousedown/focus)
-function _sphScroll(sel) {
-  if(!sel) return;
-  // Если есть сохранённое значение — не скроллим, браузер сам покажет его
-  if(sel.value && sel.value!=='') return;
-  // Находим индекс 0.00
-  const idx = Array.from(sel.options).findIndex(o=>o.value==='0.00');
-  if(idx>=0) sel.selectedIndex = idx;
-}
 function _rs(id, type, val) {
-  let opts, style=SS, isSph=false;
-  if(type==='sph')    { opts=_sphVals(); isSph=true; }
-  else if(type==='cyl'){ opts=_cylVals(); }
-  else if(type==='ax') { opts=_axVals(); style=SN; }
-  else if(type==='pd') { opts=_pdVals(); style=SN; }
-  else if(type==='add'){ opts=_addVals(); style=SN; }
-  else if(type==='degr'){opts=_addVals(); style=SN; }
-  else if(type==='bc') { opts=_bcVals(); style=SN; }
-  else if(type==='dia'){ opts=_diaVals(); style=SN; }
-  else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
-  const optHtml = isSph ? _genOptsSph(opts,val) : _genOpts(opts,val);
-  const onmousedown = isSph ? `onmousedown="_sphScroll(this)"` : '';
-  return`<div style="display:flex;gap:2px;align-items:center">
-    <select id="${id}" style="${style}" onchange="if(this.value===''){_sphScroll(this);}_modalDirty=true" ${onmousedown}>${optHtml}</select>
-    <button type="button" title="+" onclick="addCustomRx('${id}')" style="padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;background:white;cursor:pointer;font-size:13px;color:var(--accent);flex-shrink:0;line-height:1">+</button>
-  </div>`;
+  const ph = RX_PLACEHOLDER[type] || '';
+  return `<input id="${id}" value="${val||''}" placeholder="${ph}" style="${SN}" oninput="_modalDirty=true">`;
 }
-// Для вкладки Обследование — без кнопки +
+// Раньше отличалась от _rs отсутствием кнопки "+" у select — теперь оба поля одинаковые (обычный input).
 function _rsNoBtn(id, type, val) {
-  let opts, style=SS, isSph=false;
-  if(type==='sph')    { opts=_sphVals(); isSph=true; }
-  else if(type==='cyl'){ opts=_cylVals(); }
-  else if(type==='ax') { opts=_axVals(); style=SN; }
-  else return `<input id="${id}" value="${val||''}" style="${SN}" oninput="_modalDirty=true">`;
-  const optHtml = isSph ? _genOptsSph(opts,val) : _genOpts(opts,val);
-  const onmousedown = isSph ? `onmousedown="_sphScroll(this)"` : '';
-  return`<select id="${id}" style="${style}" onchange="_modalDirty=true" ${onmousedown}>${optHtml}</select>`;
-}
-function addCustomRx(id){
-  const val=prompt('Введите значение:');
-  if(val===null||val==='')return;
-  const sel=document.getElementById(id);if(!sel)return;
-  const opt=document.createElement('option');opt.value=val;opt.textContent=val;opt.selected=true;
-  sel.appendChild(opt);sel.value=val;_modalDirty=true;
+  return _rs(id, type, val);
 }
 function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="min-width:${narrow?'36px':'44px'};max-width:${narrow?'60px':'none'}">`;
 }
@@ -214,7 +137,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
               ${reasonOptions.map(r=>{
                 const savedReasons=(ge('visit_reason')||'').split(', ');
                 const sel=savedReasons.includes(r)||bookingReasons.includes(r);
-                return`<label style="display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:500;cursor:pointer;background:var(--surface2);padding:5px 10px;border-radius:6px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'}">
+                return`<label style="display:flex;align-items:center;gap:7px;font-size:15px;font-weight:500;cursor:pointer;background:var(--surface2);padding:8px 14px;border-radius:10px;border:1.5px solid ${sel?'var(--accent)':'var(--border)'}">
                   <input type="checkbox" name="visit_reason" value="${r}" ${sel?'checked':''} style="width:auto;accent-color:var(--accent)" onchange="_modalDirty=true"> ${r}
                 </label>`;
               }).join('')}
@@ -384,9 +307,6 @@ function _renderCorrs(){
   if(!_examData.corrections.length)return`<p class="text-sm text-m">Нет используемой коррекции</p>`;
   return _examData.corrections.map((c,i)=>{
     const isMKL=c.type==='МКЛ';
-    const sphOpts = _sphVals();
-    const cylOpts = _cylVals();
-    const axOpts = _axVals();
     return`<div class="corr-item">
       <div class="flex justify-between items-center mb-8">
         <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
@@ -396,15 +316,15 @@ function _renderCorrs(){
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
-        <div><label style="font-size:10px">Sph</label><select onmousedown="_sphScroll(this)" onchange="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.od_sph)}</select></div>
-        <div><label style="font-size:10px">Cyl</label><select onchange="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.od_cyl)}</select></div>
-        <div><label style="font-size:10px">Ax</label><select onchange="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.od_ax)}</select></div>
+        <div><label style="font-size:10px">Sph</label><input value="${c.od_sph||''}" placeholder="−1.25" oninput="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><label style="font-size:10px">Cyl</label><input value="${c.od_cyl||''}" placeholder="−0.50" oninput="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><label style="font-size:10px">Ax</label><input value="${c.od_ax||''}" placeholder="90" oninput="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
-        <div><select onmousedown="_sphScroll(this)" onchange="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%">${_genOptsSph(sphOpts,c.os_sph)}</select></div>
-        <div><select onchange="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%">${_genOpts(cylOpts,c.os_cyl)}</select></div>
-        <div><select onchange="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%">${_genOpts(axOpts,c.os_ax)}</select></div>
+        <div><input value="${c.os_sph||''}" placeholder="−1.25" oninput="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><input value="${c.os_cyl||''}" placeholder="−0.50" oninput="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><input value="${c.os_ax||''}" placeholder="90" oninput="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
       </div>
       <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr;gap:8px;align-items:end">
         ${isMKL?`

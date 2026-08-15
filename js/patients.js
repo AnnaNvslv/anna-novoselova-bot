@@ -196,6 +196,7 @@ async function _renderPatientCard(pid) {
         '</div>'+
         '<div class="profile-actions">'+
           (!isErvin() ? '<button class="btn btn-accent btn-sm" onclick="openAddAppointmentFor(\''+pid+'\')">'+'+ '+t('appointments')+'</button>' : '')+
+          (!isErvin() ? '<button class="btn btn-accent btn-sm" onclick="openExamForm(\'\',\''+pid+'\')">'+'+ '+t('exam_card_short')+'</button>' : '')+
           (isAdmin() ? '<button class="btn btn-accent btn-sm" onclick="openAddOrderFor(\''+pid+'\')">'+'+ '+t('orders')+'</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient(\''+pid+'\')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard(\''+pid+'\')" title="'+t('delete')+'">🗑</button>' : '')+
           (!isErvin() ? '<button class="btn btn-ghost btn-sm" onclick="savePatientPDF(\''+pid+'\')">💾 PDF</button>' : '')+
@@ -255,8 +256,9 @@ function _apptTab(appts, pid) {
 }
 
 function _examTabHtml(exams, pid) {
-  if (!exams.length) return '<div class="empty"><p>'+t('exam_none')+'</p></div>';
-  return exams.map(e =>
+  const addBtn = '<div class="mb-8"><button class="btn btn-ghost btn-sm" onclick="openExamForm(\'\',\''+pid+'\')">+ '+t('exam_card_short')+'</button></div>';
+  if (!exams.length) return addBtn+'<div class="empty"><p>'+t('exam_none')+'</p></div>';
+  return addBtn+exams.map(e =>
     '<div class="history-item">'+
       '<div class="history-dot" style="background:var(--primary-l);border-color:var(--primary)"></div>'+
       '<div style="flex:1;min-width:0">'+
@@ -391,10 +393,12 @@ async function savePatient(id) {
       toast(t('updated')); _lastAddedPatientId = null;
       closeModal(); openPatientCard(id);
     } else {
+      // Не открываем карточку автоматически — обновляем список с подсветкой
+      // новой строки (см. renderPatientsTable), чтобы Анна видела результат сразу в таблице.
       _lastAddedPatientId = np && np.id;
       toast(t('added'));
       closeModal();
-      if (np && np.id) openPatientCard(np.id); else render();
+      render();
     }
   } catch(err) {
     console.error('savePatient error:', err);

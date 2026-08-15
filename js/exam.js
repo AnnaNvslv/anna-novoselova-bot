@@ -3,17 +3,20 @@ let _autosaveTimer = null;
 let _currentExamId = null;
 let _currentApptType = '';
 async function openExamForm(apptId,patientId){
+  // apptId может быть пустым — например, когда карта обследования создаётся
+  // прямо из карточки пациента, без записи на приём (см. кнопку "+ Карта").
+  // В этом случае просто не ищем ни существующую карту по приёму, ни сам приём.
   _examTab='anamn';_examData={corrections:[]};_currentExamId=null;_currentApptType='';
   if(_autosaveTimer) clearInterval(_autosaveTimer);
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span class="modal-title">Загрузка...</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
-  const[{data:p},{data:exams},{data:cnt},{data:appt}]=await Promise.all([
+  const[{data:p},{data:exams},examCountRes,{data:appt}]=await Promise.all([
     db.from('patients').select('*').eq('id',patientId).single(),
-    db.from('examinations').select('*').eq('appointment_id',apptId).order('created_at',{ascending:false}).limit(1),
+    apptId ? db.from('examinations').select('*').eq('appointment_id',apptId).order('created_at',{ascending:false}).limit(1) : Promise.resolve({data:[]}),
     db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',patientId),
-    db.from('appointments').select('type').eq('id',apptId).single()
+    apptId ? db.from('appointments').select('type').eq('id',apptId).single() : Promise.resolve({data:null})
   ]);
   const ex = exams?.[0] || null;
-  const e=ex||{};const visitNum=e.visit_number||(cnt||0)+1;
+  const e=ex||{};const visitNum=e.visit_number||(examCountRes?.count||0)+1;
   _currentExamId = e.id || null;
   _currentApptType = appt?.type || '';
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;

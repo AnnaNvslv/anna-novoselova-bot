@@ -4,7 +4,7 @@ let _calSettings = null;
 
 const PX_PER_MIN = 1.1;
 const CAL_START_H = 9;
-const CAL_END_H   = 19;
+const CAL_END_H   = 20; // рабочий день теперь до 20:00 — раньше грид обрезался на 19:00 и записи после 19:00 не были видны
 
 const SLOT_DURATIONS = { primary: 60, short: 15, express: 30 };
 const SLOT_COLORS = {
@@ -172,12 +172,12 @@ async function renderSlots(){
         if(isTall){
           evHTML+=`<div class="cg2-event cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}">
             ${isAdmin()?`<button class="cg2-del" onclick="event.stopPropagation();${delFn}" title="Удалить">✕</button>`:''}
-            ${addFn?`<button class="cg2-add-btn${isErvin()&&!isAdmin()?' cg2-add-btn-ervin':''}" onclick="event.stopPropagation();${addFn}" title="Записать">✚</button>`:''}
+            ${addFn?`<button class="cg2-add-btn${isErvin()&&!isAdmin()?' cg2-add-btn-ervin':''}" onclick="event.stopPropagation();${addFn}" title="Записать">✡</button>`:''}
             <div class="cg2-ev-row"><span class="cg2-ev-time">${tm}</span><span class="cg2-ev-name">✓ Свободно</span></div>
           </div>`;
         } else {
           const popupBtns=[];
-          if(addFn) popupBtns.push({label:isErvin()&&!isAdmin()?'Zauzimi':'✚ Записать пациента',fn:addFn,bg:c.bg,color:c.text});
+          if(addFn) popupBtns.push({label:isErvin()&&!isAdmin()?'Zauzimi':'✡ Записать пациента',fn:addFn,bg:c.bg,color:c.text});
           if(isAdmin()) popupBtns.push({label:'Удалить слот',fn:delFn,bg:'#fee2e2',color:'#b91c1c'});
           const popupJson=JSON.stringify({title:`${tm} · Свободно`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
           evHTML+=`<div class="cg2-event cg2-event-narrow cg2-event-free" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="cg2SlotPopup(event,${popupJson})">

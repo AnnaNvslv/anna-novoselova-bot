@@ -426,7 +426,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
             '<div class="form-group">'+
               '<label>'+t('frame')+' (din.)</label>'+
               '<div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">'+t('no_data').replace('Nema','Osnovna').replace('Нет','Базовая')+'</label><input type="number" id="o-fprice" value="'+(o&&o.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
+                '<div><label style="font-size:10.5px;color:var(--text-l)">'+t('no_data').replace('Nema','Osnovna').replace('Нет','Базовая')+'</label><input type="number" id="o-fprice" value="'+(o&&o.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
                 '<div><label style="font-size:10.5px;color:var(--text-l)">% </label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
                 '<div><label style="font-size:10.5px;color:var(--green);font-weight:700">= din.</label><input type="number" id="o-fprice-final" value="'+(o&&o.frame_price||0)+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
               '</div>'+
@@ -438,7 +438,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
             '<div class="form-group">'+
               '<label id="o-lens-label">'+t('lenses')+' (din.)</label>'+
               '<div style="display:grid;grid-template-columns:1fr 60px '+(isCL?'':'80px ')+'1fr;gap:6px;align-items:flex-end">'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">Base</label><input type="number" id="o-lprice" value="'+(o&&o.lens_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
+                '<div><label style="font-size:10.5px;color:var(--text-l)">Base</label><input type="number" id="o-lprice" data-enter-jump="save" value="'+(o&&o.lens_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
                 '<div><label style="font-size:10.5px;color:var(--text-l)">% </label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
                 (isCL ? '' : '<div id="o-lqty-wrap"><label style="font-size:10.5px;color:var(--text-l)">kom</label><select id="o-lqty" onchange="recalcOrder()" style="padding:8px 4px"><option value="2" '+(lensQty!==1?'selected':'')+'>2</option><option value="1" '+(lensQty===1?'selected':'')+'>1</option></select></div>')+
                 '<div><label style="font-size:10.5px;color:var(--green);font-weight:700" id="o-lens-result-label">= din.</label><input type="number" id="o-lprice-final" value="'+(isCL?(o&&o.lens_price||0):((o&&o.lens_price||0)*lensQty))+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+

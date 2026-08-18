@@ -62,6 +62,10 @@ function initEnterNavigation() {
     el.addEventListener('keydown', e => {
       if (e.key !== 'Enter') return;
       e.preventDefault();
+      if (el.dataset.enterJump === 'save') {
+        const saveBtn = root.querySelector('.modal-footer .btn-accent');
+        if (saveBtn) { saveBtn.focus(); return; }
+      }
       const fields = Array.from(root.querySelectorAll('input, select, textarea'))
         .filter(f => f.type !== 'hidden' && !f.disabled && f.offsetParent !== null);
       const idx = fields.indexOf(el);

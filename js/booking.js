@@ -157,8 +157,13 @@ function checkAge(dob){
 
 const SB_URL='https://ncfqiznpilikwmpqhapb.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jZnFpem5waWxpa3dtcHFoYXBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTE1MDQsImV4cCI6MjA5NDE4NzUwNH0.hAr40xwNbxHnuozUhIiH1QkHFqi44YUGFI410VWH8B4';
-const{createClient}=window.supabase;
-const db=createClient(SB_URL,SB_KEY);
+let db=null,_dbInitError=false;
+try{
+  const{createClient}=window.supabase;
+  db=createClient(SB_URL,SB_KEY);
+}catch(e){
+  _dbInitError=true;
+}
 let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='@optometrist_novoselova_bot';
 let lastApptId=null,_botMissing=false;
 
@@ -185,14 +190,31 @@ function blogBeacon(event){
 }
 window.addEventListener('pagehide',()=>{if(!_blogDone&&_blogReachedForm)blogBeacon('abandoned');});
 
+function showLoadError(){
+  const box=document.getElementById('type-list');
+  if(!box)return;
+  const msg=_lang==='sr'
+    ?'Greška pri učitavanju podataka. Osvežite stranicu ili nas kontaktirajte direktno:'
+    :'Не удалось загрузить данные для записи. Обновите страницу или напишите нам напрямую:';
+  box.insertAdjacentHTML('beforeend','<div style="margin-top:14px;padding:14px;border:1.5px solid #e33;border-radius:10px;background:#fff5f5;color:#a33;font-size:13.5px;line-height:1.5;text-align:left">'+msg+' <a href="https://t.me/AnnaNvslv" style="color:#a33;font-weight:700">Telegram</a></div>');
+}
+
 document.addEventListener('DOMContentLoaded',async()=>{
-  initDobSelects();
-  applyLang();renderTypes();
-  blog('started');
-  const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
-  const today=now.toISOString().split('T')[0];const future=new Date(now);future.setDate(future.getDate()+60);
-  const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
-  allSlots=slots||[];
+  try{
+    initDobSelects();
+    applyLang();renderTypes();
+    blog('started');
+    if(_dbInitError){
+      showLoadError();
+      return;
+    }
+    const now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
+    const today=now.toISOString().split('T')[0];const future=new Date(now);future.setDate(future.getDate()+60);
+    const{data:slots}=await db.from('available_slots').select('*').eq('is_booked',false).gte('date',today).lte('date',future.toISOString().split('T')[0]).order('date').order('start_time');
+    allSlots=slots||[];
+  }catch(e){
+    showLoadError();
+  }
 });
 
 function toggleAcc(h,e){

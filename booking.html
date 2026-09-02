@@ -4,8 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Запись к оптометристу — Анна Новосёлова</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+setTimeout(function(){
+  try{
+    var tl=document.getElementById('type-list');
+    if(tl && !tl.children.length){
+      var sr=(navigator.language||'').toLowerCase().indexOf('sr')===0;
+      var msg=sr?'Stranica se nije učitala. Osvežite je ili nas kontaktirajte direktno:':'Страница не загрузилась. Обновите её или напишите нам напрямую:';
+      tl.insertAdjacentHTML('beforeend','<div style="margin-top:14px;padding:14px;border:1.5px solid #e33;border-radius:10px;background:#fff5f5;color:#a33;font-size:13.5px;line-height:1.5;text-align:left">'+msg+' <a href="https://t.me/AnnaNvslv" style="color:#a33;font-weight:700">Telegram</a></div>');
+    }
+  }catch(e){}
+},7000);
+</script>
 <link rel="stylesheet" href="css/booking.css?v=6">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body>
 
@@ -154,6 +166,6 @@
   <button class="btn-again" id="btn-again" onclick="resetBooking()">⊕ Ещё одна запись</button>
 </div>
 
-<script src="js/booking.js?v=7"></script>
+<script src="js/booking.js?v=8" defer></script>
 </body>
 </html>

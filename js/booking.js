@@ -39,7 +39,7 @@ function onDobChange(){
 
 const REASONS={primary:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки (старые не подходят/сломались/потерялись)',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],repeat:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор очков для дали',s:'Izbor naočara za daljinu'},{t:'Подбор очков для близи/работы',s:'Izbor naočara za blizinu/rad'},{t:'Подбор очков с прогрессивными линзами',s:'Izbor naočara s progresivnim sočivima'},{t:'Нужны новые очки',s:'Potrebne nove naočare'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Помощь в оформлении заказа',s:'Pomoć pri formiranju porudžbine'}],cl:[{t:'Плановая проверка зрения',s:'Planska provera vida'},{t:'Подбор контактных линз',s:'Izbor kontaktnih sočiva'},{t:'Подбор контактных линз с обучением',s:'Izbor kontaktnih sočiva s obukom'},{t:'Сложности с адаптацией к очкам/контактным линзам',s:'Teškoće s adaptacijom na naočare/kontaktna sočiva'},{t:'Консультация по гигиене зрения и ношению очков/контактных линз',s:'Konsultacija o higijeni vida i nošenju naočara/kontaktnih sočiva'}],control:[{t:'Контроль после подбора очков',s:'Kontrola nakon izbora naočara'},{t:'Контроль после подбора контактных линз',s:'Kontrola nakon izbora kontaktnih sočiva'},{t:'Контроль адаптации к прогрессивным линзам',s:'Kontrola adaptacije na progresivna sočiva'},{t:'Другое',s:'Ostalo'}],help:[{t:'Помощь в оформлении заказа на очки/контактные линзы',s:'Pomoć pri formiranju porudžbine za naočare/kontaktna sočiva'},{t:'Консультация по выбору линз/оправ',s:'Konsultacija o izboru sočiva/okvira'},{t:'Пока сам/а не знаю, что надо',s:'Za sada ne znam šta mi treba'}],express:[{t:'Хочу проверить зрение',s:'Želim da proverim vid'},{t:'Не уверен/а, нужны ли очки',s:'Nisam siguran/na da li su mi potrebne naočare'},{t:'Давно не проверял/а зрение',s:'Dugo nisam proveravao/la vid'},{t:'Хочу узнать, нужно ли менять коррекцию',s:'Želim da saznam da li treba da promenim korekciju'}]};
 
-const BK={ru:{hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',hdrWriteLabel:'Написать Анне',hdrChannel:'Канал',hdrMap:'Карта',step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',reason:'Причина обращения',contacts:'Контактные данные',complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',diop:'Диоптрии',diopHint:'(если знаете, примерно)',eye:'Заболевания глаз',general:'Общие заболевания',loads:'Зрительные нагрузки',notes:'Что хотели бы сообщить перед приёмом?',source:'Откуда вы узнали о нас?',promo:'Промокод',promoHint:'(если есть)',lblTg:'Telegram',lblLastname:'Фамилия (латиницей)',lblFirstname:'Имя (латиницей)',lblDob:'Дата рождения',lblPhone:'Телефон',hintLastname:'Пример: Ivanova',hintFirstname:'Пример: Maria',dobDay:'ДД',dobMonth:'Месяц',dobYear:'Год',submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',back:'← Назад',nextForm:'Далее — заполнить анкету →',confTitle:'Почти готово!',confSub:'Запись создана — остался 1 шаг в Telegram, без него мы не сможем подтвердить приём.',tgPrompt:'Нажмите кнопку ниже — откроется Telegram. Там нажмите синюю кнопку «START» внизу экрана.',tgBtn:'Подтвердить в Telegram',tgStepNote:'👉 Писать ничего не нужно — только нажать «START». Это подтвердит запись и включит напоминания о приёме.',tgTroubleToggle:'Telegram не открылся? Нажмите здесь',tgTroubleText:'Такое бывает при переходе из Instagram или другого приложения. Откройте меню (⋯ или три точки) в углу экрана → «Открыть в браузере», затем нажмите на ссылку ниже — или скопируйте её и откройте в Telegram вручную:',tgCopyBtn:'Скопировать ссылку',tgCopied:'Скопировано!',tgFallback:'По вопросам пишите: @AnnaNvslv',addrLabel:'Адрес:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Открыть на карте',prepLinkText:'Как подготовиться к приёму',againBtn:'⊕ Ещё одна запись',ad10t:'⛔ Приём детей до 10 лет не проводится',ad10:'Оптометрист не осматривает детей младше 10 лет.',ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Присутствие родителя или законного представителя на приёме обязательно.',ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',srcPlaceholder:'— выберите —',srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],consent:'Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',selType:'Выбранный вид приёма',selSlot:'Ваша запись',months:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],monthsG:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],chooseTime:'Выберите время — ',phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация...',phPromo:'Введите промокод',errReason:'Пожалуйста, укажите причину обращения',errTg:'Пожалуйста, укажите Telegram username',errLastname:'Пожалуйста, введите фамилию',errFirstname:'Пожалуйста, введите имя',errDob:'Пожалуйста, укажите дату рождения',errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',errSlot:'Слот уже занят. Выберите другое время.',errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv'},sr:{hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',hdrWriteLabel:'Pisati Ani',hdrChannel:'Kanal',hdrMap:'Mapa',step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',reason:'Razlog dolaska',contacts:'Kontaktni podaci',complaints:'Tegobe',correction:'Da li koristite korekciju vida?',diop:'Dioptrija',diopHint:'(ako znate, otprilike)',eye:'Bolesti oka',general:'Opšte bolesti',loads:'Vizuelna opterećenja',notes:'Šta biste voleli da nam saopštite pre pregleda?',source:'Kako ste saznali za nas?',promo:'Promo kod',promoHint:'(ako imate)',lblTg:'Telegram',lblLastname:'Prezime (latinicom)',lblFirstname:'Ime (latinicom)',lblDob:'Datum rođenja',lblPhone:'Telefon',hintLastname:'Primer: Ivanova',hintFirstname:'Primer: Maria',dobDay:'DD',dobMonth:'Mesec',dobYear:'Godina',submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',back:'← Nazad',nextForm:'Dalje — popunite anketu →',confTitle:'Skoro gotovo!',confSub:'Termin je kreiran — ostao je još 1 korak na Telegramu, bez njega ne možemo potvrditi pregled.',tgPrompt:'Kliknite dugme ispod — otvoriće se Telegram. Tu pritisnite plavo dugme „START" na dnu ekrana.',tgBtn:'Potvrdi na Telegramu',tgStepNote:'👉 Ne morate ništa da pišete — samo pritisnite „START". To potvrđuje termin i uključuje podsetnike pre pregleda.',tgTroubleToggle:'Telegram se nije otvorio? Kliknite ovde',tgTroubleText:'To se dešava kada dolazite iz Instagrama ili druge aplikacije. Otvorite meni (⋯ ili tri tačke) u uglu ekrana → „Otvori u pregledaču", zatim kliknite link ispod — ili ga kopirajte i otvorite ručno u Telegramu:',tgCopyBtn:'Kopiraj link',tgCopied:'Kopirano!',tgFallback:'Za pitanja pišite: @AnnaNvslv',addrLabel:'Adresa:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Otvori na mapi',prepLinkText:'Kako se pripremiti za pregled',againBtn:'⊕ Još jedno zakazivanje',ad10t:'⛔ Pregled dece do 10 godina nije dostupan',ad10:'Optometrista ne pregleda decu mlađu od 10 godina.',ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',ad17:'Pregled je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Prisustvo roditelja ili zakonskog staratelja na pregledu je obavezno.',ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',srcPlaceholder:'— izaberite —',srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],consent:'Klikom na "Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram bota.',selType:'Izabrana vrsta pregleda',selSlot:'Vaš termin',months:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],monthsG:['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],days:['Ne','Po','Ut','Sr','Če','Pe','Su'],daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],chooseTime:'Izaberite vreme — ',phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija...',phPromo:'Unesite promo kod',errReason:'Molimo navedite razlog dolaska',errTg:'Molimo navedite Telegram korisničko ime',errLastname:'Molimo unesite prezime',errFirstname:'Molimo unesite ime',errDob:'Molimo navedite datum rođenja',errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',errCorrection:'Molimo navedite da li koristite korekciju vida',errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv'}};
+const BK={ru:{hdrTitle:'Запись на приём к оптометристу Анне Новосёловой',hdrWriteLabel:'Написать Анне',hdrChannel:'Канал',hdrMap:'Карта',step1:'Выберите вид приёма',step1sub:'Шаг 1 из 3',reason:'Причина обращения',contacts:'Контактные данные',complaints:'Жалобы',correction:'Используете ли вы коррекцию зрения?',diop:'Диоптрии',diopHint:'(если знаете, примерно)',eye:'Заболевания глаз',general:'Общие заболевания',loads:'Зрительные нагрузки',notes:'Что хотели бы сообщить перед приёмом?',source:'Откуда вы узнали о нас?',promo:'Промокод',promoHint:'(если есть)',lblTg:'Telegram',lblLastname:'Фамилия (латиницей)',lblFirstname:'Имя (латиницей)',lblDob:'Дата рождения',lblPhone:'Телефон',hintLastname:'Пример: Ivanova',hintFirstname:'Пример: Maria',dobDay:'ДД',dobMonth:'Месяц',dobYear:'Год',submit:'Записаться →',submitting:'Оформляем...',backCal:'← Назад к расписанию',back:'← Назад',nextForm:'Далее — заполнить анкету →',confTitle:'Остался последний шаг!',confSub:'Подтвердите запись в Telegram — без этого мы не сможем принять вас.',tgPrompt:'Нажмите кнопку — и в Telegram нажмите синюю «START».',tgBtn:'Подтвердить в Telegram',tgStepNote:'👉 Писать не нужно — только «START». Это подтвердит запись.',tgDoneBtn:'Готово, я нажал(а) START ✓',tgTroubleToggle:'Telegram не открылся?',tgTroubleText:'Обычно это из-за перехода из Instagram или другого приложения. Откройте меню (⋯) в углу экрана → «Открыть в браузере» и нажмите кнопку ещё раз, либо скопируйте ссылку значком рядом с кнопкой.',tgCopyBtn:'Скопировать ссылку',tgCopied:'Скопировано!',tgFallback:'По вопросам пишите: @AnnaNvslv',addrLabel:'Адрес:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Открыть на карте',againBtn:'⊕ Ещё одна запись',ad10t:'⛔ Приём детей до 10 лет не проводится',ad10:'Оптометрист не осматривает детей младше 10 лет.',ad17t:'⚠️ Важно для пациентов от 10 до 17 лет',ad17:'Приём возможен при условии: ребёнок уже носит очки или КЛ, зрение стабильно, есть актуальный осмотр детского офтальмолога (не старше 6 месяцев). Присутствие родителя или законного представителя на приёме обязательно.',ad17check:'Продолжая запись, вы подтверждаете ознакомление с условиями приёма для несовершеннолетних.',srcPlaceholder:'— выберите —',srcOpts:['Посоветовали друзья / знакомые','Посоветовали коллеги','Из чата в ТГ','Из рекламного поста','Личное знакомство','Другое'],consent:'Нажимая «Записаться», вы соглашаетесь на обработку персональных данных и получение уведомлений через Telegram-бот.',selType:'Выбранный вид приёма',selSlot:'Ваша запись',months:['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],monthsG:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],days:['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],daysFull:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],chooseTime:'Выберите время — ',phDiop:'Например: OD -2.5, OS -2.0',phNotes:'Любая важная информация...',phPromo:'Введите промокод',errReason:'Пожалуйста, укажите причину обращения',errTg:'Пожалуйста, укажите Telegram username',errLastname:'Пожалуйста, введите фамилию',errFirstname:'Пожалуйста, введите имя',errDob:'Пожалуйста, укажите дату рождения',errComplaints:'Пожалуйста, отметьте хотя бы один пункт в разделе «Жалобы»',errCorrection:'Пожалуйста, укажите используете ли вы коррекцию зрения',errEye:'Пожалуйста, отметьте хотя бы один пункт в разделе «Заболевания глаз»',errGeneral:'Пожалуйста, отметьте хотя бы один пункт в разделе «Общие заболевания»',errLoads:'Пожалуйста, отметьте хотя бы один пункт в разделе «Зрительные нагрузки»',errSlot:'Слот уже занят. Выберите другое время.',errBook:'Ошибка записи. Напишите нам: @AnnaNvslv',errAge:'Запись детей до 10 лет недоступна. Напишите: @AnnaNvslv'},sr:{hdrTitle:'Zakazivanje pregleda kod optometriste Ane Novoselove',hdrWriteLabel:'Pisati Ani',hdrChannel:'Kanal',hdrMap:'Mapa',step1:'Izaberite vrstu pregleda',step1sub:'Korak 1 od 3',reason:'Razlog dolaska',contacts:'Kontaktni podaci',complaints:'Tegobe',correction:'Da li koristite korekciju vida?',diop:'Dioptrija',diopHint:'(ako znate, otprilike)',eye:'Bolesti oka',general:'Opšte bolesti',loads:'Vizuelna opterećenja',notes:'Šta biste voleli da nam saopštite pre pregleda?',source:'Kako ste saznali za nas?',promo:'Promo kod',promoHint:'(ako imate)',lblTg:'Telegram',lblLastname:'Prezime (latinicom)',lblFirstname:'Ime (latinicom)',lblDob:'Datum rođenja',lblPhone:'Telefon',hintLastname:'Primer: Ivanova',hintFirstname:'Primer: Maria',dobDay:'DD',dobMonth:'Mesec',dobYear:'Godina',submit:'Zakaži →',submitting:'Zakazujemo...',backCal:'← Nazad na raspored',back:'← Nazad',nextForm:'Dalje — popunite anketu →',confTitle:'Ostao je poslednji korak!',confSub:'Potvrdite termin na Telegramu — bez toga ne možemo da vas primimo.',tgPrompt:'Kliknite dugme — i na Telegramu pritisnite plavo „START".',tgBtn:'Potvrdi na Telegramu',tgStepNote:'👉 Ne treba ništa da pišete — samo „START". To potvrđuje termin.',tgDoneBtn:'Gotovo, pritisnuo/la sam START ✓',tgTroubleToggle:'Telegram se nije otvorio?',tgTroubleText:'Obično je to zbog prelaska iz Instagrama ili druge aplikacije. Otvorite meni (⋯) u uglu ekrana → „Otvori u pregledaču" i kliknite dugme ponovo, ili kopirajte link ikonicom pored dugmeta.',tgCopyBtn:'Kopiraj link',tgCopied:'Kopirano!',tgFallback:'Za pitanja pišite: @AnnaNvslv',addrLabel:'Adresa:',addrNote:'(Riblja pijaca, Noćni bazar)',mapLink:'Otvori na mapi',againBtn:'⊕ Još jedno zakazivanje',ad10t:'⛔ Pregled dece do 10 godina nije dostupan',ad10:'Optometrista ne pregleda decu mlađu od 10 godina.',ad17t:'⚠️ Važno za pacijente od 10 do 17 godina',ad17:'Pregled je moguć uz uslov: dete već nosi naočare ili KS, vid je stabilan, postoji aktuelni pregled dečijeg oftalmologa (ne stariji od 6 meseci). Prisustvo roditelja ili zakonskog staratelja na pregledu je obavezno.',ad17check:'Nastavljajući zakazivanje, potvrđujete da ste upoznati s uslovima pregleda za maloletnike.',srcPlaceholder:'— izaberite —',srcOpts:['Preporučili prijatelji / poznanici','Preporučili kolege','Iz TG grupe','Iz reklamnog posta','Lično poznanstvo','Ostalo'],consent:'Klikom na "Zakaži" pristajete na obradu ličnih podataka i primanje obaveštenja putem Telegram bota.',selType:'Izabrana vrsta pregleda',selSlot:'Vaš termin',months:['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'],monthsG:['januara','februara','marta','aprila','maja','juna','jula','avgusta','septembra','oktobra','novembra','decembra'],days:['Ne','Po','Ut','Sr','Če','Pe','Su'],daysFull:['nedelja','ponedeljak','utorak','sreda','četvrtak','petak','subota'],chooseTime:'Izaberite vreme — ',phDiop:'Na primer: OD -2.5, OS -2.0',phNotes:'Bilo koja važna informacija...',phPromo:'Unesite promo kod',errReason:'Molimo navedite razlog dolaska',errTg:'Molimo navedite Telegram korisničko ime',errLastname:'Molimo unesite prezime',errFirstname:'Molimo unesite ime',errDob:'Molimo navedite datum rođenja',errComplaints:'Molimo označite bar jednu stavku u delu "Tegobe"',errCorrection:'Molimo navedite da li koristite korekciju vida',errEye:'Molimo označite bar jednu stavku u delu "Bolesti oka"',errGeneral:'Molimo označite bar jednu stavku u delu "Opšte bolesti"',errLoads:'Molimo označite bar jednu stavku u delu "Vizuelna opterećenja"',errSlot:'Ovaj termin je već zauzet. Izaberite drugo vreme.',errBook:'Greška pri zakazivanju. Pišite nam: @AnnaNvslv',errAge:'Zakazivanje za decu do 10 godina nije dostupno. Pišite: @AnnaNvslv'}};
 
 const CL_NOTE={ru:'На приёме оптометриста не проводится циклоплегия (расширение зрачка), осмотр глазного дна и измерение внутриглазного давления. Это делает офтальмолог — врач, который также диагностирует и лечит глазные заболевания (катаракту, глаукому, патологии сетчатки и т.п.).',sr:'Na pregledu kod optometriste se ne vrši cikloplegija (širenje zenice), pregled očnog dna niti merenje očnog pritiska. To radi oftalmolog — lekar koji takođe dijagnostikuje i leči očna oboljenja (kataraktu, glaukom, bolesti mrežnjače i sl.).'};
 const PRIEM_LINK='https://annanvslv.github.io/priem.html#kak-proxodit';
@@ -131,11 +131,11 @@ function applyLang(){
   const pn=document.getElementById('f-notes');if(pn)pn.placeholder=T('phNotes');
   const pp=document.getElementById('f-promo');if(pp)pp.placeholder=T('phPromo');
   s('consent-text',T('consent'));s('conf-title',T('confTitle'));s('conf-sub',T('confSub'));
-  s('addr-label',T('addrLabel'));s('addr-note',T('addrNote'));s('map-link-text',T('mapLink'));s('prep-link-text',T('prepLinkText'));
+  s('addr-label',T('addrLabel'));s('addr-note',T('addrNote'));s('map-link-text',T('mapLink'));
   const days=T('days');
   [['dh0',1],['dh1',2],['dh2',3],['dh3',4],['dh4',5],['dh5',6],['dh6',0]].forEach(([id,js])=>s(id,days[js]));
   if(calYear)renderCalendar();if(selectedType)renderReasons();if(selectedType)updateTypeSumLang();if(selectedSlot)updateSlotSumLang();
-  if(lastApptId||_botMissing)updateTgHint();
+  if(pendingAppts.length||_botMissing)updateTgHint();
 }
 function updateTypeSumLang(){if(!selectedType)return;const td=TYPES_DATA.find(t=>t.id===selectedType.id);if(!td)return;const loc=td[_lang]||td.ru;document.getElementById('type-sel-sum').innerHTML='<div class="sel-sum type-sum"><div class="label">'+T('selType')+'</div><div class="value">'+td.icon+' '+loc.name+'</div><div style="font-size:13px;color:var(--tm);margin-top:4px">'+loc.dur+' &nbsp;&middot;&nbsp; '+loc.price+'</div></div>';}
 function updateSlotSumLang(){if(!selectedSlot||!selectedType)return;const td=TYPES_DATA.find(t=>t.id===selectedType.id);if(!td)return;const loc=td[_lang]||td.ru;const dt=new Date(selectedSlot.date+'T12:00:00');const mG=T('monthsG'),dF=T('daysFull');const dl=dt.getDate()+' '+mG[dt.getMonth()]+', '+dF[dt.getDay()];document.getElementById('form-slot-sum').innerHTML='<div class="sel-sum slot-sum"><div class="label">'+T('selSlot')+'</div><div class="value">📅 '+dl+'</div><div style="font-size:14px;opacity:.85;margin-top:3px">⏰ '+selectedSlot.time+' &nbsp;&middot;&nbsp; '+loc.dur+' &nbsp;&middot;&nbsp; '+loc.price+'</div></div>';}
@@ -165,7 +165,7 @@ try{
   _dbInitError=true;
 }
 let selectedType=null,selectedSlot=null,selectedDateStr=null,allSlots=[],calYear=0,calMonth=0,botUsername='@optometrist_novoselova_bot';
-let lastApptId=null,_botMissing=false;
+let _botMissing=false,pendingAppts=[];
 
 const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
 const BLOG_VISITOR=(function(){
@@ -363,7 +363,7 @@ async function submitBooking(){
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
     _blogDone=true;
     blog('success',{patient_name:name,telegram:tg,appointment_id:apptId});
-    showConfirm(apptId);
+    showConfirm(apptId,name+' — '+fmtApptShort(selectedSlot.date,selectedSlot.time));
   }catch(e){
     console.error(e);
     blog('error',{patient_name:name,telegram:tg,error_text:(e&&(e.message||e.details||JSON.stringify(e)))||'unknown_error'});
@@ -386,56 +386,86 @@ function tgLinkFor(apptId){
   return bot?('https://t.me/'+bot+'?start=appt_'+apptId):'';
 }
 
+function fmtApptShort(date,time){
+  const dt=new Date(date+'T12:00:00');
+  const mG=T('monthsG');
+  return dt.getDate()+' '+mG[dt.getMonth()]+', '+time;
+}
+
 function updateTgHint(){
   const box=document.getElementById('tg-hint');
   if(!box)return;
-  const link=lastApptId?tgLinkFor(lastApptId):'';
-  if(!link){
+  const bot=botUsername?botUsername.replace('@',''):'';
+  if(!bot){
     _botMissing=true;
-    box.innerHTML='<p>'+T('tgFallback')+'</p>';
+    box.innerHTML=pendingAppts.length?('<p>'+T('tgFallback')+'</p>'):'';
     return;
   }
+  if(!pendingAppts.length){
+    box.innerHTML='';
+    return;
+  }
+  const items=pendingAppts.map(function(p){
+    const link=tgLinkFor(p.id);
+    return '<div class="tg-pending-item">'+
+      '<div class="tg-pending-label">'+p.label+'</div>'+
+      '<div class="tg-pending-row">'+
+        '<a class="tg-link" href="'+link+'">'+TG_SVG+' '+T('tgBtn')+'</a>'+
+        '<button type="button" class="tg-copy-icon" onclick="copyPendingLink(this,\''+link+'\')" title="'+T('tgCopyBtn')+'">⧉</button>'+
+      '</div>'+
+      '<button type="button" class="tg-done-btn" onclick="dismissPending(\''+p.id+'\')">'+T('tgDoneBtn')+'</button>'+
+    '</div>';
+  }).join('');
   box.innerHTML=
     '<p>'+T('tgPrompt')+'</p>'+
-    '<a class="tg-link" href="'+link+'" id="tg-open-link">'+TG_SVG+' '+T('tgBtn')+'</a>'+
+    items+
     '<div class="tg-note">'+T('tgStepNote')+'</div>'+
     '<div class="tg-trouble">'+
-      '<button type="button" class="tg-trouble-toggle" onclick="toggleTrouble(this)">'+T('tgTroubleToggle')+'</button>'+
-      '<div class="tg-trouble-body" style="display:none">'+
-        '<p>'+T('tgTroubleText')+'</p>'+
-        '<div class="tg-link-copy"><input type="text" readonly value="'+link+'" id="tg-link-text" onclick="this.select()"><button type="button" onclick="copyTgLink(this)">'+T('tgCopyBtn')+'</button></div>'+
-      '</div>'+
+      '<button type="button" class="tg-trouble-toggle" onclick="toggleTrouble(this)">'+T('tgTroubleToggle')+' <span class="chev">▾</span></button>'+
+      '<div class="tg-trouble-body" style="display:none"><p>'+T('tgTroubleText')+'</p></div>'+
     '</div>';
+}
+
+function dismissPending(id){
+  pendingAppts=pendingAppts.filter(function(p){return p.id!==id;});
+  updateTgHint();
 }
 
 function toggleTrouble(btn){
   const body=btn.nextElementSibling;
   const open=body.style.display==='block';
   body.style.display=open?'none':'block';
+  btn.classList.toggle('open',!open);
 }
 
-function copyTgLink(btn){
-  const input=document.getElementById('tg-link-text');
-  if(!input)return;
-  input.select();
-  const done=function(){const old=btn.textContent;btn.textContent=T('tgCopied');setTimeout(()=>{btn.textContent=old;},1500);};
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);
+}
+
+function copyPendingLink(btn,link){
+  const old=btn.textContent;
+  const done=function(){btn.textContent='✓';setTimeout(()=>{btn.textContent=old;},1200);};
   try{
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(input.value).then(done,()=>{try{document.execCommand('copy');done();}catch(e){}});
+      navigator.clipboard.writeText(link).then(done,()=>{try{fallbackCopy(link);done();}catch(e){}});
     }else{
-      document.execCommand('copy');done();
+      fallbackCopy(link);done();
     }
   }catch(e){}
 }
 
-function showConfirm(apptId){
-  lastApptId=apptId;
+function showConfirm(apptId,label){
+  pendingAppts.push({id:apptId,label:label});
   updateTgHint();
   goPage('confirm');
 }
 
 function resetBooking(){
-  selectedType=null;selectedSlot=null;selectedDateStr=null;lastApptId=null;_botMissing=false;
+  selectedType=null;selectedSlot=null;selectedDateStr=null;_botMissing=false;
   ['f-tg','f-lastname','f-firstname','f-phone','f-diop','f-notes','f-source','f-promo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['dob-d','dob-m','dob-y'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));

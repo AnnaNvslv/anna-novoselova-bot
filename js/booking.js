@@ -413,7 +413,6 @@ function updateTgHint(){
         '<a class="tg-link" href="'+link+'">'+TG_SVG+' '+T('tgBtn')+'</a>'+
         '<button type="button" class="tg-copy-icon" onclick="copyPendingLink(this,\''+link+'\')" title="'+T('tgCopyBtn')+'">⧉</button>'+
       '</div>'+
-      '<button type="button" class="tg-done-btn" onclick="dismissPending(\''+p.id+'\')">'+T('tgDoneBtn')+'</button>'+
     '</div>';
   }).join('');
   box.innerHTML=
@@ -424,11 +423,6 @@ function updateTgHint(){
       '<button type="button" class="tg-trouble-toggle" onclick="toggleTrouble(this)">'+T('tgTroubleToggle')+' <span class="chev">▾</span></button>'+
       '<div class="tg-trouble-body" style="display:none"><p>'+T('tgTroubleText')+'</p></div>'+
     '</div>';
-}
-
-function dismissPending(id){
-  pendingAppts=pendingAppts.filter(function(p){return p.id!==id;});
-  updateTgHint();
 }
 
 function toggleTrouble(btn){

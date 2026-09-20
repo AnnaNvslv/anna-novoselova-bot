@@ -175,3 +175,5 @@ textarea{resize:none;min-height:80px}
   .kq-msg{font-size:12.5px;padding:10px 12px}
   .patient-note{font-size:12px;padding:9px 11px}
 }
+
+.field-error{outline:2px solid #e33 !important;outline-offset:3px;border-radius:10px;transition:outline-color .2s}

@@ -16,7 +16,7 @@ setTimeout(function(){
   }catch(e){}
 },7000);
 </script>
-<link rel="stylesheet" href="css/booking.css?v=8">
+<link rel="stylesheet" href="css/booking.css?v=9">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body>
@@ -75,12 +75,10 @@ setTimeout(function(){
   <button class="btn-back" id="back-from-form" onclick="goPage('cal')">← Назад к расписанию</button>
   <div id="form-slot-sum"></div>
 
-  <div class="card"><div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div><div class="chips" id="ch-reason"></div></div>
-
   <div class="card">
     <div class="card-title" id="rc-contacts">Контактные данные</div>
     <div class="patient-note" id="patient-note">Пожалуйста, укажите данные пациента — того, кто придёт на приём (не того, кто заполняет анкету). Например, если вы записываете ребёнка — впишите имя и дату рождения ребёнка.</div>
-    <div class="fg"><label id="lbl-tg">Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label><input id="f-tg" type="text" placeholder="@username"></div>
+    <div class="fg"><label id="lbl-tg">Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label><input id="f-tg" type="text" placeholder="@username"><div class="hint" id="hint-tg">Укажите именно ник (username) в Telegram, например @ivanova — без него не сможем подтвердить запись</div></div>
     <div class="fg"><label id="lbl-lastname">Фамилия пациента (латиницей) <span class="req">*</span></label><input id="f-lastname" type="text" placeholder="Ivanova" autocomplete="family-name"><div class="hint" id="hint-lastname">Пример: Ivanova</div></div>
     <div class="fg"><label id="lbl-firstname">Имя пациента (латиницей) <span class="req">*</span></label><input id="f-firstname" type="text" placeholder="Maria" autocomplete="given-name"><div class="hint" id="hint-firstname">Пример: Maria</div></div>
     <div class="fg">
@@ -145,6 +143,8 @@ setTimeout(function(){
     <div class="fg"><label id="lbl-phone">Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"></div>
   </div>
 
+  <div class="card"><div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div><div class="chips" id="ch-reason"></div></div>
+
   <div id="health-section">
     <div class="card"><div class="card-title" id="rc-complaints">Жалобы <span class="req">*</span></div><div class="chips" id="ch-complaints">
       <div class="chip" onclick="tog(this)" data-ru="Снижение остроты зрения вдаль" data-sr="Slabljenje vida na daljinu">Снижение остроты зрения вдаль</div>
@@ -172,9 +172,23 @@ setTimeout(function(){
       <div class="chip" onclick="tog(this)" data-ru="Кератоконус" data-sr="Keratokonus">Кератоконус</div>
       <div class="chip" onclick="tog(this)" data-ru="Синдром сухого глаза" data-sr="Sindrom suvog oka">Синдром сухого глаза</div>
       <div class="chip" onclick="tog(this)" data-ru="Частые воспаления (конъюктивит, блефарит)" data-sr="Česte upale (konjunktivitis, blefaritis)">Частые воспаления</div>
-      <div class="chip" onclick="tog(this)" data-ru="Операции на глазах (LASIK, PRK, замена хрусталика)" data-sr="Operacije oka (LASIK, PRK, zamena sočiva)">Операции на глазах</div>
       <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
-    </div></div>
+    </div>
+    <div class="fg" style="margin-top:10px"><label id="lbl-eye-other" style="font-size:13px;font-weight:400;color:var(--tm)">Другое (укажите)</label><input id="f-eye-other" type="text" placeholder="Если не нашли нужный пункт выше"></div>
+    </div>
+    <div class="card"><div class="card-title" id="rc-eye-surgery">Были ли у пациента операции на глазах?</div><div class="chips" id="ch-eye-surgery">
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="LASIK" data-sr="LASIK">LASIK</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="ФРК (PRK)" data-sr="FRK (PRK)">ФРК (PRK)</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="SMILE" data-sr="SMILE">SMILE</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Замена хрусталика (катаракта)" data-sr="Zamena sočiva (katarakta)">Замена хрусталика (катаракта)</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Лазерная коагуляция сетчатки (прижигание)" data-sr="Laserska koagulacija mrežnjače">Лазерная коагуляция сетчатки</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Витрэктомия" data-sr="Vitrektomija">Витрэктомия</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Операция при глаукоме" data-sr="Operacija glaukoma">Операция при глаукоме</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Операция при косоглазии" data-sr="Operacija razrokosti">Операция при косоглазии</div>
+      <div class="chip" onclick="toggleEyeSurgery(this)" data-ru="Другая операция" data-sr="Druga operacija">Другая операция</div>
+    </div>
+    <div class="fg" id="eye-surgery-year-wrap" style="display:none;margin-top:10px"><label id="lbl-eye-surgery-year" style="font-size:13px;font-weight:400;color:var(--tm)">В каком году проводили операцию?</label><input id="f-eye-surgery-year" type="text" placeholder="Например: 2022"></div>
+    </div>
     <div class="card"><div class="card-title" id="rc-general">Общие заболевания <span class="req">*</span></div><div class="chips" id="ch-general">
       <div class="chip" onclick="tog(this)" data-ru="Повышенное / нестабильное артериальное давление" data-sr="Povišen / nestabilan krvni pritisak">Повышенное / нестабильное артериальное давление</div>
       <div class="chip" onclick="tog(this)" data-ru="Заболевания щитовидной железы" data-sr="Bolesti štitne žlezde">Заболевания щитовидной железы</div>
@@ -187,9 +201,9 @@ setTimeout(function(){
       <div class="chip" onclick="tog(this)" data-ru="Нет заболеваний" data-sr="Nema bolesti">Нет заболеваний</div>
     </div></div>
     <div class="card"><div class="card-title" id="rc-loads">Зрительные нагрузки <span class="req">*</span></div><div class="chips" id="ch-loads">
-      <div class="chip" onclick="tog(this)" data-ru="Работа за монитором более 5–6 часов" data-sr="Rad za monitorom više od 5–6 sati">Работа за монитором более 5–6 часов</div>
+      <div class="chip" onclick="tog(this)" data-ru="Работа за монитором более 6 часов" data-sr="Rad za monitorom više od 6 sati">Работа за монитором более 6 часов</div>
       <div class="chip" onclick="tog(this)" data-ru="Частое использование смартфона" data-sr="Često korišćenje pametnog telefona">Частое использование смартфона</div>
-      <div class="chip" onclick="tog(this)" data-ru="Вождение в тёмное время суток" data-sr="Vožnja noću">Вождение в тёмное время суток</div>
+      <div class="chip" onclick="tog(this)" data-ru="Вождение автомобиля" data-sr="Vožnja automobila">Вождение автомобиля</div>
       <div class="chip" onclick="tog(this)" data-ru="Специфические занятия (вышивание, ювелирное дело и др.)" data-sr="Specifične aktivnosti (vezenje, juvelirstvo i sl.)">Специфические занятия</div>
       <div class="chip" onclick="tog(this)" data-ru="Ночные смены" data-sr="Noćne smene">Ночные смены</div>
       <div class="chip" onclick="tog(this)" data-ru="Ничего из перечисленного" data-sr="Ništa od navedenog">Ничего из перечисленного</div>
@@ -216,6 +230,6 @@ setTimeout(function(){
 </div>
 
 <script src="js/booking.js?v=10" defer></script>
-<script src="js/booking-kids.js?v=1" defer></script>
+<script src="js/booking-kids.js?v=2" defer></script>
 </body>
 </html>

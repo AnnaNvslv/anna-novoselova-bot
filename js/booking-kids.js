@@ -1,6 +1,87 @@
-/* Логика анкеты о зрении ребёнка (12-17 лет) и обновлённый возрастной порог (12 лет).
-   Загружается после booking.js и дополняет/переопределяет часть его функций и переводов. */
+/* booking-kids.js — расширения booking.js, загружается вторым (после booking.js).
+   v2: детская анкета 12-17 (v1) + правки по списку Анны от 2026-09-20:
+   - убран тип "подбор КЛ"
+   - новое описание экспресс-диагностики
+   - "как проходит приём" — аккордеон вместо ссылки
+   - доп. строки в описание первичного приёма про контактные линзы
+   - подсказка про ник в Telegram
+   - "используете вы" → "пользуется ли пациент"
+   - поле "другое" в заболеваниях глаз + отдельный блок операций на глазах с годом
+   - правки текста зрительных нагрузок (сделаны в booking.html, чипы статичны)
+   - валидация: скролл + подсветка вместо alert */
 
+/* ── 1. Правки TYPES_DATA (мутируем объекты/массив на месте, TYPES_DATA остаётся тем же const) ── */
+(function(){
+  const idx = TYPES_DATA.findIndex(t=>t.id==='cl');
+  if(idx!==-1) TYPES_DATA.splice(idx,1);
+
+  const primary = TYPES_DATA.find(t=>t.id==='primary');
+  if(primary && primary.includes){
+    primary.includes.ru.push(
+      'Подбор параметров контактных линз — при наличии пробников выдам их вам на дом для примерки',
+      'Теория использования контактных линз: правила ношения, надевания и снимания, ограничения — на приёме'
+    );
+    primary.includes.sr.push(
+      'Izbor parametara kontaktnih sočiva — ako imam probna sočiva, daću vam ih da isprobate kod kuće',
+      'Teorija korišćenja kontaktnih sočiva: pravila nošenja, stavljanja i skidanja, ograničenja — na pregledu'
+    );
+    primary.aboutVisit = {
+      ru: '<p>Приём длится час — коротко из чего он состоит:</p>'
+        +'<ol style="padding-left:18px;margin:6px 0 0"><li><b>Анкета</b> — до приёма прошу заполнить анкету о целях визита и истории зрения, при необходимости уточняю детали заранее.</li>'
+        +'<li><b>Анамнез и объяснение</b> — подробно расспрашиваю про историю зрения и жалобы, на схеме объясняю, что происходит с глазами и почему нужна коррекция.</li>'
+        +'<li><b>Обследование</b> — авторефкератометр (объективная рефракция) и проверка пробным набором линз (субъективная рефракция).</li>'
+        +'<li><b>Подбор очков</b> — с учётом ваших зрительных задач, без спешки.</li>'
+        +'<li><b>Рекомендации и сопровождение</b> — карточка с результатами, схема адаптации, сопровождение в оптике при выборе оправы и линз; я остаюсь на связи после приёма.</li></ol>',
+      sr: '<p>Pregled traje sat vremena — ukratko od čega se sastoji:</p>'
+        +'<ol style="padding-left:18px;margin:6px 0 0"><li><b>Anketa</b> — pre pregleda tražim da popunite anketu o cilju posete i istoriji vida, po potrebi razjasnim detalje unapred.</li>'
+        +'<li><b>Anamneza i objašnjenje</b> — detaljno pitam o istoriji vida i tegobama, na šemi objašnjavam šta se dešava sa očima i zašto je potrebna korekcija.</li>'
+        +'<li><b>Pregled</b> — autorefraktometar (objektivna refrakcija) i provera probnim setom sočiva (subjektivna refrakcija).</li>'
+        +'<li><b>Izbor naočara</b> — prema vašim vizuelnim potrebama, bez žurbe.</li>'
+        +'<li><b>Preporuke i praćenje</b> — kartica sa rezultatima, šema adaptacije, praćenje u optici pri izboru okvira i sočiva; ostajem dostupna i posle pregleda.</li></ol>'
+    };
+  }
+
+  const express = TYPES_DATA.find(t=>t.id==='express');
+  if(express){
+    express.ru.sub = 'Экспресс-чекап за 15 минут: подходят ли ещё ваши очки или их пора менять; пора ли заказывать первые очки. Подбор очков в экспресс-чекап не входит, только быстрая диагностика.';
+    express.sr.sub = 'Ekspres-čekap za 15 minuta: da li vam još odgovaraju naočare ili ih je vreme zameniti; da li je vreme za prve naočare. Izbor naočara nije uključen u ekspres-čekap, samo brza dijagnostika.';
+  }
+})();
+
+/* ── 2. Переопределяет typeExtraHtml из booking.js: "О том, как проходит приём" теперь аккордеон, не ссылка ── */
+function typeExtraHtml(t){
+  let extra='';
+  if(t.includes){
+    const items=(t.includes[_lang]||t.includes.ru).map(i=>'<li>'+i+'</li>').join('');
+    const resultHtml=t.resultNote?'<div class="type-result">'+(t.resultNote[_lang]||t.resultNote.ru)+'</div>':'';
+    const noteHtml=t.note?'<div class="type-note">'+(t.note[_lang]||t.note.ru)+'</div>':'';
+    const label=_lang==='sr'?'Šta je uključeno':(t.id==='express'?'Что входит':'Что входит в приём');
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b"><ul>'+items+'</ul>'+resultHtml+noteHtml+'</div></div>';
+  }
+  if(t.fitGroups){
+    const groups=t.fitGroups.map(g=>{
+      const gi=(g.items[_lang]||g.items.ru).map(i=>'<li>'+i+'</li>').join('');
+      const gt=g.title[_lang]||g.title.ru;
+      return '<div class="type-group '+g.tone+'"><span class="type-group-t">'+gt+'</span><ul>'+gi+'</ul></div>';
+    }).join('');
+    const label=_lang==='sr'?'Da li mi odgovara ekspres provera?':'Подходит ли мне экспресс-проверка?';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b">'+groups+'</div></div>';
+  }
+  if(t.helpList){
+    const items=(t.helpList[_lang]||t.helpList.ru).map(i=>'<li>'+i+'</li>').join('');
+    const label=_lang==='sr'?'U čemu mogu da pomognem':'Чем могу помочь';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b"><ul>'+items+'</ul></div></div>';
+  }
+  if(t.aboutVisit){
+    const label=_lang==='sr'?'O tome kako izgleda pregled →':'О том, как проходит приём →';
+    const more=_lang==='sr'?'Detaljnije na sajtu →':'Подробнее на сайте →';
+    const body=(t.aboutVisit[_lang]||t.aboutVisit.ru)+'<p style="margin-top:8px"><a href="'+(t.tgLink||PRIEM_LINK)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+more+'</a></p>';
+    extra+='<div class="type-acc"><div class="type-acc-h" onclick="toggleAcc(this,event)">'+label+' <span class="chev">▾</span></div><div class="type-acc-b">'+body+'</div></div>';
+  }
+  return extra;
+}
+
+/* ── 3. Переводы: подсказка про Telegram, новые лейблы блока операций на глазах, "пользуется ли пациент" ── */
 Object.assign(BK.ru,{
   ad10t:'⛔ Приём детей до 12 лет не проводится',
   ad10:'Оптометрист не осматривает детей младше 12 лет.',
@@ -28,7 +109,12 @@ Object.assign(BK.ru,{
   kqDeclineNoexam:'Без свежего заключения детского офтальмолога (не старше 1 года) записать ребёнка не могу — покажите его врачу, а затем возвращайтесь ко мне для уточнения и подбора очков.',
   kqAcceptNote:'Хорошо, я могу принять ребёнка. Важно: у детей часто напряжена аккомодация, и это может помешать точной проверке — если качественно провести её не получится, я направлю вас к офтальмологу без назначения очков. Если это устраивает — записывайтесь. Если нет — надёжнее сначала попасть к офтальмологу, а затем прийти ко мне для уточнения и оформления заказа.',
   errKidsIncomplete:'Пожалуйста, ответьте на все вопросы о зрении ребёнка выше.',
-  errAge:'Запись детей до 12 лет недоступна. Напишите: @AnnaNvslv'
+  errAge:'Запись детей до 12 лет недоступна. Напишите: @AnnaNvslv',
+  hintTg:'Укажите именно ник (username) в Telegram, например @ivanova — без него не сможем подтвердить запись',
+  correction:'Пользуется ли пациент коррекцией зрения?',
+  lblEyeOther:'Другое (укажите)',
+  rcEyeSurgery:'Были ли у пациента операции на глазах?',
+  lblEyeSurgeryYear:'В каком году проводили операцию?'
 });
 Object.assign(BK.sr,{
   ad10t:'⛔ Pregled dece mlađe od 12 godina nije dostupan',
@@ -57,9 +143,15 @@ Object.assign(BK.sr,{
   kqDeclineNoexam:'Bez svežeg nalaza dečijeg oftalmologa (ne starijeg od godinu dana) ne mogu zakazati dete — pokažite ga lekaru, a zatim se vratite meni radi provere i izbora naočara.',
   kqAcceptNote:'U redu, mogu primiti dete. Važno: kod dece je često pojačana akomodacija, što može otežati tačnu proveru — ako kvalitetna provera ne bude moguća, uputiću vas oftalmologu bez propisivanja naočara. Ako vam to odgovara — zakažite. Ako ne — sigurnije je prvo otići kod oftalmologa, a zatim doći kod mene radi provere i poručivanja naočara.',
   errKidsIncomplete:'Molimo odgovorite na sva pitanja o vidu deteta iznad.',
-  errAge:'Zakazivanje za decu do 12 godina nije dostupno. Pišite: @AnnaNvslv'
+  errAge:'Zakazivanje za decu do 12 godina nije dostupno. Pišite: @AnnaNvslv',
+  hintTg:'Navedite baš korisničko ime (username) na Telegramu, npr. @ivanova — bez toga ne možemo potvrditi termin',
+  correction:'Da li pacijent koristi korekciju vida?',
+  lblEyeOther:'Ostalo (navedite)',
+  rcEyeSurgery:'Da li je pacijent imao operacije na očima?',
+  lblEyeSurgeryYear:'Koje godine je urađena operacija?'
 });
 
+/* ── 4. Детская анкета (без изменений логики от версии v1) ── */
 let _kidsState='pending';
 function resetKidsQuiz(){
   ['kq-first','kq-prescribed','kq-using','kq-exam','kq-disease','kq-special'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -124,9 +216,36 @@ function updateKidsQuiz(){
   _kidsState='accept';
   finishKidsQuiz();
 }
+function collectKidsAnswers(){
+  if(!kidsGateActive())return null;
+  return {
+    first:v('kq-first'),prescribed:v('kq-prescribed'),using:v('kq-using'),
+    rx:v('kq-rx'),exam:v('kq-exam'),disease:v('kq-disease'),disease_text:v('kq-disease-text'),
+    special:v('kq-special'),result:_kidsState
+  };
+}
 
-/* Переопределяет checkAge из booking.js: порог блокировки поднят с 10 до 12 лет,
-   для 12-17 лет активируется анкета вместо статического предупреждения. */
+/* ── 5. Блок «Операции на глазах»: мультиселект + год операции, если что-то выбрано ── */
+function toggleEyeSurgery(el){
+  tog(el);
+  updateEyeSurgeryYearVisibility();
+}
+function updateEyeSurgeryYearVisibility(){
+  const has=chips('ch-eye-surgery').length>0;
+  const w=document.getElementById('eye-surgery-year-wrap');
+  if(w)w.style.display=has?'':'none';
+}
+
+/* ── 6. Скролл + подсветка невалидного поля вместо alert() ── */
+function showFieldError(sel){
+  const el=document.querySelector(sel);
+  if(!el)return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.classList.add('field-error');
+  setTimeout(()=>el.classList.remove('field-error'),2500);
+}
+
+/* ── 7. checkAge/onDobChange: порог 12 лет, детская анкета (без изменений от v1) ── */
 function checkAge(dob){
   const age=calcAge(dob);
   const btn=document.getElementById('submit-btn');
@@ -144,8 +263,6 @@ function checkAge(dob){
   if(!isKid)resetKidsQuiz();
   if(btn)btn.disabled=under12||(isKid&&_kidsState!=='accept');
 }
-
-/* Переопределяет onDobChange из booking.js: сбрасывает анкету при очистке даты рождения. */
 function onDobChange(){
   const dob=getDobValue();
   if(dob)checkAge(dob);
@@ -157,22 +274,22 @@ function onDobChange(){
   }
 }
 
-/* Переопределяет resetBooking из booking.js: дополнительно сбрасывает анкету. */
+/* ── 8. resetBooking: сброс новых полей (операции на глазах, "другое") ── */
 function resetBooking(){
   selectedType=null;selectedSlot=null;selectedDateStr=null;_botMissing=false;
-  ['f-tg','f-lastname','f-firstname','f-phone','f-diop','f-notes','f-source','f-promo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['f-tg','f-lastname','f-firstname','f-phone','f-diop','f-notes','f-source','f-promo','f-eye-other','f-eye-surgery-year'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   ['dob-d','dob-m','dob-y'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.querySelectorAll('.chip.on').forEach(c=>c.classList.remove('on'));
   document.getElementById('age-disc-10').style.display='none';
   document.getElementById('age-disc-17').style.display='none';
   resetKidsQuiz();
+  updateEyeSurgeryYearVisibility();
   document.getElementById('health-section').style.display='';
   const sb=document.getElementById('submit-btn');sb.disabled=false;sb.textContent=T('submit');
   goPage('type');
 }
 
-/* Переопределяет submitBooking из booking.js: блокирует отправку до 12 лет и
-   пока анкета для 12-17 лет не завершена принятием. */
+/* ── 9. submitBooking: скролл+подсветка вместо alert для обязательных полей, новые поля в payload ── */
 async function submitBooking(){
   const isHealth=!!(selectedType&&selectedType.health);
   const noAgeLimit=!!(selectedType&&selectedType.noAgeLimit);
@@ -180,18 +297,18 @@ async function submitBooking(){
   const name=(lastname+' '+firstname).trim();
   const dob=getDobValue();
   const age=calcAge(dob);
-  if(!noAgeLimit&&age!==null&&age<12){alert(T('errAge'));return;}
-  if(!noAgeLimit&&age!==null&&age>=12&&age<18&&_kidsState!=='accept'){alert(T('errKidsIncomplete'));return;}
-  if(!chips('ch-reason').length){alert(T('errReason'));return;}
-  if(!tg){alert(T('errTg'));return;}
-  if(!lastname){alert(T('errLastname'));return;}
-  if(!firstname){alert(T('errFirstname'));return;}
-  if(!dob){alert(T('errDob'));return;}
-  if(isHealth&&!chips('ch-complaints').length){alert(T('errComplaints'));return;}
-  if(isHealth&&!chips('ch-correction').length){alert(T('errCorrection'));return;}
-  if(isHealth&&!chips('ch-eye').length){alert(T('errEye'));return;}
-  if(isHealth&&!chips('ch-general').length){alert(T('errGeneral'));return;}
-  if(isHealth&&!chips('ch-loads').length){alert(T('errLoads'));return;}
+  if(!noAgeLimit&&age!==null&&age<12){showFieldError('#age-disc-10');return;}
+  if(!noAgeLimit&&age!==null&&age>=12&&age<18&&_kidsState!=='accept'){showFieldError('#age-disc-17');return;}
+  if(!chips('ch-reason').length){showFieldError('#ch-reason');return;}
+  if(!tg){showFieldError('#f-tg');return;}
+  if(!lastname){showFieldError('#f-lastname');return;}
+  if(!firstname){showFieldError('#f-firstname');return;}
+  if(!dob){showFieldError('.dob-row');return;}
+  if(isHealth&&!chips('ch-complaints').length){showFieldError('#ch-complaints');return;}
+  if(isHealth&&!chips('ch-correction').length){showFieldError('#ch-correction');return;}
+  if(isHealth&&!chips('ch-eye').length){showFieldError('#ch-eye');return;}
+  if(isHealth&&!chips('ch-general').length){showFieldError('#ch-general');return;}
+  if(isHealth&&!chips('ch-loads').length){showFieldError('#ch-loads');return;}
   if(!selectedSlot){goPage('cal');return;}
   const btn=document.getElementById('submit-btn');btn.disabled=true;btn.textContent=T('submitting');
   blog('submit_attempt',{patient_name:name,telegram:tg});
@@ -199,7 +316,24 @@ async function submitBooking(){
     const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
     if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
     const patientId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-    const{error:pe}=await db.from('patients').insert({id:patientId,name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,visit_reason:chips('ch-reason'),complaints:isHealth?chips('ch-complaints'):[],correction_types:isHealth?chips('ch-correction'):[],approx_diopters:v('f-diop')||null,eye_diseases:isHealth?chips('ch-eye'):[],general_diseases:isHealth?chips('ch-general'):[],visual_loads:isHealth?chips('ch-loads'):[],pre_notes:v('f-notes')||null,source:v('f-source')||null,promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true});
+    const{error:pe}=await db.from('patients').insert({
+      id:patientId,name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,
+      visit_reason:chips('ch-reason'),
+      complaints:isHealth?chips('ch-complaints'):[],
+      correction_types:isHealth?chips('ch-correction'):[],
+      approx_diopters:v('f-diop')||null,
+      eye_diseases:isHealth?chips('ch-eye'):[],
+      eye_diseases_other:v('f-eye-other')||null,
+      eye_surgeries:chips('ch-eye-surgery'),
+      eye_surgery_year:v('f-eye-surgery-year')||null,
+      general_diseases:isHealth?chips('ch-general'):[],
+      visual_loads:isHealth?chips('ch-loads'):[],
+      pre_notes:v('f-notes')||null,
+      source:v('f-source')||null,
+      promo_code:v('f-promo')||null,
+      kids_questionnaire:collectKidsAnswers(),
+      data_consent:true,accuracy_consent:true,is_first_visit:true
+    });
     if(pe)throw pe;
     const{data:numData,error:numErr}=await db.rpc('get_next_appointment_number',{date_str:selectedSlot.date});
     if(numErr)throw numErr;
@@ -220,8 +354,7 @@ async function submitBooking(){
   }
 }
 
-/* Переопределяет applyLang из booking.js: добавляет перевод статей и вопросов анкеты,
-   убирает ссылку на удалённый элемент ad17-check. */
+/* ── 10. applyLang: полная копия из booking.js + новые элементы (подсказка Telegram, блок операций на глазах, анкета подростка) ── */
 function applyLang(){
   const s=function(id,v){const e=document.getElementById(id);if(e)e.textContent=v;};
   const h=function(id,v){const e=document.getElementById(id);if(e)e.innerHTML=v;};
@@ -238,6 +371,7 @@ function applyLang(){
   h('rc-eye',T('eye')+' <span class="req">*</span>');h('rc-general',T('general')+' <span class="req">*</span>');h('rc-loads',T('loads')+' <span class="req">*</span>');
   s('rc-notes',T('notes'));s('rc-source',T('source'));h('rc-promo',T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>');
   h('lbl-tg',T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>');
+  s('hint-tg',T('hintTg'));
   h('lbl-lastname',T('lblLastname')+' <span class="req">*</span>');
   h('lbl-firstname',T('lblFirstname')+' <span class="req">*</span>');
   h('lbl-dob',T('lblDob')+' <span class="req">*</span>');
@@ -259,6 +393,9 @@ function applyLang(){
     if(sel&&sel.options.length>=3){sel.options[0].textContent=T('kqOptPlaceholder');sel.options[1].textContent=T('kqOptYes');sel.options[2].textContent=T('kqOptNo');}
   });
   if(document.getElementById('kq-first'))updateKidsQuiz();
+  s('lbl-eye-other',T('lblEyeOther'));
+  s('rc-eye-surgery',T('rcEyeSurgery'));
+  s('lbl-eye-surgery-year',T('lblEyeSurgeryYear'));
   document.querySelectorAll('.chip[data-ru]').forEach(c=>{c.textContent=_lang==='sr'?(c.dataset.sr||c.dataset.ru):c.dataset.ru;});
   const sel=document.getElementById('f-source');
   if(sel){const cur=sel.value;sel.innerHTML='<option value="">'+T('srcPlaceholder')+'</option>'+T('srcOpts').map(o=>'<option value="'+o+'">'+o+'</option>').join('');sel.value=cur;}

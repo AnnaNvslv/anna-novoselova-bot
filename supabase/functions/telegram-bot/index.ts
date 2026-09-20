@@ -12,6 +12,7 @@ const MONTHS_G = ['января','февраля','марта','апреля','�
 const DAYS_FULL = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота']
 
 const CRM_URL = 'https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html'
+const BOOKING_URL = 'https://annanvslv.github.io/anna-novoselova-bot/booking.html'
 
 // Длительность приёма по виду записи (совпадает с apptName из TYPES_DATA в js/booking.js)
 const DURATION_MAP: Record<string, string> = {
@@ -82,7 +83,7 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
   const text =
 `Здравствуйте, ${firstName}!
 
-Вы записаны в Оптику Ginter на ${appt.type} к оптометристу Анне Новосёловой.
+Вы записаны в Оптику Ginter на ${appt.type} к оптометристу <a href="https://t.me/AnnaNvslv">Анне Новосёловой</a>.
 
 🗓 ${dateLabel}
 🕒 ${time}
@@ -91,10 +92,10 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
 https://maps.app.goo.gl/LJerB2rskqhnhES48
 
 Продолжительность приёма — ${duration}
-Номер записи: ${appt.appointment_number}
 
 ➡️ Стоимость приёма: ${appt.consultation_price} динар.
-Оплата — только наличными (Очки можно оплатить картой)
+Оплата — только наличными.
+Очки можно оплатить картой.
 
 📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).${prepNote}
 
@@ -102,9 +103,11 @@ https://maps.app.goo.gl/LJerB2rskqhnhES48
 
 🌐 Там же — как проходит приём и статьи о зрении: https://annanvslv.github.io
 
+👥 Записываетесь ещё на кого-то? Оформите вторую запись: ${BOOKING_URL}
+
 ❤️‍🩹 Если планы изменятся — сообщите, пожалуйста, заранее Анне: @AnnaNvslv
 
-Подпишитесь, пожалуйста, на канал: https://t.me/+brXxLUcHb-M1MmQ6
+Буду рада вашей подписке на мой канал по оптометрии: https://t.me/+brXxLUcHb-M1MmQ6
 
 До встречи!
 Анна ✨`

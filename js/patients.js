@@ -149,10 +149,33 @@ function _bookingSurveyHtml(p) {
   if (arr(p.correction_types))  rows.push(['Коррекция зрения', arr(p.correction_types)]);
   if (p.approx_diopters)        rows.push(['Диоптрии (со слов)', p.approx_diopters]);
   if (arr(p.eye_diseases))      rows.push(['Глазные заболевания', arr(p.eye_diseases)]);
+  if (p.eye_diseases_other)     rows.push(['Глазные заболевания (другое)', p.eye_diseases_other]);
+  if (arr(p.eye_surgeries))     rows.push(['Операции на глазах', arr(p.eye_surgeries)]);
+  if (p.eye_surgery_year)       rows.push(['Год операции', p.eye_surgery_year]);
   if (arr(p.general_diseases))  rows.push(['Общие заболевания', arr(p.general_diseases)]);
   if (arr(p.visual_loads))      rows.push(['Зрительные нагрузки', arr(p.visual_loads)]);
   if (p.pre_notes)              rows.push(['Примечание пациента', p.pre_notes]);
   if (p.promo_code)             rows.push(['Промокод', p.promo_code]);
+  const kq = p.kids_questionnaire;
+  if (kq && typeof kq === 'object') {
+    const kqLabels = {
+      first: 'Первый раз проверка/первые очки',
+      prescribed: 'Врач что-то выписал, нужна доуточнение',
+      using: 'Уже носит очки, нужна коррекция',
+      rx: 'Диоптрии устоялись',
+      exam: 'Был у врача недавно',
+      disease: 'Жалобы на резкое ухудшение зрения',
+      special: 'Особые обстоятельства'
+    };
+    const yn = v => v === true ? 'да' : v === false ? 'нет' : (v || '');
+    const kqParts = [];
+    Object.keys(kqLabels).forEach(k => {
+      if (kq[k] !== undefined && kq[k] !== null && kq[k] !== '') kqParts.push(kqLabels[k] + ': ' + yn(kq[k]));
+    });
+    const resultLabel = kq.result === 'accept' ? '✅ Можно записать (с предупреждением)' : kq.result === 'decline' ? '⚠️ Направлена к офтальмологу' : (kq.result || '');
+    if (resultLabel) kqParts.unshift('Итог анкеты: ' + resultLabel);
+    if (kqParts.length) rows.push(['Анкета для подростка (12–17)', kqParts.join('; ')]);
+  }
   if (!rows.length) return '';
   return '<div class="mb-12" style="background:var(--surface2,#f1f5f9);border-radius:8px;padding:10px 12px">'+
     '<div style="font-size:11px;font-weight:700;color:var(--text-m,#64748b);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 Из анкеты онлайн-записи</div>'+

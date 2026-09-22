@@ -50,7 +50,7 @@ async function openExamView(examId,pid){
 // остальной код (saveExam, печать, order-форму), который на них ссылается.
 const RX_PLACEHOLDER = {
   sph: '−1.25', cyl: '−0.50', ax: '90', pd: '62',
-  add: '1.50', degr: '1.50', bc: '8.6', dia: '14.2'
+  add: '1.50', degr: '1.50', bc: '8.6', dia: '14.2', prism: '2Δ baza in'
 };
 const SN = 'padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;width:100%;min-width:60px;text-align:center;background:#fff;color:var(--text)';
 
@@ -215,9 +215,9 @@ function _drawExam(p,e,visitNum,apptId,apptType){
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для дали</div>
           <table class="rx-table">
-            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_rs('rf-od-sph','sph',ge('rx_far_od_sph'))}</td><td>${_rs('rf-od-cyl','cyl',ge('rx_far_od_cyl'))}</td><td>${_rs('rf-od-ax','ax',ge('rx_far_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_rs('rf-os-sph','sph',ge('rx_far_os_sph'))}</td><td>${_rs('rf-os-cyl','cyl',ge('rx_far_os_cyl'))}</td><td>${_rs('rf-os-ax','ax',ge('rx_far_os_ax'))}</td></tr>
+            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
+            <tr><td>OD</td><td>${_rs('rf-od-sph','sph',ge('rx_far_od_sph'))}</td><td>${_rs('rf-od-cyl','cyl',ge('rx_far_od_cyl'))}</td><td>${_rs('rf-od-ax','ax',ge('rx_far_od_ax'))}</td><td>${_rs('rf-od-prism','prism',ge('rx_far_od_prism'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rf-os-sph','sph',ge('rx_far_os_sph'))}</td><td>${_rs('rf-os-cyl','cyl',ge('rx_far_os_cyl'))}</td><td>${_rs('rf-os-ax','ax',ge('rx_far_os_ax'))}</td><td>${_rs('rf-os-prism','prism',ge('rx_far_os_prism'))}</td></tr>
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
@@ -228,9 +228,9 @@ function _drawExam(p,e,visitNum,apptId,apptType){
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для работы с компьютером</div>
           <table class="rx-table">
-            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_rs('rc-od-sph','sph',ge('rx_comp_od_sph'))}</td><td>${_rs('rc-od-cyl','cyl',ge('rx_comp_od_cyl'))}</td><td>${_rs('rc-od-ax','ax',ge('rx_comp_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_rs('rc-os-sph','sph',ge('rx_comp_os_sph'))}</td><td>${_rs('rc-os-cyl','cyl',ge('rx_comp_os_cyl'))}</td><td>${_rs('rc-os-ax','ax',ge('rx_comp_os_ax'))}</td></tr>
+            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
+            <tr><td>OD</td><td>${_rs('rc-od-sph','sph',ge('rx_comp_od_sph'))}</td><td>${_rs('rc-od-cyl','cyl',ge('rx_comp_od_cyl'))}</td><td>${_rs('rc-od-ax','ax',ge('rx_comp_od_ax'))}</td><td>${_rs('rc-od-prism','prism',ge('rx_comp_od_prism'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rc-os-sph','sph',ge('rx_comp_os_sph'))}</td><td>${_rs('rc-os-cyl','cyl',ge('rx_comp_os_cyl'))}</td><td>${_rs('rc-os-ax','ax',ge('rx_comp_os_ax'))}</td><td>${_rs('rc-os-prism','prism',ge('rx_comp_os_prism'))}</td></tr>
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
@@ -241,9 +241,9 @@ function _drawExam(p,e,visitNum,apptId,apptType){
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для близи / чтения</div>
           <table class="rx-table">
-            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-            <tr><td>OD</td><td>${_rs('rn-od-sph','sph',ge('rx_near_od_sph'))}</td><td>${_rs('rn-od-cyl','cyl',ge('rx_near_od_cyl'))}</td><td>${_rs('rn-od-ax','ax',ge('rx_near_od_ax'))}</td></tr>
-            <tr><td>OS</td><td>${_rs('rn-os-sph','sph',ge('rx_near_os_sph'))}</td><td>${_rs('rn-os-cyl','cyl',ge('rx_near_os_cyl'))}</td><td>${_rs('rn-os-ax','ax',ge('rx_near_os_ax'))}</td></tr>
+            <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
+            <tr><td>OD</td><td>${_rs('rn-od-sph','sph',ge('rx_near_od_sph'))}</td><td>${_rs('rn-od-cyl','cyl',ge('rx_near_od_cyl'))}</td><td>${_rs('rn-od-ax','ax',ge('rx_near_od_ax'))}</td><td>${_rs('rn-od-prism','prism',ge('rx_near_od_prism'))}</td></tr>
+            <tr><td>OS</td><td>${_rs('rn-os-sph','sph',ge('rx_near_os_sph'))}</td><td>${_rs('rn-os-cyl','cyl',ge('rx_near_os_cyl'))}</td><td>${_rs('rn-os-ax','ax',ge('rx_near_os_ax'))}</td><td>${_rs('rn-os-prism','prism',ge('rx_near_os_prism'))}</td></tr>
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
@@ -315,19 +315,21 @@ function _renderCorrs(){
         <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
           ${CORR_TYPES.map(t=>`<option ${c.type===t?'selected':''}>${t}</option>`).join('')}
         </select>
-        <button class="btn btn-danger btn-xs" onclick="_examData.corrections.splice(${i},1);document.getElementById('corr-list').innerHTML=_renderCorrs()">✕</button>
+        <button class="btn btn-danger btn-xs" onclick="_examData.corrections[${i}].splice(${i},1);document.getElementById('corr-list').innerHTML=_renderCorrs()">✕</button>
       </div>
-      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:start;margin-bottom:4px">
+      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr${isMKL?'':' 1fr'};gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
         <div><label style="font-size:10px">Sph</label><input value="${c.od_sph||''}" placeholder="−1.25" oninput="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
         <div><label style="font-size:10px">Cyl</label><input value="${c.od_cyl||''}" placeholder="−0.50" oninput="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
         <div><label style="font-size:10px">Ax</label><input value="${c.od_ax||''}" placeholder="90" oninput="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        ${isMKL?'':`<div><label style="font-size:10px">Prism</label><input value="${c.od_prism||''}" placeholder="2Δ baza in" oninput="_examData.corrections[${i}].od_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
       </div>
-      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;align-items:center;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr${isMKL?'':' 1fr'};gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
         <div><input value="${c.os_sph||''}" placeholder="−1.25" oninput="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
         <div><input value="${c.os_cyl||''}" placeholder="−0.50" oninput="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
         <div><input value="${c.os_ax||''}" placeholder="90" oninput="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        ${isMKL?'':`<div><input value="${c.os_prism||''}" placeholder="2Δ baza in" oninput="_examData.corrections[${i}].os_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
       </div>
       <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr;gap:8px;align-items:end">
         ${isMKL?`
@@ -359,21 +361,21 @@ async function saveExam(id,apptId,patientId,visitNum){
     refr_od_sph:vs('r-od-sph'),refr_od_cyl:vs('r-od-cyl'),refr_od_ax:vs('r-od-ax'),refr_od_pd:vs('r-pd'),refr_od_ave:vs('r-od-ave'),
     refr_os_sph:vs('r-os-sph'),refr_os_cyl:vs('r-os-cyl'),refr_os_ax:vs('r-os-ax'),refr_os_pd:vs('r-pd'),refr_os_ave:vs('r-os-ave'),
     refr_comment:vs('r-comment'),
-    exam_od_without:vs('x-od-wo'),exam_od_cosph:vs('x-od-cs'),exam_od_cyl:vs('x-od-cyl'),exam_od_ax:vs('x-od-ax'),exam_od_with:vs('x-od-wi'),
-    exam_os_without:vs('x-os-wo'),exam_os_cosph:vs('x-os-cs'),exam_os_cyl:vs('x-os-cyl'),exam_os_ax:vs('x-os-ax'),exam_os_with:vs('x-os-wi'),
+    exam_od_without:vs('x-od-wo'),exam_od_cosph:vs('x-od-cs'),exam_od_cyl:vs('x-od-cyl'),exam_od_ax:vs('x-od-ax'),exam_od_with:vs('x-od-wi'),exam_od_prism:vs('x-od-prism'),
+    exam_os_without:vs('x-os-wo'),exam_os_cosph:vs('x-os-cs'),exam_os_cyl:vs('x-os-cyl'),exam_os_ax:vs('x-os-ax'),exam_os_with:vs('x-os-wi'),exam_os_prism:vs('x-os-prism'),
     exam_ou:vs('x-ou'),
     exam_comment:vs('x-comment'),
     rx_far_enabled:true,
-    rx_far_od_sph:vs('rf-od-sph'),rx_far_od_cyl:vs('rf-od-cyl'),rx_far_od_ax:vs('rf-od-ax'),rx_far_od_pd:vs('rf-pd'),
-    rx_far_os_sph:vs('rf-os-sph'),rx_far_os_cyl:vs('rf-os-cyl'),rx_far_os_ax:vs('rf-os-ax'),rx_far_os_pd:vs('rf-add'),
+    rx_far_od_sph:vs('rf-od-sph'),rx_far_od_cyl:vs('rf-od-cyl'),rx_far_od_ax:vs('rf-od-ax'),rx_far_od_pd:vs('rf-pd'),rx_far_od_prism:vs('rf-od-prism'),
+    rx_far_os_sph:vs('rf-os-sph'),rx_far_os_cyl:vs('rf-os-cyl'),rx_far_os_ax:vs('rf-os-ax'),rx_far_os_pd:vs('rf-add'),rx_far_os_prism:vs('rf-os-prism'),
     rx_far_comment:vs('rf-comment'),
     rx_comp_enabled:true,
-    rx_comp_od_sph:vs('rc-od-sph'),rx_comp_od_cyl:vs('rc-od-cyl'),rx_comp_od_ax:vs('rc-od-ax'),rx_comp_od_pd:vs('rc-pd'),rx_comp_od_add:vs('rc-add'),
-    rx_comp_os_sph:vs('rc-os-sph'),rx_comp_os_cyl:vs('rc-os-cyl'),rx_comp_os_ax:vs('rc-os-ax'),
+    rx_comp_od_sph:vs('rc-od-sph'),rx_comp_od_cyl:vs('rc-od-cyl'),rx_comp_od_ax:vs('rc-od-ax'),rx_comp_od_pd:vs('rc-pd'),rx_comp_od_add:vs('rc-add'),rx_comp_od_prism:vs('rc-od-prism'),
+    rx_comp_os_sph:vs('rc-os-sph'),rx_comp_os_cyl:vs('rc-os-cyl'),rx_comp_os_ax:vs('rc-os-ax'),rx_comp_os_prism:vs('rc-os-prism'),
     rx_comp_comment:vs('rc-comment'),
     rx_near_enabled:true,
-    rx_near_od_sph:vs('rn-od-sph'),rx_near_od_cyl:vs('rn-od-cyl'),rx_near_od_ax:vs('rn-od-ax'),rx_near_od_pd:vs('rn-pd'),rx_near_od_add:vs('rn-degr'),
-    rx_near_os_sph:vs('rn-os-sph'),rx_near_os_cyl:vs('rn-os-cyl'),rx_near_os_ax:vs('rn-os-ax'),
+    rx_near_od_sph:vs('rn-od-sph'),rx_near_od_cyl:vs('rn-od-cyl'),rx_near_od_ax:vs('rn-od-ax'),rx_near_od_pd:vs('rn-pd'),rx_near_od_add:vs('rn-degr'),rx_near_od_prism:vs('rn-od-prism'),
+    rx_near_os_sph:vs('rn-os-sph'),rx_near_os_cyl:vs('rn-os-cyl'),rx_near_os_ax:vs('rn-os-ax'),rx_near_os_prism:vs('rn-os-prism'),
     rx_near_comment:vs('rn-comment'),
     rx_cl_enabled:true,
     rx_cl_od_sph:vs('rcl-od-sph'),rx_cl_od_cyl:vs('rcl-od-cyl'),rx_cl_od_ax:vs('rcl-od-ax'),
@@ -445,13 +447,14 @@ async function _buildPrintCard(examId) {
   const doctor=s.doctor_name||'Ana Novoselova';
 
   const rxBlock=(title,titleRu,rows,shared,comment)=>{
-    if(!rows.some(r=>r.v1||r.v2||r.v3)) return '';
+    if(!rows.some(r=>r.v1||r.v2||r.v3||r.v4)) return '';
+    const hasPrism = rows.some(r=>r.v4);
     return`<div class="pc-rx-block" style="page-break-inside:avoid">
       <div class="pc-rx-title">${title}<br><span style="font-weight:400;font-size:7pt;color:#777;text-transform:none;letter-spacing:0">${titleRu}</span></div>
       <table class="pc-table">
-        <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
-        <tr><td class="eye">OD</td><td>${rows[0].v1}</td><td>${rows[0].v2}</td><td>${rows[0].v3}</td></tr>
-        <tr><td class="eye">OS</td><td>${rows[1].v1}</td><td>${rows[1].v2}</td><td>${rows[1].v3}</td></tr>
+        <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${hasPrism?'<th>Prizma</th>':''}</tr>
+        <tr><td class="eye">OD</td><td>${rows[0].v1}</td><td>${rows[0].v2}</td><td>${rows[0].v3}</td>${hasPrism?`<td>${rows[0].v4||''}</td>`:''}</tr>
+        <tr><td class="eye">OS</td><td>${rows[1].v1}</td><td>${rows[1].v2}</td><td>${rows[1].v3}</td>${hasPrism?`<td>${rows[1].v4||''}</td>`:''}</tr>
       </table>
       <div style="display:flex;gap:16pt;margin-top:4pt;font-size:8pt">
         ${shared.filter(s=>s.val).map(s=>`<span><b>${s.label}:</b> ${s.val}</span>`).join('')}
@@ -485,16 +488,18 @@ async function _buildPrintCard(examId) {
     ${rx('general_diseases_notes')?`<div class="pc-sec">${secLabel('Anamneza','Анамнез')}<div class="pc-text">${rx('general_diseases_notes').split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('Диоптрии (со слов)')&&!s.startsWith('Примечания пациента')).join('; ')}</div></div>`:''}`+
     `${(e?.current_corrections?.length)?`<div class="pc-sec" style="page-break-inside:avoid">
       ${secLabel('Korekcija u upotrebi','Используемая коррекция')}
-      ${e.current_corrections.map(c=>`<div style="margin-bottom:5pt">
+      ${e.current_corrections.map(c=>{
+        const cHasPrism = c.type!=='МКЛ' && (c.od_prism||c.os_prism);
+        return`<div style="margin-bottom:5pt">
         <div style="font-size:8pt;font-weight:700;color:#1B4F72;margin-bottom:2pt">${c.type}${c.duration?' · '+c.duration:''}</div>
-        <table class="pc-table"><tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${c.type==='МКЛ'?'<th>BC</th><th>DIA</th>':'<th>PD</th>'}${c.add?'<th>ADD</th>':''}</tr>
-          <tr><td class="eye">OD</td><td>${c.od_sph||''}</td><td>${c.od_cyl||''}</td><td>${c.od_ax||''}</td><td>${c.type==='МКЛ'?(c.bc||''):(c.pd||'')}</td>${c.add?`<td>${c.add}</td>`:''}</tr>
-          <tr><td class="eye">OS</td><td>${c.os_sph||''}</td><td>${c.os_cyl||''}</td><td>${c.os_ax||''}</td><td>${c.type==='МКЛ'?(c.dia||''):''}</td>${c.add?`<td></td>`:''}</tr>
+        <table class="pc-table"><tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th>${cHasPrism?'<th>Prizma</th>':''}${c.type==='МКЛ'?'<th>BC</th><th>DIA</th>':'<th>PD</th>'}${c.add?'<th>ADD</th>':''}</tr>
+          <tr><td class="eye">OD</td><td>${c.od_sph||''}</td><td>${c.od_cyl||''}</td><td>${c.od_ax||''}</td>${cHasPrism?`<td>${c.od_prism||''}</td>`:''}<td>${c.type==='МКЛ'?(c.bc||''):(c.pd||'')}</td>${c.add?`<td>${c.add}</td>`:''}</tr>
+          <tr><td class="eye">OS</td><td>${c.os_sph||''}</td><td>${c.os_cyl||''}</td><td>${c.os_ax||''}</td>${cHasPrism?`<td>${c.os_prism||''}</td>`:''}<td>${c.type==='МКЛ'?(c.dia||''):''}</td>${c.add?`<td></td>`:''}</tr>
         </table>
         ${c.lens_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Тип линз: ${c.lens_type}</div>`:''}
         ${c.cl_type?`<div style="font-size:7.5pt;color:#555;margin-top:1pt">Vrsta KS: ${c.cl_type}</div>`:''}
         ${c.note?`<div style="font-size:7.5pt;color:#555">Napomena: ${c.note}</div>`:''}
-      </div>`).join('')}
+      </div>`;}).join('')}
     </div>`:''}`+
     `<div class="pc-sec" style="page-break-inside:avoid">
       ${secLabel('Autorefraktometrija','Авторефрактометрия')}
@@ -509,9 +514,9 @@ async function _buildPrintCard(examId) {
     <div class="pc-sec" style="page-break-inside:avoid">
       ${secLabel('Rezultati pregleda','Результаты обследования')}
       <table class="pc-table">
-        <tr><th></th><th>Visus bez kor.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th></tr>
-        <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td></tr>
-        <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td></tr>
+        <tr><th></th><th>Visus bez kor.</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th>Visus sa kor.</th>${(rx('exam_od_prism')||rx('exam_os_prism'))?'<th>Prizma</th>':''}</tr>
+        <tr><td class="eye">OD</td><td>${rx('exam_od_without')}</td><td>${rx('exam_od_cosph')}</td><td>${rx('exam_od_cyl')}</td><td>${rx('exam_od_ax')}</td><td>${rx('exam_od_with')}</td>${(rx('exam_od_prism')||rx('exam_os_prism'))?`<td>${rx('exam_od_prism')}</td>`:''}</tr>
+        <tr><td class="eye">OS</td><td>${rx('exam_os_without')}</td><td>${rx('exam_os_cosph')}</td><td>${rx('exam_os_cyl')}</td><td>${rx('exam_os_ax')}</td><td>${rx('exam_os_with')}</td>${(rx('exam_od_prism')||rx('exam_os_prism'))?`<td>${rx('exam_os_prism')}</td>`:''}</tr>
       </table>
       ${rx('exam_ou')?`<div style="font-size:8pt;margin-top:4pt"><b>Visus OU sa korekcijom:</b> ${rx('exam_ou')}</div>`:''}
       ${rx('exam_comment')?`<div style="font-size:8pt;margin-top:4pt;color:#555;font-style:italic">${rx('exam_comment')}</div>`:''}
@@ -519,19 +524,19 @@ async function _buildPrintCard(examId) {
     ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock(
       'Parametri za izradu naocara za daljinu',
       'Параметры для изготовления очков для дали',
-      [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax')}],
+      [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax'),v4:rx('rx_far_od_prism')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax'),v4:rx('rx_far_os_prism')}],
       [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}],
       rx('rx_far_comment')):''}
     ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock(
       'Parametri za izradu naocara za rad za racunarom',
       'Параметры для изготовления очков для работы с компьютером',
-      [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax')}],
+      [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax'),v4:rx('rx_comp_od_prism')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax'),v4:rx('rx_comp_os_prism')}],
       [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}],
       rx('rx_comp_comment')):''}
     ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock(
       'Parametri za izradu naocara za blizinu',
       'Параметры для изготовления очков для близи',
-      [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax')}],
+      [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax'),v4:rx('rx_near_od_prism')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax'),v4:rx('rx_near_os_prism')}],
       [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}],
       rx('rx_near_comment')):''}
     ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-rx-block" style="page-break-inside:avoid">
@@ -615,13 +620,14 @@ async function _buildPatientPrintCard(pid) {
     </tr>`).join('') || '<tr><td colspan="6" style="color:#999;text-align:center">Nema pregleda</td></tr>';
 
   const lastExam = (exams||[])[0];
+  const lastExamHasPrism = lastExam && (lastExam.rx_far_od_prism||lastExam.rx_far_os_prism);
   const examBlock = lastExam ? `
     <div class="pc-sec">
       <div class="pc-sec-label">Poslednji karton — ${lastExam.appointment_number||('Poseta br.'+(lastExam.visit_number||'—'))} (${fmt(lastExam.created_at?.split('T')[0])})</div>
       <table class="pc-table" style="font-size:8pt">
-        <tr><th></th><th>Sph daljina</th><th>Cyl</th><th>Ax</th></tr>
-        <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td></tr>
-        <tr><td class="eye">OS</td><td>${lastExam.rx_far_os_sph||'—'}</td><td>${lastExam.rx_far_os_cyl||'—'}</td><td>${lastExam.rx_far_os_ax||'—'}</td></tr>
+        <tr><th></th><th>Sph daljina</th><th>Cyl</th><th>Ax</th>${lastExamHasPrism?'<th>Prizma</th>':''}</tr>
+        <tr><td class="eye">OD</td><td>${lastExam.rx_far_od_sph||'—'}</td><td>${lastExam.rx_far_od_cyl||'—'}</td><td>${lastExam.rx_far_od_ax||'—'}</td>${lastExamHasPrism?`<td>${lastExam.rx_far_od_prism||'—'}</td>`:''}</tr>
+        <tr><td class="eye">OS</td><td>${lastExam.rx_far_os_sph||'—'}</td><td>${lastExam.rx_far_os_cyl||'—'}</td><td>${lastExam.rx_far_os_ax||'—'}</td>${lastExamHasPrism?`<td>${lastExam.rx_far_os_prism||'—'}</td>`:''}</tr>
       </table>
       ${lastExam.control_date?`<div style="margin-top:4pt;font-size:8pt;color:#b45309"><b>Kontrolna poseta:</b> ${fmt(lastExam.control_date)}</div>`:''}
     </div>` : '';

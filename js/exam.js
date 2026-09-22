@@ -306,16 +306,22 @@ function _switchExamTab(){
   });
 }
 function updateCtrlDate(m){if(m)document.getElementById('e-ctrl-date').value=addMonths(today(),+m);}
+function _reRenderCorrs(){
+  document.getElementById('corr-list').innerHTML=_renderCorrs();
+  // Перерисовка через innerHTML не подхватывается общим initEnterNavigation() (вызывается
+  // один раз при открытии модалки), поэтому навешиваем Enter-навигацию на новые поля заново.
+  if(typeof initEnterNavigation==='function') initEnterNavigation();
+}
 function _renderCorrs(){
   if(!_examData.corrections.length)return`<p class="text-sm text-m">Нет используемой коррекции</p>`;
   return _examData.corrections.map((c,i)=>{
     const isMKL=c.type==='МКЛ';
     return`<div class="corr-item">
       <div class="flex justify-between items-center mb-8">
-        <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;document.getElementById('corr-list').innerHTML=_renderCorrs()">
+        <select style="width:auto;min-width:220px" onchange="_examData.corrections[${i}].type=this.value;_reRenderCorrs()">
           ${CORR_TYPES.map(t=>`<option ${c.type===t?'selected':''}>${t}</option>`).join('')}
         </select>
-        <button class="btn btn-danger btn-xs" onclick="_examData.corrections[${i}].splice(${i},1);document.getElementById('corr-list').innerHTML=_renderCorrs()">✕</button>
+        <button class="btn btn-danger btn-xs" onclick="_examData.corrections.splice(${i},1);_reRenderCorrs()">✕</button>
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr${isMKL?'':' 1fr'};gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
@@ -347,7 +353,7 @@ function _renderCorrs(){
     `</div>`;
   }).join('');
 }
-function addCorrection(){_examData.corrections.push({type:'Очки для дали'});document.getElementById('corr-list').innerHTML=_renderCorrs();}
+function addCorrection(){_examData.corrections.push({type:'Очки для дали'});_reRenderCorrs();}
 
 async function saveExam(id,apptId,patientId,visitNum){
   const effectiveId = _currentExamId || id || '';

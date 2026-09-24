@@ -12,7 +12,7 @@ function _splitName(name) {
 }
 
 async function renderPatients() {
-  document.getElementById('content').innerHTML = '<div class="topbar"><h1>'+t('patients')+'</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="'+t('search')+'" oninput="filterPatientsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddPatient()">'+t('add_patient_short')+'</button></div></div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
+  document.getElementById('content').innerHTML = '<div class="topbar"><h1>'+t('patients')+'</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="psearch" placeholder="'+t('search')+'" oninput="filterPatientsUI(this.value)"></div><button id="dupes-btn" class="btn btn-ghost" style="display:none" onclick="openDupesModal()"></button><button class="btn btn-accent" onclick="openAddPatient()">'+t('add_patient_short')+'</button></div></div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
   const [{data:patients},{data:appts},{data:orders},{data:exams}] = await Promise.all([
     db.from('patients').select('*').is('deleted_at',null),
     db.from('appointments').select('patient_id,date,status').is('deleted_at',null),
@@ -22,6 +22,7 @@ async function renderPatients() {
   _allPatients = patients || [];
   _patientMeta = _buildPatientMeta(appts||[], orders||[], exams||[]);
   _sortAndRenderPatients(_allPatients);
+  _updateDupesBtn();
 }
 
 function _sortPatients(list) {
@@ -141,7 +142,7 @@ function filterPatientsUI(q) {
 }
 
 // ═══ АНКЕТА ОНЛАЙН-ЗАПИСИ (данные, которые пациент указал при бронировании на booking.html) ═══
-function _bookingSurveyHtml(p) {
+function _bookingSurveyHtml(p, title) {
   const rows = [];
   const arr = v => Array.isArray(v) && v.length ? v.join(', ') : '';
   if (arr(p.visit_reason))      rows.push(['Причина обращения', arr(p.visit_reason)]);
@@ -178,11 +179,140 @@ function _bookingSurveyHtml(p) {
   }
   if (!rows.length) return '';
   return '<div class="mb-12" style="background:var(--surface2,#f1f5f9);border-radius:8px;padding:10px 12px">'+
-    '<div style="font-size:11px;font-weight:700;color:var(--text-m,#64748b);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 Из анкеты онлайн-записи</div>'+
+    (title === false ? '' : '<div style="font-size:11px;font-weight:700;color:var(--text-m,#64748b);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📝 '+(title || t('intake_title'))+'</div>')+
     rows.map(([label,val]) =>
       '<div style="font-size:12.5px;margin-bottom:3px"><span style="color:var(--text-m,#64748b)">'+label+':</span> '+val+'</div>'
     ).join('')+
   '</div>';
+}
+
+function _hasIntake(a) { return !!(a && a.intake && typeof a.intake === 'object' && Object.keys(a.intake).length); }
+// В карточке — анкета последней онлайн-записи; для старых карточек (до миграции 005) — анкета из самой карточки.
+function _cardSurveyHtml(p, appts) {
+  const a = appts.find(_hasIntake);   // appts отсортированы по дате, новые сверху
+  if (a) return _bookingSurveyHtml(a.intake, t('intake_title')+' · '+fmt(a.date));
+  return _bookingSurveyHtml(p);
+}
+
+// ═══ ОБЪЕДИНЕНИЕ ДУБЛЕЙ ═══
+// Сравнение ФИО без учёта регистра, пробелов и порядка слов — как norm_patient_name() в SQL.
+function _normName(n) { return (n||'').toLowerCase().trim().split(/\s+/).filter(Boolean).sort().join(' '); }
+function _escH(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Группы возможных дублей: одинаковое ФИО и одинаковая дата рождения (или дата не указана).
+// Разные даты рождения = разные люди. Внутри группы первым идёт самая старая карточка.
+function _findDupeGroups(list) {
+  const byName = {};
+  list.forEach(p => { const k = _normName(p.name); if (k) (byName[k] = byName[k] || []).push(p); });
+  const groups = [];
+  Object.values(byName).forEach(g => {
+    if (g.length < 2) return;
+    const byDob = {}, noDob = [];
+    g.forEach(p => p.dob ? (byDob[p.dob] = byDob[p.dob] || []).push(p) : noDob.push(p));
+    const keys = Object.keys(byDob);
+    if (!keys.length) { groups.push(noDob); return; }
+    if (keys.length === 1) { const gg = byDob[keys[0]].concat(noDob); if (gg.length > 1) groups.push(gg); return; }
+    keys.forEach(k => { if (byDob[k].length > 1) groups.push(byDob[k]); });
+  });
+  groups.forEach(g => g.sort((a,b) => (a.created_at||'').localeCompare(b.created_at||'')));
+  return groups.sort((a,b) => a[0].name.localeCompare(b[0].name, 'sr'));
+}
+
+function _updateDupesBtn() {
+  const b = document.getElementById('dupes-btn'); if (!b) return;
+  const n = isAdmin() ? _findDupeGroups(_allPatients).length : 0;
+  b.style.display = n ? '' : 'none';
+  b.textContent = '👥 '+t('dupes_btn')+' ('+n+')';
+}
+
+function _mergeRowHtml(x, actionHtml) {
+  const sub = [x.patient_code, x.dob ? fmt(x.dob) : '', x.phone, x.telegram_username, x.created_at ? t('in_base')+': '+fmt(x.created_at.split('T')[0]) : '']
+    .filter(Boolean).map(_escH).join(' · ');
+  return '<div class="history-item" style="align-items:center">'+
+    '<div style="flex:1;min-width:0"><div class="history-title" style="word-break:break-word">'+_escH(x.name)+'</div>'+
+    '<div class="text-sm text-m">'+sub+'</div></div>'+
+    '<div class="history-actions">'+actionHtml+'</div></div>';
+}
+
+let _mergeKeepId = null, _mergeAll = [];
+async function openMergePatient(pid) {
+  _mergeKeepId = pid;
+  const {data} = await db.from('patients').select('id,name,dob,phone,telegram_username,patient_code,created_at').is('deleted_at',null);
+  _mergeAll = data || [];
+  const me = _mergeAll.find(x => x.id === pid); if (!me) return;
+  const key = _normName(me.name);
+  const myWords = key.split(' ');
+  const sugg = _mergeAll.filter(x => x.id !== pid && (
+    _normName(x.name) === key ||
+    (me.dob && x.dob === me.dob && _normName(x.name).split(' ').some(w => myWords.includes(w)))
+  ));
+  openModal('<div class="modal modal-lg">'+
+    '<div class="modal-header"><span class="modal-title">🔗 '+t('merge_title')+'</span><button class="btn btn-ghost btn-sm" onclick="openPatientCard(\''+pid+'\')">✕</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="mb-12" style="background:var(--surface2,#f1f5f9);border-radius:8px;padding:10px 12px">'+
+        '<div class="fw-6">'+_escH(me.name)+(me.dob ? ' · '+fmt(me.dob) : '')+(me.patient_code ? ' · '+_escH(me.patient_code) : '')+'</div>'+
+        '<div class="text-sm text-m" style="margin-top:4px">'+t('merge_hint')+'</div>'+
+      '</div>'+
+      (sugg.length ? '<div class="fw-6 mb-8">'+t('merge_suggested')+'</div>'+sugg.map(x => _mergeRowHtml(x, _mergeBtn(pid, x.id, 'card'))).join('')+'<div class="divider"></div>' : '')+
+      '<div class="fw-6 mb-8">'+t('merge_all')+'</div>'+
+      '<input type="text" id="merge-q" placeholder="'+t('search')+'" oninput="_renderMergeSearch(this.value)" style="margin-bottom:8px">'+
+      '<div id="merge-results"></div>'+
+    '</div></div>');
+  setTimeout(() => { const q = document.getElementById('merge-q'); if (q) q.focus(); }, 250);
+}
+function _mergeBtn(keepId, dropId, after) {
+  return '<button class="btn btn-accent btn-sm" onclick="confirmMergePatients(\''+keepId+'\',\''+dropId+'\',\''+after+'\')">🔗 '+t('merge_btn')+'</button>';
+}
+function _renderMergeSearch(q) {
+  const box = document.getElementById('merge-results'); if (!box) return;
+  q = (q||'').trim().toLowerCase();
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const res = _mergeAll.filter(x => x.id !== _mergeKeepId && (
+    (x.name||'').toLowerCase().includes(q) || (x.phone||'').includes(q) || (x.patient_code||'').includes(q) ||
+    (x.telegram_username||'').toLowerCase().includes(q)
+  )).slice(0, 30);
+  box.innerHTML = res.length ? res.map(x => _mergeRowHtml(x, _mergeBtn(_mergeKeepId, x.id, 'card'))).join('') : '<div class="empty"><p>—</p></div>';
+}
+
+async function confirmMergePatients(keepId, dropId, after) {
+  const pool = _mergeAll.length ? _mergeAll : _allPatients;
+  const nm = id => ((pool.find(x => x.id === id) || _allPatients.find(x => x.id === id) || {}).name || '?');
+  if (!confirm(t('merge_confirm').replace('{drop}', nm(dropId)).replace('{keep}', nm(keepId)))) return;
+  const {data, error} = await db.rpc('merge_patients', {keep_id: keepId, drop_id: dropId});
+  if (error) {
+    const missing = error.code === 'PGRST202' || /merge_patients/.test(error.message||'');
+    toast(missing ? t('merge_need_sql') : (t('error')+': '+(error.message||'')), 'error');
+    return;
+  }
+  const d = data || {};
+  toast(t('merge_done')+' ('+t('appointments')+': '+(d.appointments||0)+', '+t('exam_card_short')+': '+(d.examinations||0)+', '+t('orders')+': '+(d.orders||0)+')');
+  _mergeAll = [];
+  if (after === 'dupes') {
+    if (document.getElementById('psearch')) await renderPatients();
+    else { const {data:pp} = await db.from('patients').select('*').is('deleted_at',null); _allPatients = pp || []; }
+    openDupesModal();
+  } else {
+    if (document.getElementById('psearch')) renderPatients();
+    await openPatientCard(keepId);
+  }
+}
+
+function openDupesModal() {
+  const groups = _findDupeGroups(_allPatients);
+  openModal('<div class="modal modal-lg">'+
+    '<div class="modal-header"><span class="modal-title">👥 '+t('dupes_title')+' ('+groups.length+')</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
+    '<div class="modal-body">'+
+      (groups.length ? '<div class="text-sm text-m mb-12">'+t('dupes_hint')+'</div>'+
+        groups.map(g =>
+          '<div class="card mb-12" style="padding:10px 12px">'+
+            g.map((x, i) => _mergeRowHtml(x,
+              '<button class="btn btn-ghost btn-sm" onclick="openPatientCard(\''+x.id+'\')">'+t('card')+'</button>'+
+              (i === 0 ? '<span class="badge badge-green">'+t('dupes_keep')+'</span>' : _mergeBtn(g[0].id, x.id, 'dupes'))
+            )).join('')+
+          '</div>'
+        ).join('')
+      : '<div class="empty"><p>'+t('dupes_none')+'</p></div>')+
+    '</div></div>');
 }
 
 // ═══ PATIENT CARD ═══
@@ -221,6 +351,7 @@ async function _renderPatientCard(pid) {
           (!isErvin() ? '<button class="btn btn-accent btn-sm" onclick="openAddAppointmentFor(\''+pid+'\')">'+'+ '+t('appointments')+'</button>' : '')+
           (!isErvin() ? '<button class="btn btn-accent btn-sm" onclick="openExamForm(\'\',\''+pid+'\')">'+'+ '+t('exam_card_short')+'</button>' : '')+
           (isAdmin() ? '<button class="btn btn-accent btn-sm" onclick="openAddOrderFor(\''+pid+'\')">'+'+ '+t('orders')+'</button>' : '')+
+          (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="openMergePatient(\''+pid+'\')" title="'+t('merge_title')+'">🔗 '+t('merge_btn')+'</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditPatient(\''+pid+'\')">✏️</button><button class="btn btn-danger btn-sm" onclick="delPatientFromCard(\''+pid+'\')" title="'+t('delete')+'">🗑</button>' : '')+
           (!isErvin() ? '<button class="btn btn-ghost btn-sm" onclick="savePatientPDF(\''+pid+'\')">💾 PDF</button>' : '')+
           '<button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>'+
@@ -237,7 +368,7 @@ async function _renderPatientCard(pid) {
           '<div class="info-item"><label>'+t('in_base')+'</label><p>'+fmt((p.created_at||'').split('T')[0])+'</p></div>'+
         '</div>'+
         (p.notes ? '<div class="mb-12 text-m text-sm">'+p.notes+'</div>' : '')+
-        _bookingSurveyHtml(p)+
+        _cardSurveyHtml(p, appts||[])+
         '<div class="divider"></div>'+
         '<div class="tab-bar">'+
           '<div class="tab'+(_cardTab==='appts'?' active':'')+'" onclick="_cardTab=\'appts\';_renderPatientCard(\''+pid+'\')">'+ t('appointments')+' ('+(appts||[]).length+')</div>'+
@@ -264,6 +395,7 @@ function _apptTab(appts, pid) {
           (a.type || t('appointments'))+
         '</div>'+
         (a.consultation_price ? '<div class="text-sm text-m">'+t('cost')+': '+fmtMoney(a.consultation_price)+'</div>' : '')+
+        (_hasIntake(a) ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px;color:var(--primary)">📝 '+t('intake_show')+'</summary><div style="margin-top:6px">'+_bookingSurveyHtml(a.intake, false)+'</div></details>' : '')+
       '</div>'+
       '<div class="history-actions">'+
         (!isErvin() ? '<button class="btn btn-primary btn-sm" onclick="openExamForm(\''+a.id+'\',\''+pid+'\')">📋 '+t('exam_card_short')+'</button>' : '')+

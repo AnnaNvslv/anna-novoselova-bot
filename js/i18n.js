@@ -79,7 +79,7 @@ const TRANSLATIONS = {
     analytics: 'Аналитика', admin_only: 'Только для администратора',
     revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
     my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
-    appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
+    appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
     currency_din: 'дин.',
     ten_percent: '10% от суммы заказов:', salary_total: 'Итого к зарплате:', orders_by_status: 'Заказы по статусам',
     // SETTINGS
@@ -115,6 +115,13 @@ const TRANSLATIONS = {
     restore: 'Восстановить', restored: 'Восстановлено', deleted_at: 'удалено',
     moved_to_trash: 'Перемещено в корзину', confirm_empty_trash: 'Удалить всё из корзины навсегда?',
     trash_emptied: 'Корзина очищена',
+    merge_btn: 'Объединить', merge_title: 'Объединить с другим пациентом',
+    merge_hint: 'Все приёмы, карты обследования и заказы выбранного пациента перейдут в эту карточку. Дубль уйдёт в корзину.',
+    merge_suggested: 'Похожие', merge_all: 'Все пациенты', merge_confirm: 'Перенести всё из «{drop}» в «{keep}»? Отменить нельзя.',
+    merge_done: 'Пациенты объединены', merge_need_sql: 'Сначала запустите SQL-миграцию 005 в Supabase',
+    dupes_btn: 'Дубли', dupes_title: 'Возможные дубли', dupes_none: 'Дублей не найдено', dupes_keep: 'основная',
+    dupes_hint: 'Совпадают фамилия, имя и дата рождения (или дата не указана). Основной остаётся самая старая карточка.',
+    intake_title: 'Из анкеты онлайн-записи', intake_show: 'Анкета',
   },
   sr: {
     // NAV
@@ -193,7 +200,7 @@ const TRANSLATIONS = {
     analytics: 'Analitika', admin_only: 'Samo za administratora',
     revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
     my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
-    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
+    appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',
     currency_din: 'din.',
     ten_percent: '10% od iznosa porudžbina:', salary_total: 'Ukupna plata:', orders_by_status: 'Porudžbine po statusima',
     // SETTINGS
@@ -229,6 +236,13 @@ const TRANSLATIONS = {
     restore: 'Vrati', restored: 'Vraćeno', deleted_at: 'obrisano',
     moved_to_trash: 'Premješteno u korpu', confirm_empty_trash: 'Trajno obrisati sve iz korpe?',
     trash_emptied: 'Korpa ispraznjena',
+    merge_btn: 'Spoji', merge_title: 'Spoji sa drugim pacijentom',
+    merge_hint: 'Svi pregledi, kartoni i porudžbine izabranog pacijenta prelaze u ovaj karton. Duplikat ide u korpu.',
+    merge_suggested: 'Slični', merge_all: 'Svi pacijenti', merge_confirm: 'Prebaciti sve iz „{drop}" u „{keep}"? Ne može se poništiti.',
+    merge_done: 'Pacijenti spojeni', merge_need_sql: 'Prvo pokrenite SQL migraciju 005 u Supabase',
+    dupes_btn: 'Duplikati', dupes_title: 'Mogući duplikati', dupes_none: 'Nema duplikata', dupes_keep: 'glavni',
+    dupes_hint: 'Poklapaju se prezime, ime i datum rođenja (ili datum nije unet). Glavni ostaje najstariji karton.',
+    intake_title: 'Iz ankete online zakazivanja', intake_show: 'Anketa',
   }
 };
 

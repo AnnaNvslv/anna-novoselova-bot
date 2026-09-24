@@ -37,7 +37,9 @@ serve(async () => {
   if (!appointments) return new Response('no appointments')
 
   for (const appt of appointments) {
-    const chat_id = appt.patients?.telegram_chat_id
+    // Сначала — чат, из которого подтвердили именно эту запись (повторные записи
+    // одного пациента могут быть сделаны с другого аккаунта), затем — чат из карточки.
+    const chat_id = appt.patient_chat_id || appt.patients?.telegram_chat_id
     if (!chat_id) continue
 
     // Собираем datetime записи (Serbia = UTC+2, используем date+time напрямую)

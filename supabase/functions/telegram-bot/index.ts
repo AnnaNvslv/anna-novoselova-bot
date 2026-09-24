@@ -62,11 +62,20 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
     return
   }
 
-  // Сохраняем chat_id и username в patients
-  await db.from('patients').update({
-    telegram_chat_id: chat_id,
-    telegram_username: username ? `@${username}` : appt.patients.telegram_username,
-  }).eq('id', appt.patient_id)
+  // Сохраняем chat_id и username в patients.
+  // Онлайн-запись прикрепляет повторные записи к существующей карточке (ФИО + дата рождения),
+  // поэтому не перезаписываем уже привязанный Telegram чужим аккаунтом: обновляем, только если
+  // chat_id ещё пуст или username совпадает с сохранённым в карточке.
+  const normTg = (u?: string | null) => (u || '').trim().replace(/^@/, '').toLowerCase()
+  const pt = appt.patients || {}
+  const canLink = !pt.telegram_chat_id ||
+    (!!username && normTg(pt.telegram_username) === normTg(username))
+  if (canLink) {
+    await db.from('patients').update({
+      telegram_chat_id: chat_id,
+      telegram_username: username ? `@${username}` : pt.telegram_username,
+    }).eq('id', appt.patient_id)
+  }
 
   await db.from('appointments').update({ patient_chat_id: chat_id }).eq('id', apptId)
 

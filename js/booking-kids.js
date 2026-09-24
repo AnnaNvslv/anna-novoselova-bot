@@ -315,9 +315,8 @@ async function submitBooking(){
   try{
     const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
     if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
-    const patientId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-    const{error:pe}=await db.from('patients').insert({
-      id:patientId,name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,
+    const payload={
+      name,last_name:lastname,first_name:firstname,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,
       visit_reason:chips('ch-reason'),
       complaints:isHealth?chips('ch-complaints'):[],
       correction_types:isHealth?chips('ch-correction'):[],
@@ -333,15 +332,14 @@ async function submitBooking(){
       promo_code:v('f-promo')||null,
       kids_questionnaire:collectKidsAnswers(),
       data_consent:true,accuracy_consent:true,is_first_visit:true
-    });
-    if(pe)throw pe;
+    };
+    const patientId=await bkFindOrCreatePatient(payload);
     const{data:numData,error:numErr}=await db.rpc('get_next_appointment_number',{date_str:selectedSlot.date});
     if(numErr)throw numErr;
     const num=numData;
     const td=TYPES_DATA.find(t=>t.id===selectedType.id);
     const apptId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-    const{error:ae}=await db.from('appointments').insert({id:apptId,patient_id:patientId,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:td?.ru?.apptName||selectedType.id,status:'запланирован',appointment_number:num,consultation_price:td?.consult||0});
-    if(ae)throw ae;
+    await bkInsertAppointment({id:apptId,patient_id:patientId,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:td?.ru?.apptName||selectedType.id,status:'запланирован',appointment_number:num,consultation_price:td?.consult||0},bkIntake(payload));
     await db.from('available_slots').update({is_booked:true,appointment_id:apptId}).eq('id',selectedSlot.id);
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
     _blogDone=true;

@@ -325,6 +325,38 @@ function tog(el){el.classList.toggle('on');}
 function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.dataset.ru||e.textContent);}
 function v(id){return(document.getElementById(id)?.value||'').trim();}
 
+// ═══ Повторные записи: один пациент = одна карточка ═══
+// find_or_create_patient (SQL, миграция 005) ищет пациента по ФИО + дате рождения
+// и возвращает его id; если не нашёл — создаёт. Если миграция ещё не применена
+// (или RPC недоступен) — старое поведение: новый пациент через insert.
+function bkUuid(){return(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));}
+async function bkFindOrCreatePatient(payload){
+  try{
+    const{data,error}=await db.rpc('find_or_create_patient',{p:payload});
+    if(!error&&data)return data;
+    if(error)blog('error',{patient_name:payload.name,telegram:payload.telegram_username,error_text:'rpc_find_or_create: '+(error.message||error.code||'')});
+  }catch(e){}
+  const id=bkUuid();
+  const{error:pe}=await db.from('patients').insert(Object.assign({id},payload));
+  if(pe)throw pe;
+  return id;
+}
+// Анкета этой записи (хранится в appointments.intake, чтобы у каждого визита была своя)
+const BK_INTAKE_KEYS=['visit_reason','complaints','correction_types','approx_diopters','eye_diseases','eye_diseases_other','eye_surgeries','eye_surgery_year','general_diseases','visual_loads','pre_notes','promo_code','kids_questionnaire'];
+function bkIntake(payload){
+  const o={};
+  BK_INTAKE_KEYS.forEach(k=>{const x=payload[k];if(x===null||x===undefined||x==='')return;if(Array.isArray(x)&&!x.length)return;o[k]=x;});
+  return o;
+}
+async function bkInsertAppointment(row,intake){
+  let{error}=await db.from('appointments').insert(Object.assign({},row,{intake}));
+  // колонки intake ещё нет (миграция 005 не применена) — пишем запись без анкеты
+  if(error&&/intake/i.test((error.message||'')+(error.details||''))){
+    ({error}=await db.from('appointments').insert(row));
+  }
+  if(error)throw error;
+}
+
 async function submitBooking(){
   const isHealth=!!(selectedType&&selectedType.health);
   const noAgeLimit=!!(selectedType&&selectedType.noAgeLimit);
@@ -349,16 +381,14 @@ async function submitBooking(){
   try{
     const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
     if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
-    const patientId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-    const{error:pe}=await db.from('patients').insert({id:patientId,name,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,visit_reason:chips('ch-reason'),complaints:isHealth?chips('ch-complaints'):[],correction_types:isHealth?chips('ch-correction'):[],approx_diopters:v('f-diop')||null,eye_diseases:isHealth?chips('ch-eye'):[],general_diseases:isHealth?chips('ch-general'):[],visual_loads:isHealth?chips('ch-loads'):[],pre_notes:v('f-notes')||null,source:v('f-source')||null,promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true});
-    if(pe)throw pe;
+    const payload={name,last_name:lastname,first_name:firstname,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,visit_reason:chips('ch-reason'),complaints:isHealth?chips('ch-complaints'):[],correction_types:isHealth?chips('ch-correction'):[],approx_diopters:v('f-diop')||null,eye_diseases:isHealth?chips('ch-eye'):[],general_diseases:isHealth?chips('ch-general'):[],visual_loads:isHealth?chips('ch-loads'):[],pre_notes:v('f-notes')||null,source:v('f-source')||null,promo_code:v('f-promo')||null,data_consent:true,accuracy_consent:true,is_first_visit:true};
+    const patientId=await bkFindOrCreatePatient(payload);
     const{data:numData,error:numErr}=await db.rpc('get_next_appointment_number',{date_str:selectedSlot.date});
     if(numErr)throw numErr;
     const num=numData;
     const td=TYPES_DATA.find(t=>t.id===selectedType.id);
     const apptId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
-    const{error:ae}=await db.from('appointments').insert({id:apptId,patient_id:patientId,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:td?.ru?.apptName||selectedType.id,status:'запланирован',appointment_number:num,consultation_price:td?.consult||0});
-    if(ae)throw ae;
+    await bkInsertAppointment({id:apptId,patient_id:patientId,slot_id:selectedSlot.id,date:selectedSlot.date,time:selectedSlot.time,type:td?.ru?.apptName||selectedType.id,status:'запланирован',appointment_number:num,consultation_price:td?.consult||0},bkIntake(payload));
     await db.from('available_slots').update({is_booked:true,appointment_id:apptId}).eq('id',selectedSlot.id);
     await notifyAnna(name,selectedSlot.date,selectedSlot.time,num,td?.ru?.name||selectedType.id);
     _blogDone=true;

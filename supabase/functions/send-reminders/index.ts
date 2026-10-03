@@ -24,8 +24,86 @@ async function sendMessage(chat_id: number, text: string, extra: Record<string, 
   })
 }
 
+const BOOKING_URL = 'https://annanvslv.github.io/anna-novoselova-bot/booking.html'
+const CRM_URL = 'https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html'
+
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// ── Напоминание о контроле после промежуточной коррекции ──
+// Карты, где в рецептах отмечена «Промежуточная коррекция для адаптации» (clinical.interim = '1'),
+// и наступила дата контроля. Пишем пациенту один раз (control_notified), только днём по Белграду,
+// только если дата контроля была не раньше 14 дней назад (старые даты не трогаем),
+// и если пациент ещё не записан и не приходил после этой карты.
+async function sendControlReminders(now: Date): Promise<number> {
+  const local = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Belgrade' }))
+  const hour = local.getHours()
+  if (hour < 10 || hour >= 19) return 0
+  const todayStr = ymd(local)
+  const fromD = new Date(local); fromD.setDate(fromD.getDate() - 14)
+
+  const { data: exams } = await db
+    .from('examinations')
+    .select('id, patient_id, created_at, control_date, appointments(patient_chat_id), patients(name, telegram_chat_id, deleted_at)')
+    .is('deleted_at', null)
+    .eq('control_notified', false)
+    .contains('clinical', { interim: '1' })
+    .lte('control_date', todayStr)
+    .gte('control_date', ymd(fromD))
+  if (!exams?.length) return 0
+
+  const { data: r } = await db.from('settings').select('key,value').eq('key', 'my_chat_id')
+  const myChatId = r?.[0]?.value
+  let sent = 0
+
+  for (const ex of exams) {
+    const pt = ex.patients as Record<string, unknown> | null
+    const markDone = () => db.from('examinations').update({ control_notified: true }).eq('id', ex.id)
+    if (!pt || pt.deleted_at) { await markDone(); continue }
+
+    // Уже записан на будущее или уже был новый осмотр — напоминать не нужно
+    const { count: planned } = await db.from('appointments').select('id', { count: 'exact', head: true })
+      .eq('patient_id', ex.patient_id).eq('status', 'запланирован').gte('date', todayStr).is('deleted_at', null)
+    const { count: newer } = await db.from('examinations').select('id', { count: 'exact', head: true })
+      .eq('patient_id', ex.patient_id).gt('created_at', ex.created_at).is('deleted_at', null)
+    if ((planned || 0) > 0 || (newer || 0) > 0) { await markDone(); continue }
+
+    const name = (pt.name as string) || ''
+    const firstName = name.split(' ')[1] || name
+    const chat_id = (ex.appointments as Record<string, unknown> | null)?.patient_chat_id || pt.telegram_chat_id
+    const crmLink = `${CRM_URL}#patient=${ex.patient_id}`
+
+    if (chat_id) {
+      const text =
+`👋 ${firstName}, здравствуйте!
+
+Подошло время контрольного визита после промежуточной коррекции у оптометриста Анны Новосёловой.
+
+На контроле проверим, как идёт адаптация к очкам, и при необходимости поменяем диоптрии — следующий шаг к полной коррекции.
+
+⏱ 30 минут · бесплатно
+📍 Trg Republike 25, Нови-Сад
+
+Выберите удобное время по кнопке ниже 👇`
+      await sendMessage(Number(chat_id), text, {
+        reply_markup: { inline_keyboard: [[{ text: '📅 Записаться на контроль', url: `${BOOKING_URL}?type=control` }]] },
+      })
+      sent++
+      if (myChatId) await sendMessage(Number(myChatId), `🔔 Пациенту отправлено напоминание о контроле (промежуточная коррекция)\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
+    } else if (myChatId) {
+      await sendMessage(Number(myChatId), `🔔 Пациенту пора на контроль (промежуточная коррекция), но Telegram не привязан — свяжитесь вручную.\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
+    }
+    await markDone()
+  }
+  return sent
+}
+
 serve(async () => {
   const now = new Date()
+
+  let controlSent = 0
+  try { controlSent = await sendControlReminders(now) } catch (e) { console.error('control reminders', e) }
 
   // Все активные записи с chat_id, не отменённые
   const { data: appointments } = await db
@@ -34,7 +112,7 @@ serve(async () => {
     .eq('status', 'запланирован')
     .neq('confirmation_status', 'cancelled')
 
-  if (!appointments) return new Response('no appointments')
+  if (!appointments) return new Response(`no appointments; control reminders: ${controlSent}`)
 
   for (const appt of appointments) {
     // Сначала — чат, из которого подтвердили именно эту запись (повторные записи
@@ -92,5 +170,5 @@ serve(async () => {
     }
   }
 
-  return new Response('reminders sent')
+  return new Response(`reminders sent; control reminders: ${controlSent}`)
 })

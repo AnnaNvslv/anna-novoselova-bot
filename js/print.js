@@ -44,6 +44,31 @@ function _pcKV(items){
   if(!f.length) return '';
   return `<div class="pc-kv">${f.map(i=>`<span><b>${i.label}:</b> ${_pe(i.val)}</span>`).join('')}</div>`;
 }
+// Заключение: лёгкая разметка из шаблона (см. REC_BLOCKS в exam.js) → оформленный HTML.
+// Старые заключения без разметки печатаются как обычный текст.
+function _recsHtml(text){
+  const lines=String(text||'').replace(/\r/g,'').split('\n');
+  const hasMarkup=lines.some(l=>/^(## |• |- |\d\) |🇷🇸|⚠️)/.test(l.trim()));
+  if(!hasMarkup) return `<div class="pc-recs">${_pt(text)}</div>`;
+  const em=t=>_pe(t).replace(/(HYLO[- ][A-ZČĆŠĐŽ]+|Artelac[^,.;)]*)/g,'<b>$1</b>').replace(/→/g,'<span class="rc-arr">→</span>');
+  let out='', list=[], steps=[];
+  const flushList=()=>{ if(list.length){ out+=`<ul class="rc-list">${list.map(x=>`<li>${em(x)}</li>`).join('')}</ul>`; list=[]; } };
+  const flushSteps=()=>{ if(steps.length){ out+=`<div class="rc-steps">${steps.map((x,i)=>`<div class="rc-step"><span class="rc-n">${i+1}</span>${em(x).replace(/\s*<span class="rc-arr">→<\/span>\s*/,'<br>')}</div>`).join('')}</div>`; steps=[]; } };
+  const flush=()=>{ flushList(); flushSteps(); };
+  lines.forEach(raw=>{
+    const l=raw.trim();
+    if(!l){ flush(); return; }
+    let m;
+    if(l.startsWith('## ')){ flush(); out+=`<div class="rc-h">${_pe(l.slice(3))}</div>`; }
+    else if((m=l.match(/^[•\-]\s+(.*)$/))){ flushSteps(); list.push(m[1]); }
+    else if((m=l.match(/^\d+\)\s+(.*)$/))){ flushList(); steps.push(m[1]); }
+    else if(l.startsWith('🇷🇸')){ flush(); out+=`<div class="rc-box rc-sr">${em(l.replace(/^🇷🇸\s*/,''))}</div>`; }
+    else if(l.startsWith('⚠️')){ flush(); out+=`<div class="rc-box rc-warn">${em(l.replace(/^⚠️\s*/,''))}</div>`; }
+    else { flush(); out+=`<div class="rc-p">${em(l)}</div>`; }
+  });
+  flush();
+  return `<div class="pc-recs2">${out}</div>`;
+}
 function _pcComment(v){ return v?`<div class="pc-comment">${_pt(v)}</div>`:''; }
 
 async function _buildPrintCard(examId) {
@@ -124,6 +149,7 @@ async function _buildPrintCard(examId) {
       ${_pcComment(rx('exam_comment'))}
     </div>`:''}
     ${clin(['subj','bino','accom','extra'])}
+    ${e?.clinical?.interim?`<div class="pc-interim"><b>Privremena korekcija za adaptaciju <span class="pc-ru" style="color:#b45309">· Промежуточная коррекция</span></b>Preporučuju se budžetska sočiva. Kontrolni pregled za 6–8 nedelja, zatim promena dioptrije ka punoj korekciji.<br><span style="color:#9a5a1e">Рекомендованы бюджетные линзы. Контроль через 6–8 недель, затем замена диоптрий в сторону полной коррекции.</span></div>`:''}
     ${hd(['rx_far_od_sph','rx_far_os_sph','rx_far_od_cyl','rx_far_os_cyl'])?rxBlock(
       'Parametri za izradu naočara za daljinu','Очки для дали',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax'),v4:rx('rx_far_od_prism')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax'),v4:rx('rx_far_os_prism')}],
@@ -147,7 +173,7 @@ async function _buildPrintCard(examId) {
     </div>`:''}
     ${rx('recommendations').trim()?`<div class="pc-sec">
       ${_pcLabel('Preporuke i zaključak','Рекомендации и заключение')}
-      <div class="pc-recs">${_pt(rx('recommendations'))}</div>
+      ${_recsHtml(rx('recommendations'))}
     </div>`:''}
     ${e?.control_date?`<div class="pc-control"><span>Kontrolna poseta</span><b>${fmt(e.control_date)}</b></div>`:''}
     <div class="pc-footer">
@@ -302,6 +328,24 @@ function _openPrintWindow(title, html) {
     .pc-kv{display:flex;flex-wrap:wrap;gap:4pt 18pt;margin-top:5pt;font-size:9pt}
     .pc-comment{margin-top:5pt;font-size:9pt;color:#4b5563;white-space:pre-line}
     .pc-recs{border-left:2pt solid #1B4F72;padding:4pt 0 4pt 9pt;font-size:9.5pt;white-space:pre-line;line-height:1.55}
+    .pc-recs2{font-size:9.5pt;line-height:1.5}
+    .pc-recs2 .rc-h{font-size:10pt;font-weight:700;color:#1B4F72;margin:9pt 0 3pt;break-after:avoid;page-break-after:avoid}
+    .pc-recs2 .rc-h:first-child{margin-top:0}
+    .pc-recs2 .rc-p{margin:2pt 0}
+    .pc-recs2 .rc-list{margin:2pt 0 2pt 0;padding-left:14pt}
+    .pc-recs2 .rc-list li{margin:1.5pt 0}
+    .pc-recs2 .rc-arr{color:#9ca3af;padding:0 2pt}
+    .pc-recs2 .rc-steps{display:flex;flex-wrap:wrap;gap:4pt;margin:5pt 0;break-inside:avoid;page-break-inside:avoid}
+    .pc-recs2 .rc-step{flex:1 1 0;min-width:70pt;border:0.8pt solid #c7d6e6;border-radius:3pt;padding:4pt 5pt;font-size:8.5pt;line-height:1.3;background:#f6f9fc}
+    .pc-recs2 .rc-step:last-child{background:#e8f1fa;border-color:#1B4F72;font-weight:700}
+    .pc-recs2 .rc-n{display:block;font-size:7.5pt;font-weight:700;color:#1B4F72;margin-bottom:1pt}
+    .pc-recs2 .rc-box{border-radius:3pt;padding:4pt 7pt;margin:4pt 0;font-size:9pt;break-inside:avoid}
+    .pc-recs2 .rc-sr{border:0.8pt solid #c7d6e6;background:#f6f9fc}
+    .pc-recs2 .rc-sr::before{content:"Srpski · ";font-weight:700;color:#1B4F72}
+    .pc-recs2 .rc-warn{border:0.8pt solid #f1c27d;background:#fff8ec}
+    .pc-recs2 .rc-warn::before{content:"⚠ ";font-weight:700;color:#b45309}
+    .pc-interim{border:1pt solid #b45309;border-radius:3pt;padding:6pt 9pt;margin-bottom:11pt;font-size:9.5pt;color:#7c3d0a;background:#fff8ec;break-inside:avoid}
+    .pc-interim b{display:block;font-size:10pt;margin-bottom:2pt}
     .pc-express{display:inline-block;margin-left:8pt;padding:1.5pt 7pt;border:0.8pt solid #15803d;border-radius:8pt;font-size:8.5pt;font-weight:700;color:#15803d;vertical-align:middle;letter-spacing:.3pt}
     .pc-clin td:first-child{width:38%!important;padding-right:8pt}
     .pc-clin td{border-bottom:0.4pt solid #eef1f4}

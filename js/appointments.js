@@ -26,7 +26,7 @@ function _renderApptTable(){
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="appt-actions">
-          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price||3000})">✓ Завершить</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
+          ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price??3000})">✓ Завершить</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
           ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
@@ -67,13 +67,13 @@ async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
         <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>
-        <select id="a-type" onchange="apptTypeChanged()">${APPT_TYPES.map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" ${(a?.type||'')===tp.name?'selected':''}>${apptTypeName(tp.name)}</option>`).join('')}</select>
+        <select id="a-type" onchange="apptTypeChanged()">${(a?.type&&!APPT_TYPES.some(tp=>tp.name===a.type)?[{name:a.type,duration:apptDuration(a.type),price:+a.consultation_price||0}]:[]).concat(APPT_TYPES).map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" data-price="${tp.price??''}" ${(a?.type||'')===tp.name?'selected':''}>${apptTypeName(tp.name)}</option>`).join('')}</select>
       </div>
       ${slotPickerHtml}
       <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
       <div class="form-group"><label>${t('time')} *</label><select id="a-time">${timeOpts}</select></div>
-      <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?.consultation_price||3000}"></div>
-      <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?APPT_TYPES.find(tp=>tp.name===a.type)?.duration||60:60}" readonly></div>
+      <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?(a.consultation_price??0):(APPT_TYPES[0].price??3000)}"></div>
+      <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?apptDuration(a.type):APPT_TYPES[0].duration}" readonly></div>
       <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
       <div class="form-group full"><label>${t('notify_tg')}</label>
         <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">${isErvin()?'Ne':'Нет'}</option></select>
@@ -97,7 +97,7 @@ function pickSlot(date,time,slotId){
   for(let o of sel.options) if(o.value===time||o.textContent===time){o.selected=true;break;}
   window._pickedSlotId=slotId;
 }
-function apptTypeChanged(){const sel=document.getElementById('a-type');const opt=sel.options[sel.selectedIndex];document.getElementById('a-dur').value=opt?.dataset?.dur||60;}
+function apptTypeChanged(){const sel=document.getElementById('a-type');const opt=sel.options[sel.selectedIndex];document.getElementById('a-dur').value=opt?.dataset?.dur||60;if(opt?.dataset?.price!==undefined&&opt.dataset.price!=='')document.getElementById('a-price').value=opt.dataset.price;}
 
 async function saveAppt(id){
   const btn=document.querySelector('.modal-footer .btn-accent');
@@ -166,7 +166,7 @@ async function saveAppt(id){
     if(v('a-notify')==='yes'&&!id){
       const{data:p}=await db.from('patients').select('name,telegram_chat_id').eq('id',patient_id).single();
       if(p?.telegram_chat_id){
-        const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n📅 ${fmtDateLong(date)}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n💰 Стоимость приёма: ${(+(v('a-price')||3000)).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули.\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
+        const msg=`Здравствуйте, ${p.name}!\n\nВы записаны в Оптику Ginter на ${typeName} к оптометристу Анне Новосёловой.\n\n📅 ${fmtDateLong(date)}\n⏰ ${time}\n\nАдрес: <a href="https://maps.app.goo.gl/LJerB2rskqhnhES48">Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)</a> 📍\n\nПродолжительность приёма — ${apptDurText(typeName)}\n\n${+v('a-price')>0?`💰 Стоимость приёма: ${(+v('a-price')).toLocaleString('ru-RU')} динар. Оплата за приём — только наличными.\n(Очки можно оплатить картой)`:'💰 Приём бесплатный.\n(Очки можно оплатить картой)'}\n\nНа приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями, которые у вас есть (даже старые и которые вы уже не используете).\n\nЗа полчаса до приёма нужно прекратить активную зрительную нагрузку — перестать работать за компьютером, телефоном и дать глазам отдохнуть.\n\nЕсли вы носите контактные линзы, то за 20 минут до приёма вам нужно их снять, чтобы глаза отдохнули.\n\n❤️‍🩹 Если ваши планы изменятся или вы захотите отменить или перенести приём — сообщите, пожалуйста, заранее.\n\nЕсли есть ещё вопросы — свободно пишите, обсудим.\n\nДо встречи!\nАнна.`;
         await tgSend(p.telegram_chat_id,msg);
       }
     }
@@ -208,7 +208,7 @@ function openCompleteApptPopup(id, defaultPrice) {
     <div class="modal-body">
       <div class="form-group">
         <label>Сумма оплаты (дин.)</label>
-        <input type="number" id="complete-price" value="${defaultPrice||3000}" style="font-size:20px;font-weight:700;text-align:center;padding:12px;border:2px solid var(--accent);border-radius:8px;width:100%">
+        <input type="number" id="complete-price" value="${defaultPrice??3000}" style="font-size:20px;font-weight:700;text-align:center;padding:12px;border:2px solid var(--accent);border-radius:8px;width:100%">
       </div>
       <div class="form-group" style="margin-top:12px">
         <label>Комментарий</label>
@@ -220,6 +220,11 @@ function openCompleteApptPopup(id, defaultPrice) {
       <button class="btn btn-success" onclick="doCompleteAppt('${id}')">✓ Завершить</button>
     </div>
   </div>`);
+  // Цена из самой записи: бесплатные виды (контроль, помощь, экспресс) не подставляют 3000
+  db.from('appointments').select('consultation_price,type').eq('id',id).single().then(({data})=>{
+    const el=document.getElementById('complete-price'); if(!el||!data) return;
+    el.value = (+data.consultation_price>0) ? +data.consultation_price : apptDefaultPrice(data.type);
+  });
   setTimeout(()=>{ const el=document.getElementById('complete-price'); if(el){el.focus();el.select();} },100);
 }
 

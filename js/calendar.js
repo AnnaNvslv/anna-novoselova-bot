@@ -118,7 +118,7 @@ async function renderSlots(){
     });
     (appts||[]).filter(a=>a.date===d).forEach(a=>{
       const tm=a.time?.substr(0,5); if(!tm||seenTimes.has(tm))return;
-      events.push({ tm, slot:null, appt:a, dur:calDur, slotType:'primary' });
+      events.push({ tm, slot:null, appt:a, dur:(typeof apptDuration==='function'?apptDuration(a.type):calDur), slotType:'primary' });
     });
 
     let evHTML='';
@@ -281,8 +281,8 @@ async function renderSlots(){
   </div>
   <div style="display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--text-m);flex-wrap:wrap;align-items:center">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#d1fae5;border-left:3px solid #6ee7b7;display:inline-block"></span>Приём 60 мин</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;border-left:3px solid #fcd34d;display:inline-block"></span>15 мин</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fce7f3;border-left:3px solid #f9a8d4;display:inline-block"></span>Экспресс 30 мин</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;border-left:3px solid #fcd34d;display:inline-block"></span>15 мин: помощь в оптике</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fce7f3;border-left:3px solid #f9a8d4;display:inline-block"></span>30 мин: экспресс / контроль</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#dbeafe;border-left:3px solid #93c5fd;display:inline-block"></span>${t('patient')}</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#fde68a;border-left:3px solid #fbbf24;display:inline-block"></span>${t('slot_ervin')}</span>
     <span style="opacity:.6">· узкий слот — нажмите для действий</span>
@@ -309,8 +309,8 @@ function openAddSlotOrAppt(date,tm){
       <div class="form-group" style="margin-top:8px"><label>Тип</label>
         <select id="cas-type">
           <option value="primary">Основной приём (60 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (30 мин)</option>
+          <option value="short">15 мин (помощь в оптике)</option>
+          <option value="express">30 мин (экспресс / контроль)</option>
         </select>
       </div>
     </div>
@@ -362,8 +362,8 @@ async function openWeekSlots(from,to){
       <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
         <select id="ws-type">
           <option value="primary">Основной приём (60 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (30 мин)</option>
+          <option value="short">15 мин (помощь в оптике)</option>
+          <option value="express">30 мин (экспресс / контроль)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:10px"><label>Рабочие дни</label>
@@ -406,8 +406,8 @@ async function openDaySlots(date){
       <div class="form-group" style="margin-top:10px"><label>Тип слотов</label>
         <select id="ds-type">
           <option value="primary">Основной приём (60 мин)</option>
-          <option value="short">15 мин (контроль / помощь)</option>
-          <option value="express">Экспресс-диагностика (30 мин)</option>
+          <option value="short">15 мин (помощь в оптике)</option>
+          <option value="express">30 мин (экспресс / контроль)</option>
         </select>
       </div>
       <div class="form-group" style="margin-top:12px"><label>Время (каждый слот на новой строке)</label>

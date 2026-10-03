@@ -5,13 +5,31 @@ let db = null;
 try { const { createClient } = window.supabase; db = createClient(SB_URL, SB_KEY); } catch(e) { console.error('Supabase init error', e); }
 
 // ═══ CONSTANTS ═══
+// price — цена по умолчанию при создании записи в CRM (можно поправить вручную)
 const APPT_TYPES = [
-  { name: 'Первичный приём (подбор очков/МКЛ)', duration: 60 },
-  { name: 'Повторный приём', duration: 60 },
-  { name: 'Подбор КЛ с обучением', duration: 90 },
-  { name: 'Помощь в оптике', duration: 30 },
-  { name: 'Контрольный осмотр', duration: 15 },
+  { name: 'Первичный приём (подбор очков/МКЛ)', duration: 60, price: 3000 },
+  { name: 'Повторный приём', duration: 60, price: 2000 },
+  { name: 'Подбор КЛ с обучением', duration: 90, price: 3500 },
+  { name: 'Экспресс-диагностика', duration: 30, price: 0 },
+  { name: 'Помощь в оптике', duration: 15, price: 0 },
+  { name: 'Контрольный визит', duration: 30, price: 0 },
 ];
+// Длительность записи по названию вида (в т.ч. старые названия из онлайн-записи)
+function apptDuration(type){
+  const t=APPT_TYPES.find(x=>x.name===type); if(t) return t.duration;
+  if(/Контрол/i.test(type||'')) return 30;
+  if(/Экспресс/i.test(type||'')) return 30;
+  if(/Помощь/i.test(type||'')) return 15;
+  if(/обучени/i.test(type||'')) return 90;
+  return 60;
+}
+// Цена по умолчанию по названию вида: бесплатные — контроль, помощь, экспресс
+function apptDefaultPrice(type){
+  const t=APPT_TYPES.find(x=>x.name===type); if(t) return t.price;
+  if(/Контрол|Помощь|Экспресс/i.test(type||'')) return 0;
+  if(/Повторн/i.test(type||'')) return 2000;
+  return 3000;
+}
 const ORDER_STATUSES_NEW = ['оформлен'];
 const ORDER_STATUSES_ALL = ['оформлен','в работе','готов','выдан','отменен','возврат','переделка'];
 const CORR_TYPES = ['Очки для дали','Очки для компьютера','Очки для близи','Прогрессивные очки','Очки постоянного ношения','МКЛ'];
@@ -37,6 +55,8 @@ const APPT_TYPES_SR = {
   'Подбор КЛ с обучением': 'Izbor KS s obukom',
   'Помощь в оптике': 'Pomoć u optici',
   'Контрольный осмотр': 'Kontrolni pregled',
+  'Контрольный визит': 'Kontrolni pregled',
+  'Экспресс-диагностика': 'Ekspres dijagnostika',
 };
 function apptTypeName(ru){ return (typeof _lang!=='undefined'&&_lang==='sr'&&APPT_TYPES_SR[ru])||ru; }
 

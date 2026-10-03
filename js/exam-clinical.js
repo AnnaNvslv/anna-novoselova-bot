@@ -143,6 +143,7 @@ function _clinCollect(prev){
   // Сохраняем ключи, которых нет в текущей форме (на случай будущих/удалённых полей)
   if (prev && typeof prev === 'object') Object.keys(prev).forEach(k=>{ if(!document.querySelector('[data-clin="'+k+'"]') && prev[k]) out[k]=prev[k]; });
   document.querySelectorAll('#modal-container [data-clin]').forEach(el=>{
+    if (el.type === 'checkbox') { if (el.checked) out[el.dataset.clin] = '1'; return; }
     const val = (el.value||'').trim();
     if (val) out[el.dataset.clin] = val;
   });
@@ -251,20 +252,75 @@ function clinFarPlusAdd(targetPrefix){
   if (!isNaN(pd) && !_getVal(targetPrefix==='rc'?'rc-pd':'rn-pd')) _setVal(targetPrefix==='rc'?'rc-pd':'rn-pd', String(pd-(targetPrefix==='rc'?2:3)));
   toast(targetPrefix==='rc' ? 'Компьютер = даль + ½ ADD, PD −2 мм (проверьте!)' : 'Близь = даль + ADD, PD −3 мм (проверьте!)','info');
 }
-// Очки для дали → МКЛ с пересчётом на вертекс 12 мм (по главным меридианам)
+// Очки для дали → мягкие МКЛ. Общепринятые правила подбора:
+//  1. Вертекс 12 мм пересчитывается только для меридианов с |F| ≥ 4.00 D
+//     (ниже разница меньше 0.25 D): F_кл = F / (1 − 0.012·F).
+//  2. Округление до 0.25 «в плюс»: при миопии — в сторону меньшего минуса,
+//     при гиперметропии — в сторону большего плюса.
+//  3. |Cyl| ≤ 0.75 → сферическая КЛ на сферический эквивалент (Sph + ½Cyl).
+//     |Cyl| > 0.75 → торическая КЛ: Cyl подгоняется к стандартной линейке
+//     (−0.75 / −1.25 / −1.75 / −2.25), ось — к шагу 10°. Больше −2.25 — индивидуальная/RGP.
+//  Это стартовые параметры: финал — по посадке и сверхрефракции на глазу.
+const CL_TORIC_CYLS = [-0.75, -1.25, -1.75, -2.25];
+function _clVertex(F){ return Math.abs(F) >= 4 ? F / (1 - 0.012*F) : F; }
+function _clRoundPlus(F){ return Math.ceil(F*4 - 1e-6) / 4; }
+function _clCalcEye(sph, cyl, ax){
+  cyl = isNaN(cyl) ? 0 : cyl;
+  if (cyl > 0) { sph = sph + cyl; cyl = -cyl; ax = isNaN(ax) ? ax : (ax + 90) % 180 || 180; } // плюс-цилиндр → минус
+  if (Math.abs(cyl) <= 0.75) {
+    const se = sph + cyl/2;
+    const v = _clVertex(se);
+    return { sph:_clRoundPlus(v), cyl:null, ax:null,
+      note: (cyl ? 'сфер. эквивалент '+_fmtD(se) : 'сфера') + (Math.abs(se)>=4 ? ', вертекс '+_fmtD(se)+'→'+v.toFixed(2) : '') };
+  }
+  const m1 = _clVertex(sph), m2 = _clVertex(sph + cyl);
+  const rawCyl = m2 - m1;
+  let best = CL_TORIC_CYLS[0];
+  CL_TORIC_CYLS.forEach(c => { if (Math.abs(c - rawCyl) < Math.abs(best - rawCyl)) best = c; });
+  let axR = isNaN(ax) ? null : Math.round(ax/10)*10; if (axR === 0) axR = 180;
+  // Сфера компенсирует разницу при подгонке цилиндра — сохраняем сферический эквивалент
+  const sphAdj = m1 + (rawCyl - best)/2;
+  return { sph:_clRoundPlus(sphAdj), cyl:best, ax:axR,
+    note: 'торика: Cyl '+rawCyl.toFixed(2)+'→'+_fmtD(best)+(Math.abs(m1)>=4||Math.abs(sph+cyl)>=4?', с вертексом':'')+(axR!==null&&axR!==ax?', ось '+ax+'→'+axR:'')+(rawCyl < -2.375 ? ' ⚠️ цилиндр больше −2.25 — рассмотрите индивидуальные торические или RGP' : '') };
+}
 function clinFarToCL(){
-  const v = 0.012;
-  const conv = F => F / (1 - v*F);
+  const notes = [];
   ['od','os'].forEach(eye=>{
     const s = _num(_getVal(`rf-${eye}-sph`));
-    if (isNaN(s)) return;
-    const c = _num(_getVal(`rf-${eye}-cyl`)) || 0;
-    const m1 = conv(s), m2 = conv(s + c);
-    _setVal(`rcl-${eye}-sph`, _fmtD(m1));
-    _setVal(`rcl-${eye}-cyl`, c ? _fmtD(m2 - m1) : '');
-    _setVal(`rcl-${eye}-ax`, c ? _getVal(`rf-${eye}-ax`) : '');
+    const c = _num(_getVal(`rf-${eye}-cyl`));
+    const a = parseInt(_getVal(`rf-${eye}-ax`), 10);
+    if (isNaN(s) && isNaN(c)) return;
+    const r = _clCalcEye(isNaN(s)?0:s, c, a);
+    _setVal(`rcl-${eye}-sph`, _fmtD(r.sph));
+    _setVal(`rcl-${eye}-cyl`, r.cyl===null ? '' : _fmtD(r.cyl));
+    _setVal(`rcl-${eye}-ax`, r.ax===null ? '' : String(r.ax));
+    notes.push(eye.toUpperCase()+': '+r.note);
   });
-  toast('Пересчёт на вертекс 12 мм выполнен — подберите ближайшие доступные параметры КЛ','info');
+  if (!notes.length) { toast('Сначала заполните рецепт для дали','error'); return; }
+  const box = document.getElementById('cl-calc-note');
+  if (box) { box.textContent = 'Расчёт: '+notes.join(' · ')+'. Стартовые параметры — уточните по посадке и сверхрефракции.'; box.style.display='block'; }
+  toast('Параметры МКЛ рассчитаны — проверьте на глазу','info');
+}
+
+// Промежуточная коррекция: дата контроля через 6 недель + блок в заключении для пациента
+function clinInterimToggle(on){
+  const lab = document.getElementById('e-interim')?.closest('.ex-interim');
+  if (lab) lab.classList.toggle('on', on);
+  _modalDirty = true;
+  if (on) {
+    const d = new Date(); d.setDate(d.getDate()+42);
+    const iso = d.toISOString().split('T')[0];
+    const el = document.getElementById('e-ctrl-date');
+    if (el && (!el.value || el.value > iso)) el.value = iso;
+    const sel = document.getElementById('e-ctrl-sel'); if (sel) sel.value = 'w6';
+    if (typeof addRecBlock === 'function') {
+      const ta = document.getElementById('e-recs');
+      if (ta && !ta.value.includes(REC_BLOCKS.interim.text.split('\n')[0])) addRecBlock('interim');
+    }
+    toast('Контроль назначен на '+fmt(iso)+' · блок для пациента добавлен в заключение','info');
+  } else if (typeof removeRecBlock === 'function') {
+    removeRecBlock('interim');
+  }
 }
 
 // ── Нормализация ввода диоптрий при выходе из поля ──
@@ -307,6 +363,9 @@ document.addEventListener('focusout', ev=>{
   .ex-express{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:13.5px;font-weight:700;cursor:pointer;user-select:none;color:var(--text-m);background:var(--surface)}
   .ex-express input{width:16px;height:16px;margin:0;accent-color:#16a34a}
   .ex-express.on{background:#dcfce7;border-color:#86efac;color:#15803d}
+  .ex-interim{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin-bottom:16px;border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:14.5px;color:var(--text-m);background:var(--surface)}
+  .ex-interim input{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#b45309}
+  .ex-interim.on{border-style:solid;border-color:#f1c27d;background:#fff8ec;color:#7c3d0a}
   .tab .tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
   @media(max-width:768px){.clin-tables{grid-template-columns:1fr}}
   `;
@@ -329,6 +388,7 @@ if (typeof _examTabHtml === 'function') {
           '<div class="history-date">'+t('visit')+(e.visit_number||'—')+' · '+fmt((e.created_at||'').split('T')[0])+'</div>'+
           '<div class="history-title">'+t('exam_card')+
             (e.express_pregled ? ' <span class="badge" style="background:#dcfce7;color:#15803d;font-size:11.5px;padding:2px 8px">⚡ '+(sr?'Ekspres pregled':'Экспресс-преглед')+'</span>' : '')+
+            (e.clinical && e.clinical.interim ? ' <span class="badge" style="background:#fff8ec;color:#b45309;font-size:11.5px;padding:2px 8px">↗ '+(sr?'Privremena korekcija':'Промежуточная коррекция')+'</span>' : '')+
           '</div>'+
           ((e.exam_od_with||e.exam_os_with) ? '<div class="text-sm">Visus s/k: OD '+_ce(e.exam_od_with||'—')+' · OS '+_ce(e.exam_os_with||'—')+(e.exam_ou?' · OU '+_ce(e.exam_ou):'')+'</div>' : '')+
           ((e.rx_far_od_sph||e.rx_far_os_sph) ? '<div class="text-sm">'+t('exam_far_short')+': OD '+_ce(rxLine(e.rx_far_od_sph,e.rx_far_od_cyl,e.rx_far_od_ax))+' · OS '+_ce(rxLine(e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax))+'</div>' : '')+

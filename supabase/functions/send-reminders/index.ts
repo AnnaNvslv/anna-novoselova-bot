@@ -31,25 +31,36 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// ── Напоминание о контроле после промежуточной коррекции ──
-// Карты, где в рецептах отмечена «Промежуточная коррекция для адаптации» (clinical.interim = '1'),
-// и наступила дата контроля. Пишем пациенту один раз (control_notified), только днём по Белграду,
-// только если дата контроля была не раньше 14 дней назад (старые даты не трогаем),
-// и если пациент ещё не записан и не приходил после этой карты.
+function dmy(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
+}
+
+// ── Напоминание о контрольном визите ──
+// Любая карта обследования с датой контроля: пишем пациенту за 3 дня до даты контроля
+// (или сразу, если дата уже наступила, но не позже 14 дней после неё — старые даты не трогаем).
+// Один раз на карту (control_notified), только днём по Белграду. Не пишем, если пациент уже
+// записан на будущее или после этой карты был новый осмотр.
+// Виды: промежуточная коррекция (clinical.interim) и короткий контроль (до ~3 мес. после осмотра)
+// → бесплатный «Контрольный визит» по ссылке ?type=control; плановый (полгода–год) → обычная запись.
+const CONTROL_LEAD_DAYS = 3
+const SHORT_CONTROL_MAX_DAYS = 100
+
 async function sendControlReminders(now: Date): Promise<number> {
   const local = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Belgrade' }))
   const hour = local.getHours()
   if (hour < 10 || hour >= 19) return 0
   const todayStr = ymd(local)
   const fromD = new Date(local); fromD.setDate(fromD.getDate() - 14)
+  const toD = new Date(local); toD.setDate(toD.getDate() + CONTROL_LEAD_DAYS)
 
   const { data: exams } = await db
     .from('examinations')
-    .select('id, patient_id, created_at, control_date, appointments(patient_chat_id), patients(name, telegram_chat_id, deleted_at)')
+    .select('id, patient_id, created_at, control_date, clinical, appointments(patient_chat_id), patients(name, telegram_chat_id, deleted_at)')
     .is('deleted_at', null)
     .eq('control_notified', false)
-    .contains('clinical', { interim: '1' })
-    .lte('control_date', todayStr)
+    .not('control_date', 'is', null)
+    .lte('control_date', ymd(toD))
     .gte('control_date', ymd(fromD))
   if (!exams?.length) return 0
 
@@ -69,30 +80,55 @@ async function sendControlReminders(now: Date): Promise<number> {
       .eq('patient_id', ex.patient_id).gt('created_at', ex.created_at).is('deleted_at', null)
     if ((planned || 0) > 0 || (newer || 0) > 0) { await markDone(); continue }
 
+    const interim = (ex.clinical as Record<string, unknown> | null)?.interim === '1'
+    const gapDays = (new Date(ex.control_date + 'T12:00:00').getTime() - new Date(ex.created_at).getTime()) / 86400000
+    const kind = interim ? 'interim' : (gapDays <= SHORT_CONTROL_MAX_DAYS ? 'short' : 'planned')
+    const kindLabel = kind === 'interim' ? 'контроль после промежуточной коррекции'
+      : kind === 'short' ? 'контрольный визит' : 'плановая проверка зрения'
+
     const name = (pt.name as string) || ''
     const firstName = name.split(' ')[1] || name
     const chat_id = (ex.appointments as Record<string, unknown> | null)?.patient_chat_id || pt.telegram_chat_id
     const crmLink = `${CRM_URL}#patient=${ex.patient_id}`
+    const due = ex.control_date <= todayStr ? 'уже подошёл' : `подходит ${dmy(ex.control_date)}`
 
     if (chat_id) {
-      const text =
+      let text: string
+      let button: { text: string; url: string }
+      if (kind === 'planned') {
+        text =
 `👋 ${firstName}, здравствуйте!
 
-Подошло время контрольного визита после промежуточной коррекции у оптометриста Анны Новосёловой.
+Срок плановой проверки зрения у оптометриста Анны Новосёловой ${due}.
 
-На контроле проверим, как идёт адаптация к очкам, и при необходимости поменяем диоптрии — следующий шаг к полной коррекции.
+Пора проверить, по-прежнему ли подходят очки или линзы и не изменилось ли зрение.
+
+📍 Trg Republike 25, Нови-Сад
+
+Выберите удобное время по кнопке ниже 👇`
+        button = { text: '📅 Записаться на приём', url: BOOKING_URL }
+      } else {
+        const why = kind === 'interim'
+          ? 'На контроле проверим, как идёт адаптация к очкам, и при необходимости поменяем диоптрии — следующий шаг к полной коррекции.'
+          : 'На контроле проверим, как вы видите в новой коррекции и всё ли в порядке.'
+        text =
+`👋 ${firstName}, здравствуйте!
+
+Срок контрольного визита к оптометристу Анне Новосёловой ${due}.
+
+${why}
 
 ⏱ 30 минут · бесплатно
 📍 Trg Republike 25, Нови-Сад
 
-Выберите удобное время по кнопке ниже 👇`
-      await sendMessage(Number(chat_id), text, {
-        reply_markup: { inline_keyboard: [[{ text: '📅 Записаться на контроль', url: `${BOOKING_URL}?type=control` }]] },
-      })
+Нажмите кнопку ниже — откроется запись сразу на «Контрольный визит», вид записи выбирать не нужно 👇`
+        button = { text: '📅 Записаться на контроль', url: `${BOOKING_URL}?type=control` }
+      }
+      await sendMessage(Number(chat_id), text, { reply_markup: { inline_keyboard: [[button]] } })
       sent++
-      if (myChatId) await sendMessage(Number(myChatId), `🔔 Пациенту отправлено напоминание о контроле (промежуточная коррекция)\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
+      if (myChatId) await sendMessage(Number(myChatId), `🔔 Пациенту отправлено напоминание: ${kindLabel} (дата ${dmy(ex.control_date)})\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
     } else if (myChatId) {
-      await sendMessage(Number(myChatId), `🔔 Пациенту пора на контроль (промежуточная коррекция), но Telegram не привязан — свяжитесь вручную.\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
+      await sendMessage(Number(myChatId), `🔔 Пациенту пора: ${kindLabel} (дата ${dmy(ex.control_date)}), но Telegram не привязан — свяжитесь вручную.\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
     }
     await markDone()
   }
@@ -110,7 +146,9 @@ serve(async () => {
     .from('appointments')
     .select('*, patients(name, telegram_chat_id)')
     .eq('status', 'запланирован')
-    .neq('confirmation_status', 'cancelled')
+    // neq сам по себе отбрасывает записи с пустым confirmation_status (NULL), а это все новые записи
+    .or('confirmation_status.is.null,confirmation_status.neq.cancelled')
+    .is('deleted_at', null)
 
   if (!appointments) return new Response(`no appointments; control reminders: ${controlSent}`)
 

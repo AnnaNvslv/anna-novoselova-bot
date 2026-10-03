@@ -74,29 +74,66 @@ function _comment(id,val,placeholder){
   </div>`;
 }
 
-const DEFAULT_RECS = `Контроль остроты зрения через 1 год / 6 мес. / 3 мес.
-Плановый осмотр врача-офтальмолога 1 р/год.
-Рекомендован осмотр врача-офтальмолога.
-
-Рекомендовано соблюдение гигиены зрения при работе за компьютером/телефоном:
-
-• Правило 20-20-20: каждые 20 минут смотреть вдаль (~6 м) в течение 20 секунд.
-• Работать в хорошо освещённом помещении.
-• Установить на мониторе режим «Тёплые тона» (снижение синего спектра).
-• Увлажняющие капли с гиалуроновой кислотой: по 1 капле в каждый глаз каждые 3 часа (KAPI ZA OČI Artelac Splash MDO (0.24%), Hylo Comod (0.1%) — подходит для закапывания прямо поверх контактных линз. При более выраженной сухости, жжении, покраснении глаз: Hylo Forte).
-• Увлажнение помещения 40–60%.
-• Следить за правильным положением тела, делать разминку для шеи каждые 2 часа.
-
-При появлении дискомфорта в новых очках (слабое головокружение, непривычные и слабые болевые ощущения в глазах и голове) перейти к схеме адаптации к очкам:
-Утром, проснувшись, надеть очки.
-15 мин. в очках / 5 мин. без очков →
-20 мин. в очках / 5 мин. без очков →
-25 мин. в очках / 5 мин. без очков →
-35 мин. в очках / 5 мин. без очков →
-Привыкать каждый день, начиная с той длительности, на которой остановились.
-Старые очки не использовать!
-Адаптация может длиться до 2 недель.
-При сохранении дискомфорта через 2 недели — контрольный приём (напишите @AnnaNvslv)`;
+// ── ШАБЛОН ЗАКЛЮЧЕНИЯ ──
+// Простая разметка, которую print.js превращает в оформленный документ:
+//   "## Заголовок"   — подзаголовок раздела
+//   "• текст"        — пункт списка;  "HYLO-…" внутри пункта выделяется жирным
+//   "1) текст"       — шаг (подряд идущие шаги печатаются схемой-лесенкой)
+//   "🇷🇸 текст"       — подсказка по-сербски (рамка)
+//   "⚠️ текст"       — предупреждение (рамка)
+// Блоки можно добавлять кнопками над полем, лишнее — просто стереть.
+const REC_BLOCKS = {
+  control: {label:'Наблюдение', text:`## Наблюдение
+• Контроль остроты зрения через 12 месяцев (или через 6 / 3 мес. — по назначению).
+• Плановый осмотр офтальмолога — 1 раз в год.
+• Рекомендован осмотр офтальмолога.`},
+  hygiene: {label:'Гигиена зрения', text:`## Гигиена зрения при работе с экраном
+• Правило 20-20-20: каждые 20 минут — 20 секунд смотреть вдаль (от 6 метров).
+• Моргать чаще и полностью: за экраном мы моргаем намного реже, глаза пересыхают.
+• Экран — на расстоянии вытянутой руки, верхний край чуть ниже уровня глаз.
+• Хорошее общее освещение, без бликов на экране; не работать в темноте.
+• Вечером — тёплые тона экрана (ночной режим).
+• Влажность воздуха в помещении 40–60%.
+• Каждые 2 часа — короткая разминка для шеи и плеч.`},
+  drops: {label:'Капли', text:`## Увлажняющие капли
+По 1 капле в каждый глаз 3–4 раза в день, при сухости — чаще. Все капли ниже без консервантов.
+• Лёгкая усталость и раздражение к вечеру → HYLO FRESH
+• Сухость, жжение, «песок» в глазах, долгая работа за экраном → HYLO-COMOD (можно капать прямо поверх контактных линз)
+• Сильная постоянная сухость, после операций на глазах → HYLO-GEL (лучше без линз или на ночь)
+• Сухость вместе с аллергией, зудом → HYLO-DUAL
+С контактными линзами (кроме HYLO-COMOD) — капать не раньше чем через 30 минут после надевания.
+🇷🇸 В аптеке: «Dobar dan, trebaju mi kapi za oči HYLO-COMOD.» Если нет: «Imate li neke veštačke suze bez konzervansa, sa hijaluronskom kiselinom?»
+⚠️ Покраснение, боль, выделения или резкое ухудшение зрения — это не к каплям: срочно к офтальмологу.`},
+  adapt: {label:'Адаптация к очкам', text:`## Адаптация к новым очкам
+В первые дни нормально: лёгкое головокружение, «наклон» пола, искажение формы предметов, усталость глаз.
+Надевайте очки утром сразу после пробуждения. Если дискомфортно — привыкайте по шагам, каждый день начиная с того шага, на котором остановились:
+1) 15 мин в очках → 5 мин отдыха
+2) 20 мин в очках → 5 мин отдыха
+3) 25 мин в очках → 5 мин отдыха
+4) 35 мин в очках → 5 мин отдыха
+5) Очки весь день
+• Старые очки не надевайте — это затягивает привыкание.
+• Обычно адаптация занимает до 2 недель. Если дискомфорт сохраняется дольше — напишите @AnnaNvslv, назначим бесплатный контрольный визит.`},
+  interim: {label:'Промежуточная коррекция', text:`## Промежуточная коррекция
+• Эти очки — промежуточный этап: переходим к полной коррекции постепенно, чтобы привыкание было комфортным.
+• Рекомендуем бюджетные линзы — через 6–8 недель диоптрии будут изменены.
+• Контрольный визит через 6–8 недель (бесплатно, 30 минут): проверим адаптацию и подберём следующий шаг. Telegram-бот напомнит и пришлёт ссылку на запись.`},
+};
+const DEFAULT_RECS = ['control','hygiene','drops','adapt'].map(k=>REC_BLOCKS[k].text).join('\n\n');
+// Вставить блок в заключение (если его там ещё нет)
+function addRecBlock(key){
+  const ta=document.getElementById('e-recs'); if(!ta) return;
+  const b=REC_BLOCKS[key]; if(!b) return;
+  const head=b.text.split('\n')[0];
+  if(ta.value.includes(head)){ toast('Этот блок уже есть в заключении','info'); return; }
+  ta.value=(ta.value.trim()? ta.value.trim()+'\n\n' : '')+b.text;
+  _modalDirty=true;
+}
+function removeRecBlock(key){
+  const ta=document.getElementById('e-recs'); if(!ta) return;
+  const b=REC_BLOCKS[key]; if(!b) return;
+  if(ta.value.includes(b.text)){ ta.value=ta.value.replace('\n\n'+b.text,'').replace(b.text,'').trim(); _modalDirty=true; }
+}
 
 const EXAM_TABS=[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['bino','Бинокулярное / аккомодация'],['rx','Рецепты'],['concl','Заключение']];
 function _drawExam(p,e,visitNum,apptId,apptType){
@@ -223,6 +260,10 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       </div>
 
       <div id="exam-tab-rx" class="tab-content${_examTab==='rx'?' active':''}">
+        <label class="ex-interim${e?.clinical?.interim?' on':''}">
+          <input type="checkbox" id="e-interim" data-clin="interim" ${e?.clinical?.interim?'checked':''} onchange="clinInterimToggle(this.checked)">
+          <span><b>Промежуточная коррекция для адаптации</b><br><span style="font-weight:400">Бюджетные линзы · контроль через 6–8 недель · затем замена диоптрий в сторону полной коррекции</span></span>
+        </label>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков для дали</div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinCopyExamToFar()">← Из результатов обследования</button></div>
@@ -267,7 +308,8 @@ function _drawExam(p,e,visitNum,apptId,apptType){
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для заказа контактных линз</div>
-          <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarToCL()">← Из очков для дали (пересчёт на вертекс)</button></div>
+          <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarToCL()" title="Вертекс от ±4.00 D, округление в плюс, Cyl ≤ 0.75 → сферический эквивалент, торика под стандартную линейку">← Рассчитать из очков для дали</button></div>
+          <div id="cl-calc-note" style="display:none;font-size:12.5px;color:var(--text-m);background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:6px 10px;margin:-2px 0 10px"></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>
             <tr><td>OD</td><td>${_rs('rcl-od-sph','sph',ge('rx_cl_od_sph'))}</td><td>${_rs('rcl-od-cyl','cyl',ge('rx_cl_od_cyl'))}</td><td>${_rs('rcl-od-ax','ax',ge('rx_cl_od_ax'))}</td></tr>
@@ -283,12 +325,17 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       </div>
 
       <div id="exam-tab-concl" class="tab-content${_examTab==='concl'?' active':''}">
-        <div class="form-group"><label>Рекомендации</label><textarea id="e-recs" style="min-height:220px" oninput="_modalDirty=true">${ge('recommendations')||DEFAULT_RECS}</textarea></div>
+        <div class="form-group"><label>Рекомендации</label>
+          <div class="ex-tools" style="margin:0 0 6px">${Object.keys(REC_BLOCKS).map(k=>`<button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="addRecBlock('${k}')">+ ${REC_BLOCKS[k].label}</button>`).join('')}</div>
+          <textarea id="e-recs" style="min-height:360px;font-size:14.5px;line-height:1.55" oninput="_modalDirty=true">${ge('recommendations')||DEFAULT_RECS}</textarea>
+          <div style="font-size:12px;color:var(--text-m);margin-top:4px">«## » — заголовок, «• » — пункт, «1) » — шаг схемы, «🇷🇸 » — подсказка по-сербски, «⚠️ » — предупреждение. На печати оформляется автоматически.</div>
+        </div>
         <div class="divider"></div>
         <div class="form-grid">
           <div class="form-group"><label>Дата контрольного визита</label>
             <select id="e-ctrl-sel" onchange="updateCtrlDate(this.value)">
               <option value="">— не задана —</option>
+              <option value="w6">Через 6 недель (промежуточная коррекция)</option>
               <option value="1">Через 1 месяц</option>
               <option value="3">через 3 месяца</option>
               <option value="6">Через 6 месяцев</option>
@@ -320,7 +367,13 @@ function _switchExamTab(){
     t.classList.toggle('active',tabs[i]===_examTab);
   });
 }
-function updateCtrlDate(m){if(m)document.getElementById('e-ctrl-date').value=addMonths(today(),+m);}
+function updateCtrlDate(m){
+  if(!m) return;
+  const el=document.getElementById('e-ctrl-date');
+  if(m==='w6'){ const d=new Date(); d.setDate(d.getDate()+42); el.value=d.toISOString().split('T')[0]; }
+  else el.value=addMonths(today(),+m);
+  _modalDirty=true;
+}
 function _reRenderCorrs(){
   document.getElementById('corr-list').innerHTML=_renderCorrs();
   // Перерисовка через innerHTML не подхватывается общим initEnterNavigation() (вызывается

@@ -50,33 +50,77 @@ function openModal(html) {
   },200);
 }
 // ═══ ENTER → следующее поле ═══
-// В модалках нет тега <form> (модалки — просто div-ы), поэтому работаем
-// по всем полям внутри #modal-container в DOM-порядке.
-// Textarea и кнопки не трогаем — Enter в textarea должен давать перенос строки.
+// Один делегированный обработчик на документ — работает для ЛЮБОГО содержимого
+// #modal-container, включая блоки, перерисованные через innerHTML после открытия
+// (карта обследования, «Используемая коррекция», форма заказа и т.п.).
+// • Enter в input/select → следующее видимое поле; с последнего поля → кнопка «Сохранить».
+// • data-enter-jump="save" на поле → сразу на кнопку «Сохранить».
+// • Textarea: Enter = перенос строки, Ctrl/Cmd+Enter → следующее поле.
+// • Ctrl/Cmd+S в модалке → кнопка [data-hotkey-save] (или основная кнопка подвала).
+// • Esc → закрыть модалку (с подтверждением, если есть несохранённые изменения).
+function _modalFields(root){
+  return Array.from(root.querySelectorAll('input, select, textarea'))
+    .filter(f => f.type !== 'hidden' && f.type !== 'file' && !f.disabled && !f.readOnly && f.offsetParent !== null && f.tabIndex !== -1);
+}
+function _modalSaveBtn(root){
+  return root.querySelector('[data-hotkey-save]') || root.querySelector('.modal-footer .btn-accent') || root.querySelector('.modal-footer .btn-primary');
+}
+let _enterNavInstalled = false;
 function initEnterNavigation() {
-  const root = document.getElementById('modal-container');
-  if (!root) return;
-  root.querySelectorAll('input, select').forEach(el => {
-    if (el.dataset.enterBound) return;
-    el.dataset.enterBound = '1';
-    el.addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return;
+  if (_enterNavInstalled) return;
+  _enterNavInstalled = true;
+  document.addEventListener('keydown', e => {
+    const root = document.getElementById('modal-container');
+    const overlay = document.getElementById('overlay');
+    const modalOpen = root && overlay && !overlay.classList.contains('hidden');
+    if (!modalOpen) return;
+    const el = e.target;
+    // Esc — закрыть
+    if (e.key === 'Escape') {
+      if (el && el.tagName === 'SELECT') return;
       e.preventDefault();
-      if (el.dataset.enterJump === 'save') {
-        const saveBtn = root.querySelector('.modal-footer .btn-accent');
-        if (saveBtn) { saveBtn.focus(); return; }
+      if (!_modalDirty || confirm(typeof t==='function'?t('close_unsaved'):'Закрыть без сохранения?')) closeModal();
+      return;
+    }
+    // Ctrl/Cmd+S — сохранить
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы')) {
+      const btn = _modalSaveBtn(root);
+      if (btn) { e.preventDefault(); btn.click(); }
+      return;
+    }
+    if (e.key !== 'Enter' || !root.contains(el)) return;
+    const tag = el.tagName;
+    if (tag === 'TEXTAREA' && !(e.ctrlKey || e.metaKey)) return;
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') return;
+    if (tag === 'INPUT' && (el.type === 'button' || el.type === 'submit')) return;
+    e.preventDefault();
+    if (el.dataset.enterJump === 'save') {
+      const saveBtn = root.querySelector('.modal-footer .btn-accent');
+      if (saveBtn) { saveBtn.focus(); return; }
+    }
+    const fields = _modalFields(root);
+    const next = fields[fields.indexOf(el) + 1];
+    if (next) {
+      next.focus();
+      if (typeof next.select === 'function' && next.tagName === 'INPUT' && next.type !== 'checkbox' && next.type !== 'radio' && next.type !== 'date') next.select();
+    } else {
+      // Последнее поле вкладки → следующая вкладка (карта обследования), иначе — «Сохранить»
+      const nextTab = root.querySelector('.tab-bar .tab.active')?.nextElementSibling;
+      if (nextTab && nextTab.classList.contains('tab') && el.closest('.tab-content')) {
+        nextTab.click();
+        setTimeout(() => {
+          const pane = root.querySelector('.tab-content.active');
+          const first = pane && _modalFields(pane)[0];
+          if (first) { first.focus(); if (first.tagName==='INPUT' && typeof first.select==='function') first.select(); }
+        }, 30);
+        return;
       }
-      const fields = Array.from(root.querySelectorAll('input, select, textarea'))
-        .filter(f => f.type !== 'hidden' && !f.disabled && f.offsetParent !== null);
-      const idx = fields.indexOf(el);
-      const next = fields[idx + 1];
-      if (next) {
-        next.focus();
-        if (typeof next.select === 'function') next.select();
-      }
-    });
+      const btn = _modalSaveBtn(root);
+      if (btn) btn.focus();
+    }
   });
 }
+initEnterNavigation();
 function closeModal() { _modalDirty=false; if(_autosaveTimer){clearInterval(_autosaveTimer);_autosaveTimer=null;} document.getElementById('overlay').classList.add('hidden'); }
 function overlayClick(e) {
   if(e.target===document.getElementById('overlay')) {

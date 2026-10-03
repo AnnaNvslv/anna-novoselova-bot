@@ -26,6 +26,11 @@ function _pcHeader(doctor,docType,numLine,date){
 }
 // Таблица OD/OS
 function _pcEyeTable(cols,od,os){
+  // На печать — только заполненные колонки: колонка, пустая для обоих глаз, не выводится
+  const filled = v => v!==null && v!==undefined && String(v).trim()!=='';
+  const keep = cols.map((c,i)=>filled(od[i])||filled(os[i]));
+  if (!keep.some(Boolean)) return '';
+  cols = cols.filter((c,i)=>keep[i]); od = od.filter((c,i)=>keep[i]); os = os.filter((c,i)=>keep[i]);
   // Фиксированная ширина колонок — Sph/Cyl/Ax выровнены во всех таблицах карты
   return `<table class="pc-table" style="width:${32+cols.length*66}pt">
       <colgroup><col class="c-eye">${cols.map(()=>`<col style="width:66pt">`).join('')}</colgroup>
@@ -64,7 +69,9 @@ async function _buildPrintCard(examId) {
   };
 
   const anamnez = rx('general_diseases_notes')
-    ? rx('general_diseases_notes').split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('Диоптрии (со слов)')&&!x.startsWith('Примечания пациента')).join('\n')
+    ? rx('general_diseases_notes').split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('Диоптрии (со слов)')&&!x.startsWith('Примечания пациента'))
+      // незаполненные строки шаблона («Аллергия:», «Первые очки - с:») на печать не выводим
+      .filter(x=>!(/[:：]\s*$/.test(x) && (x.match(/:/g)||[]).length===1)).join('\n')
     : '';
 
   const corrections = (e?.current_corrections?.length) ? `<div class="pc-sec">
@@ -84,9 +91,12 @@ async function _buildPrintCard(examId) {
     </div>` : '';
 
   const hasExamPrism = rx('exam_od_prism')||rx('exam_os_prism');
+  const hasExam = hd(['exam_od_without','exam_os_without','exam_od_cosph','exam_os_cosph','exam_od_cyl','exam_os_cyl','exam_od_ax','exam_os_ax','exam_od_with','exam_os_with','exam_od_prism','exam_os_prism','exam_ou','exam_comment']);
+  const clin = keys => (typeof _clinPrintHtml==='function') ? _clinPrintHtml(e, keys) : '';
+  const express = !!e?.express_pregled;
 
   const html=`<div class="print-card">
-    ${_pcHeader(doctor,'Karton optometrijskog pregleda',e?.appointment_number||('Poseta br. '+(e?.visit_number||1)),date)}
+    ${_pcHeader(doctor,'Karton optometrijskog pregleda'+(express?' <span class="pc-express">Ekspres pregled</span>':''),e?.appointment_number||('Poseta br. '+(e?.visit_number||1)),date)}
     <div class="pc-patient-block">
       <div class="pc-patient-name">${_pe(p?.name||'')}</div>
       <div class="pc-patient-sub">${[age!==''&&age!==null?age+' god.':'',p?.dob?'D.r. '+fmt(p.dob):'',p?.patient_code?'ID: '+_pe(p.patient_code):''].filter(Boolean).join(' · ')}</div>
@@ -94,15 +104,17 @@ async function _buildPrintCard(examId) {
     ${textSec('Razlog dolaska','Причина обращения',rx('visit_reason'))}
     ${textSec('Tegobe','Жалобы',rx('complaints_notes'))}
     ${textSec('Bolesti oka','Глазные заболевания',rx('eye_diseases_notes'))}
+    ${textSec('Poslednja poseta oftalmologu','Последний визит к офтальмологу',rx('last_ophthalmologist'))}
     ${textSec('Anamneza','Анамнез',anamnez)}
     ${corrections}
-    ${hd(['refr_od_sph','refr_os_sph','refr_od_cyl','refr_os_cyl'])?`<div class="pc-sec">
+    ${hd(['refr_od_sph','refr_os_sph','refr_od_cyl','refr_os_cyl','refr_od_ax','refr_os_ax','refr_od_ave','refr_os_ave','refr_od_pd','refr_comment'])?`<div class="pc-sec">
       ${_pcLabel('Autorefraktometrija','Авторефрактометрия')}
       ${_pcEyeTable(['Sph','Cyl','Ax','R AVE'],[rx('refr_od_sph'),rx('refr_od_cyl'),rx('refr_od_ax'),rx('refr_od_ave')],[rx('refr_os_sph'),rx('refr_os_cyl'),rx('refr_os_ax'),rx('refr_os_ave')])}
       ${_pcKV([{label:'PD',val:rx('refr_od_pd')}])}
       ${_pcComment(rx('refr_comment'))}
     </div>`:''}
-    <div class="pc-sec">
+    ${clin(['kera'])}
+    ${hasExam?`<div class="pc-sec">
       ${_pcLabel('Rezultati pregleda','Результаты обследования')}
       ${_pcEyeTable(
         ['Visus bez kor.','Sph','Cyl','Ax','Visus sa kor.'].concat(hasExamPrism?['Prizma']:[]),
@@ -110,32 +122,33 @@ async function _buildPrintCard(examId) {
         [rx('exam_os_without'),rx('exam_os_cosph'),rx('exam_os_cyl'),rx('exam_os_ax'),rx('exam_os_with')].concat(hasExamPrism?[rx('exam_os_prism')]:[]))}
       ${_pcKV([{label:'Visus OU sa korekcijom',val:rx('exam_ou')}])}
       ${_pcComment(rx('exam_comment'))}
-    </div>
-    ${hd(['rx_far_od_sph','rx_far_os_sph'])?rxBlock(
+    </div>`:''}
+    ${clin(['subj','bino','accom','extra'])}
+    ${hd(['rx_far_od_sph','rx_far_os_sph','rx_far_od_cyl','rx_far_os_cyl'])?rxBlock(
       'Parametri za izradu naočara za daljinu','Очки для дали',
       [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax'),v4:rx('rx_far_od_prism')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax'),v4:rx('rx_far_os_prism')}],
       [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}],
       rx('rx_far_comment')):''}
-    ${hd(['rx_comp_od_sph','rx_comp_os_sph'])?rxBlock(
+    ${hd(['rx_comp_od_sph','rx_comp_os_sph','rx_comp_od_cyl','rx_comp_os_cyl'])?rxBlock(
       'Parametri za izradu naočara za rad na računaru','Очки для компьютера',
       [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax'),v4:rx('rx_comp_od_prism')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax'),v4:rx('rx_comp_os_prism')}],
       [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}],
       rx('rx_comp_comment')):''}
-    ${hd(['rx_near_od_sph','rx_near_os_sph'])?rxBlock(
+    ${hd(['rx_near_od_sph','rx_near_os_sph','rx_near_od_cyl','rx_near_os_cyl'])?rxBlock(
       'Parametri za izradu naočara za blizinu','Очки для близи',
       [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax'),v4:rx('rx_near_od_prism')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax'),v4:rx('rx_near_os_prism')}],
       [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}],
       rx('rx_near_comment')):''}
-    ${hd(['rx_cl_od_sph','rx_cl_os_sph'])?`<div class="pc-sec pc-rx">
+    ${hd(['rx_cl_od_sph','rx_cl_os_sph','rx_cl_od_cyl','rx_cl_os_cyl','rx_cl_od_bc','rx_cl_od_type'])?`<div class="pc-sec pc-rx">
       ${_pcLabel('Parametri za porudžbinu kontaktnih sočiva','Контактные линзы')}
       ${_pcEyeTable(['Sph','Cyl','Ax'],[rx('rx_cl_od_sph'),rx('rx_cl_od_cyl'),rx('rx_cl_od_ax')],[rx('rx_cl_os_sph'),rx('rx_cl_os_cyl'),rx('rx_cl_os_ax')])}
       ${_pcKV([{label:'BC',val:rx('rx_cl_od_bc')},{label:'DIA',val:rx('rx_cl_od_dia')},{label:'Preporučena KS',val:rx('rx_cl_od_type')}])}
       ${_pcComment(rx('rx_cl_comment'))}
     </div>`:''}
-    <div class="pc-sec">
+    ${rx('recommendations').trim()?`<div class="pc-sec">
       ${_pcLabel('Preporuke i zaključak','Рекомендации и заключение')}
-      <div class="pc-recs">${_pt(rx('recommendations'))||'—'}</div>
-    </div>
+      <div class="pc-recs">${_pt(rx('recommendations'))}</div>
+    </div>`:''}
     ${e?.control_date?`<div class="pc-control"><span>Kontrolna poseta</span><b>${fmt(e.control_date)}</b></div>`:''}
     <div class="pc-footer">
       <div class="pc-note">Dokument je namenjen za izbor i izradu optičke korekcije (naočare / kontaktna sočiva). U slučaju bolesti oka, bolova ili naglog pogoršanja vida obratite se lekaru oftalmologu.</div>
@@ -152,7 +165,7 @@ async function _buildPatientPrintCard(pid) {
     db.from('patients').select('*').eq('id',pid).single(),
     db.from('appointments').select('*').eq('patient_id',pid).is('deleted_at',null).order('date',{ascending:false}),
     db.from('orders').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false}),
-    db.from('examinations').select('*').eq('patient_id',pid).order('created_at',{ascending:false})
+    db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false})
   ]);
   if(!p) return null;
   const age = p.dob ? calcAge(p.dob) : '';
@@ -176,11 +189,11 @@ async function _buildPatientPrintCard(pid) {
     const hasPrism = lastExam.rx_far_od_prism||lastExam.rx_far_os_prism;
     const hasRx = lastExam.rx_far_od_sph||lastExam.rx_far_os_sph||lastExam.rx_far_od_cyl||lastExam.rx_far_os_cyl;
     examBlock = `<div class="pc-sec">
-      ${_pcLabel('Poslednji pregled — '+_pe(lastExam.appointment_number||('poseta br. '+(lastExam.visit_number||'—')))+', '+fmt(lastExam.created_at?.split('T')[0]),'')}
+      ${_pcLabel('Poslednji pregled — '+_pe(lastExam.appointment_number||('poseta br. '+(lastExam.visit_number||'—')))+', '+fmt(lastExam.created_at?.split('T')[0])+(lastExam.express_pregled?' · ekspres pregled':''),'')}
       ${hasRx?`<div class="pc-sub-title">Naočare za daljinu</div>`+_pcEyeTable(
         ['Sph','Cyl','Ax'].concat(hasPrism?['Prizma']:[]),
         [lastExam.rx_far_od_sph,lastExam.rx_far_od_cyl,lastExam.rx_far_od_ax].concat(hasPrism?[lastExam.rx_far_od_prism]:[]),
-        [lastExam.rx_far_os_sph,lastExam.rx_far_os_cyl,lastExam.rx_far_os_ax].concat(hasPrism?[lastExam.rx_far_os_prism]:[])):'<div class="pc-text muted">Parametri za naočare nisu upisani.</div>'}
+        [lastExam.rx_far_os_sph,lastExam.rx_far_os_cyl,lastExam.rx_far_os_ax].concat(hasPrism?[lastExam.rx_far_os_prism]:[])):''}
       ${lastExam.control_date?`<div class="pc-kv"><span><b>Kontrolna poseta:</b> ${fmt(lastExam.control_date)}</span></div>`:''}
     </div>`;
   }
@@ -204,29 +217,28 @@ async function _buildPatientPrintCard(pid) {
     <div class="pc-sec">
       ${_pcLabel('Kontakt podaci','')}
       <table class="pc-info">
-        <tr><td>Telefon</td><td>${_pe(p.phone||'—')}</td><td>Email</td><td>${_pe(p.email||'—')}</td></tr>
-        <tr><td>Telegram</td><td>${tg}</td><td>Izvor</td><td>${_pe(p.source||'—')}</td></tr>
-        <tr><td>U bazi od</td><td>${p.created_at?fmt(p.created_at.split('T')[0]):'—'}</td><td></td><td></td></tr>
+        ${(()=>{ const items=[['Telefon',_pe(p.phone||'')],['Email',_pe(p.email||'')],['Telegram',tg==='—'?'':tg],['Izvor',_pe(p.source||'')],['U bazi od',p.created_at?fmt(p.created_at.split('T')[0]):'']].filter(i=>i[1]);
+          const rows=[]; for(let i=0;i<items.length;i+=2){ const a=items[i], b=items[i+1]; rows.push(`<tr><td>${a[0]}</td><td>${a[1]}</td><td>${b?b[0]:''}</td><td>${b?b[1]:''}</td></tr>`); } return rows.join(''); })()}
       </table>
       ${p.notes?`<div class="pc-comment"><b>Napomene:</b> ${_pt(p.notes)}</div>`:''}
     </div>
     ${examBlock}
-    <div class="pc-sec">
+    ${(appts||[]).length?`<div class="pc-sec">
       ${_pcLabel('Istorija poseta','')}
       <table class="pc-table pc-list">
         <colgroup><col style="width:15%"><col style="width:10%"><col style="width:15%"><col><col style="width:14%"><col style="width:16%"></colgroup>
         <tr><th>Datum</th><th>Vreme</th><th>Broj</th><th class="l">Vrsta</th><th>Status</th><th class="r">Cena</th></tr>
         ${apptRows}
       </table>
-    </div>
-    <div class="pc-sec">
+    </div>`:''}
+    ${(orders||[]).length?`<div class="pc-sec">
       ${_pcLabel('Porudžbine','')}
       <table class="pc-table pc-list">
         <colgroup><col style="width:15%"><col><col style="width:16%"><col style="width:18%"></colgroup>
         <tr><th>Datum</th><th class="l">Vrsta</th><th>Status</th><th class="r">Iznos</th></tr>
         ${orderRows}
       </table>
-    </div>
+    </div>`:''}
     <div class="pc-footer">
       <div class="pc-note">Poverljivo. Samo za internu upotrebu Optike Ginter.</div>
     </div>
@@ -290,6 +302,9 @@ function _openPrintWindow(title, html) {
     .pc-kv{display:flex;flex-wrap:wrap;gap:4pt 18pt;margin-top:5pt;font-size:9pt}
     .pc-comment{margin-top:5pt;font-size:9pt;color:#4b5563;white-space:pre-line}
     .pc-recs{border-left:2pt solid #1B4F72;padding:4pt 0 4pt 9pt;font-size:9.5pt;white-space:pre-line;line-height:1.55}
+    .pc-express{display:inline-block;margin-left:8pt;padding:1.5pt 7pt;border:0.8pt solid #15803d;border-radius:8pt;font-size:8.5pt;font-weight:700;color:#15803d;vertical-align:middle;letter-spacing:.3pt}
+    .pc-clin td:first-child{width:38%!important;padding-right:8pt}
+    .pc-clin td{border-bottom:0.4pt solid #eef1f4}
     .pc-control{display:flex;justify-content:space-between;align-items:center;border:0.8pt solid #1B4F72;border-radius:3pt;padding:6pt 9pt;margin-bottom:11pt;font-size:10pt;color:#1B4F72;break-inside:avoid}
     .pc-footer{margin-top:14pt;padding-top:6pt;border-top:0.6pt solid #d1d9e2;display:flex;justify-content:space-between;align-items:flex-end;gap:20pt;break-inside:avoid;page-break-inside:avoid}
     .pc-note{font-size:7.5pt;color:#6b7280;max-width:115mm;line-height:1.4}
@@ -300,4 +315,3 @@ function _openPrintWindow(title, html) {
   win.focus();
   setTimeout(()=>{ win.print(); },400);
 }
-

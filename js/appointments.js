@@ -3,7 +3,7 @@ let _allAppts = [];
 let _apptSearchQuery = '';
 async function renderAppointments() {
   document.getElementById('content').innerHTML=`<div class="topbar"><h1>${t('appointments')}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="asearch" placeholder="${t('search')}" oninput="filterAppointmentsUI(this.value)"></div><button class="btn btn-accent" onclick="openAddAppointment()">+ ${t('appointments')||'Pregledi'}</button></div></div><div class="content"><div class="spinner">Загрузка...</div></div>`;
-  const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id)').is('deleted_at',null).order('date',{ascending:false}).order('time');
+  const{data:appts}=await db.from('appointments').select('*, patients(name,telegram_chat_id,telegram_username)').is('deleted_at',null).order('date',{ascending:false}).order('time');
   _allAppts = appts||[];
   _renderApptTable();
 }
@@ -11,7 +11,7 @@ function filterAppointmentsUI(q){ _apptSearchQuery=q; _renderApptTable(); }
 function _renderApptTable(){
   let filtered=apptFilter==='все'?_allAppts:_allAppts.filter(a=>a.status===apptFilter);
   const q=_apptSearchQuery.trim().toLowerCase();
-  if(q) filtered=filtered.filter(a=>((a.patients&&a.patients.name)||'').toLowerCase().includes(q)||(a.appointment_number||'').toLowerCase().includes(q)||(a.type||'').toLowerCase().includes(q));
+  if(q) filtered=filtered.filter(a=>((a.patients&&a.patients.name)||'').toLowerCase().includes(q)||(tgNick(a.patients&&a.patients.telegram_username)).toLowerCase().includes(q.replace(/^@/,''))||(a.appointment_number||'').toLowerCase().includes(q)||(a.type||'').toLowerCase().includes(q));
   document.querySelector('.content').innerHTML=`
     <div class="section-header">
       <div class="filter-bar">${['все','запланирован','завершён','отменён'].map(f=>`<button class="filter-btn${apptFilter===f?' active':''}" onclick="apptFilter='${f}';_renderApptTable()">${{'все':t('all'),'запланирован':t('status_planned'),'завершён':t('status_done'),'отменён':t('status_cancelled')}[f]||f}</button>`).join('')}</div>
@@ -19,7 +19,7 @@ function _renderApptTable(){
     <div class="card"><div class="table-wrap"><table>
       <thead><tr><th>${t('patient')}</th><th>№ приёма</th><th>${t('date_time')}</th><th>${t('appt_type')}</th><th>${t('cost')}</th><th>${t('status')}</th><th></th></tr></thead>
       <tbody>${filtered.map(a=>`<tr>
-        <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span></td>
+        <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span> ${tgTag(a.patients?.telegram_username)}</td>
         <td><span class="badge badge-accent" style="font-size:11px">${a.appointment_number||'—'}</span></td>
         <td><b>${fmt(a.date)}</b> в ${a.time?.substr(0,5)}</td>
         <td style="font-size:13.5px">${a.type||'—'}</td>
@@ -27,7 +27,8 @@ function _renderApptTable(){
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="appt-actions">
           ${a.status=='запланирован'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-success btn-sm" onclick="openCompleteApptPopup('${a.id}',${a.consultation_price??3000})">✓ Завершить</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Otkaži pregled" onclick="cancelAppt('${a.id}')">🚫</button><button class="btn btn-danger btn-sm" title="Obriši (greška)" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
-          ${a.status==='завершён'?`<button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
+          ${a.status==='завершён'?`<button class="btn btn-primary btn-sm" onclick="openExamForm('${a.id}','${a.patient_id}')">📋 Kartica</button><button class="btn btn-ghost btn-sm" onclick="openEditAppt('${a.id}')">✏️</button><button class="btn btn-ghost btn-sm" title="Vrati na zakazan" onclick="revertApptToPlanned('${a.id}')">↩</button>`:''}
+          ${a.status!=='запланирован'&&!isErvin()?`<button class="btn btn-danger btn-sm" title="Obriši" onclick="deleteAppt('${a.id}')">🗑</button>`:''}
         </div></td>
       </tr>`).join('')||`<tr><td colspan="7"><div class="empty"><p>${t('no_appts_table')}</p></div></td></tr>`}
       </tbody></table></div></div>`;
@@ -38,7 +39,7 @@ function openAddAppointmentFor(pid){_apptForm(null,pid);}
 async function openAddAppointmentAtSlot(date,time,slotId){_apptForm(null,null,date,time,slotId);}
 async function openEditAppt(id){const{data:a}=await db.from('appointments').select('*').eq('id',id).single();_apptForm(a,null);}
 async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
-  const{data:patients}=await db.from('patients').select('id,name').is('deleted_at',null).order('name');
+  const{data:patients}=await db.from('patients').select('id,name,telegram_username,phone').is('deleted_at',null).order('name');
   const toD=new Date();toD.setDate(toD.getDate()+21);
   const{data:freeSlots}=await db.from('available_slots').select('*').eq('is_booked',false).is('booked_by',null).gte('date',today()).lte('date',toD.toISOString().split('T')[0]).order('date').order('start_time');
   const slotsByDate={};(freeSlots||[]).forEach(s=>{if(!slotsByDate[s.date])slotsByDate[s.date]=[];slotsByDate[s.date].push(s);});
@@ -63,8 +64,8 @@ async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
   openModal(`<div class="modal modal-lg">
     <div class="modal-header"><span class="modal-title">${a?t('edit_appt'):t('new_appt')}</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
     <div class="modal-body"><div class="form-grid">
-      <div class="form-group full"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><label style="margin:0">${t('patient')} *</label><button type="button" class="btn btn-ghost btn-sm" style="font-size:12px" onclick="_apptSaveState();openAddPatient()">+ Novi pacijent</button></div>
-        <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${p.name}</option>`).join('')}</select>
+      <div class="form-group full"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><label style="margin:0">${t('patient')} *</label><button type="button" class="btn btn-ghost btn-sm" style="font-size:12px" onclick="_apptSaveState();openAddPatient(true)">+ Novi pacijent</button></div>
+        <select id="a-pid"><option value="">${isErvin()?'— izaberite —':'— '+t('patient')+' —'}</option>${(patients||[]).map(p=>`<option value="${p.id}" ${(a?.patient_id||prePatient)===p.id?'selected':''}>${nameWithNick(p.name,p.telegram_username)}</option>`).join('')}</select>
       </div>
       <div class="form-group full"><label>${t('appt_type')} *</label>
         <select id="a-type" onchange="apptTypeChanged()">${(a?.type&&!APPT_TYPES.some(tp=>tp.name===a.type)?[{name:a.type,duration:apptDuration(a.type),price:+a.consultation_price||0}]:[]).concat(APPT_TYPES).map(tp=>`<option value="${tp.name}" data-dur="${tp.duration}" data-price="${tp.price??''}" ${(a?.type||'')===tp.name?'selected':''}>${apptTypeName(tp.name)}</option>`).join('')}</select>
@@ -271,6 +272,7 @@ async function revertApptToPlanned(id){
 }
 
 function _apptSaveState(){
+  window._apptResume={date:v('a-date'),time:v('a-time'),slotId:window._pickedSlotId||null};
   window._pendingApptPid=v('a-pid');
   window._pendingApptType=v('a-type');
   window._pendingApptDate=v('a-date');

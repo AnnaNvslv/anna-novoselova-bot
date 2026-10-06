@@ -78,7 +78,7 @@ async function renderSlots(){
   const [s,{data:slots},{data:appts}]=await Promise.all([
     loadCalSettings(),
     db.from('available_slots').select('*').in('date',weekDays).order('start_time'),
-    db.from('appointments').select('date,time,type,patient_id,patients(name),appointment_number').in('date',weekDays).neq('status','отменён').is('deleted_at',null)
+    db.from('appointments').select('date,time,type,patient_id,patients(name,telegram_username),appointment_number').in('date',weekDays).neq('status','отменён').is('deleted_at',null)
   ]);
   const workDays=s.cal_work_days?s.cal_work_days.split(',').map(Number):[1,2,3,4,5,6];
   const calDur=+(s.cal_duration||60);
@@ -137,14 +137,14 @@ async function renderSlots(){
           const delB=canDel?`<button class="cg2-del" onclick="event.stopPropagation();removeSlotDirect('${slot?.id||''}','${appt.patient_id}')" title="Удалить">✕</button>`:'';
           evHTML+=`<div class="cg2-event" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="openPatientCard('${appt.patient_id}')">
             ${delB}
-            <div class="cg2-ev-row"><span class="cg2-ev-time">${tm}</span><span class="cg2-ev-name">${height<44?lastName(fullName):fullName}</span></div>
+            <div class="cg2-ev-row"><span class="cg2-ev-time">${tm}</span><span class="cg2-ev-name">${height<44?lastName(fullName):fullName}</span>${height>=44&&tgNick(appt.patients?.telegram_username)?` <span class="cg2-ev-nick">@${tgNick(appt.patients?.telegram_username)}</span>`:''}</div>
             ${height>=44?`<div class="cg2-ev-sub">${sub}</div>`:''}
           </div>`;
         } else {
           // Narrow: single colored stripe, click → popup
           const popupBtns=[{label:'Открыть карту',fn:`openPatientCard('${appt.patient_id}')`,bg:'#dbeafe',color:'#1e3a8a'}];
           if(canDel) popupBtns.push({label:'Удалить запись',fn:`removeSlotDirect('${slot?.id||''}','${appt.patient_id}')`,bg:'#fee2e2',color:'#b91c1c'});
-          const popupJson=JSON.stringify({title:`${tm} · ${fullName}`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+          const popupJson=JSON.stringify({title:`${tm} · ${nameWithNick(fullName,appt.patients?.telegram_username)}`,buttons:popupBtns}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
           evHTML+=`<div class="cg2-event cg2-event-narrow" style="top:${top}px;height:${height}px;background:${c.bg};border-left:3px solid ${c.border};color:${c.text}" onclick="cg2SlotPopup(event,${popupJson})">
             <span class="cg2-ev-time-nano">${tm}</span><span class="cg2-ev-nano-name">${lastName(fullName)}</span>
           </div>`;

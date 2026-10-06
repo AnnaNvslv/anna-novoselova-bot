@@ -21,6 +21,7 @@ async function openExamForm(apptId,patientId){
   _currentApptType = appt?.type || '';
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;
   _drawExam(p,e,visitNum,apptId,_currentApptType);
+  _examApplyLock(e,false);
   _autosaveTimer = setInterval(()=>{
     if(_modalDirty && document.getElementById('e-complaints')){
       saveExam(_currentExamId||'',apptId,patientId,visitNum).then(()=>{
@@ -29,8 +30,10 @@ async function openExamForm(apptId,patientId){
     }
   },120000);
 }
-async function openExamView(examId,pid){
+// edit=true — открыть сразу для исправления (пункт «Изменить» в карточке пациента).
+async function openExamView(examId,pid,edit){
   _examTab='anamn';
+  _currentExamId=examId;
   const{data:e}=await db.from('examinations').select('*').eq('id',examId).single();
   const{data:p}=await db.from('patients').select('*').eq('id',pid).single();
   let apptType='';
@@ -42,6 +45,36 @@ async function openExamView(examId,pid){
   _examData.corrections=e?.current_corrections||[];
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span></span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'',apptType);
+  _examApplyLock(e,!!edit);
+}
+
+// ═══ БЛОКИРОВКА ПРОШЕДШЕГО ПРЕГЛЕДА ═══
+// Карта осмотра, созданная не сегодня, открывается только для просмотра: все поля
+// заблокированы, сохранение скрыто. Кнопка «✏️ Изменить» снимает блокировку.
+// Печать и отправка на e-mail в режиме просмотра работают без пересохранения.
+function _examIsLocked(){ return !!document.querySelector('#modal-container .modal.exam-locked'); }
+function _examApplyLock(e, forceEdit){
+  const d=(e?.created_at||'').split('T')[0];
+  const locked = !forceEdit && !!(e && e.id && d && d < today());
+  _examSetLocked(locked, d);
+}
+function _examSetLocked(locked, dateStr){
+  const modal=document.querySelector('#modal-container .modal'); if(!modal) return;
+  modal.classList.toggle('exam-locked', locked);
+  modal.querySelectorAll('input, select, textarea, .modal-body button').forEach(el=>{
+    if(el.closest('[data-nolock]')) return;
+    if(locked){ if(!el.disabled){ el.disabled=true; el.dataset.lk='1'; } }
+    else if(el.dataset.lk){ el.disabled=false; delete el.dataset.lk; }
+  });
+  const ban=document.getElementById('exam-lock-banner');
+  if(ban && dateStr) ban.querySelector('.exam-lock-date').textContent=fmt(dateStr);
+  if(!locked){ _modalDirty=false; }
+}
+function examUnlock(){
+  _examSetLocked(false);
+  toast(t('exam_unlocked'),'info');
+  const first=document.querySelector('#modal-container .tab-content.active input:not([type=checkbox]), #modal-container .tab-content.active textarea');
+  if(first) first.focus();
 }
 // ── RX ПОЛЯ ──
 // Раньше Sph/Cyl/Ax/PD/ADD/BC/DIA были выпадающими списками. По просьбе Анны
@@ -157,7 +190,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
     <div class="modal-header">
       <div style="display:flex;flex-direction:column;gap:2px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>
+          <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>${tgTag(p?.telegram_username)}
           ${apptNum?`<span class="badge badge-accent">${apptNum}</span>`:`<span class="badge badge-accent">${t('visit')}${visitNum}</span>`}
           <label class="ex-express${isExpress?' on':''}" title="Отметьте, если это экспресс-преглед — отметка выводится на печать"><input type="checkbox" id="e-express" ${isExpress?'checked':''} onchange="this.parentNode.classList.toggle('on',this.checked);_modalDirty=true"> ⚡ ${(typeof _lang!=='undefined'&&_lang==='sr'?'Ekspres pregled':'Экспресс-преглед')}</label>
         </div>
@@ -169,6 +202,10 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       <button class="btn btn-ghost btn-sm" onclick="_examClose()">✕</button>
     </div>
     <div class="modal-body">
+      <div id="exam-lock-banner" class="exam-lock-banner" data-nolock>
+        <span>🔒 ${t('exam_locked_title')} <b class="exam-lock-date"></b> — ${t('exam_locked_hint')}</span>
+        <button type="button" class="btn btn-warn btn-sm" onclick="examUnlock()">✏️ ${t('pt_edit')}</button>
+      </div>
       <div class="tab-bar">
         ${EXAM_TABS.map(([tab,l])=>`<div class="tab${_examTab===tab?' active':''}" onclick="_examTab='${tab}';_switchExamTab()">${l}${(tab==='refr'||tab==='exam'||tab==='bino')?_dot(tab):''}</div>`).join('')}
       </div>
@@ -350,14 +387,20 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       <button class="btn btn-ghost" onclick="_examClose()" style="margin-right:auto">${t('btn_close')}</button>
       <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${pid}','${visitNum}','patient')">📧 Пациенту</button>
       <button class="btn btn-ghost" onclick="saveBeforeEmail('${e?.id||''}','${apptId}','${pid}','${visitNum}','clinic')">📧 В оптику</button>
-      <button class="btn btn-ghost" data-hotkey-save="1" title="Ctrl+S" onclick="saveExam('${e?.id||''}','${apptId}','${pid}','${visitNum}')">💾 ${t('btn_save')}</button>
+      <button class="btn btn-warn exam-unlock-btn" data-nolock onclick="examUnlock()">✏️ ${t('pt_edit')}</button>
+      <button class="btn btn-ghost exam-edit-only" data-hotkey-save="1" title="Ctrl+S" onclick="saveExam('${e?.id||''}','${apptId}','${pid}','${visitNum}')">💾 ${t('btn_save')}</button>
       <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${pid}','${visitNum}')">🖨️ ${t('btn_print')}</button>
     </div>
   </div>`;
 }
 function _examClose(){
-  if(_modalDirty && !confirm(t('close_unsaved'))) return;
+  if(_modalDirty && !_examIsLocked() && !confirm(t('close_unsaved'))) return;
   closeModal();
+  _examRefreshPatient();
+}
+// Карточка пациента справа обновляется после сохранения/закрытия карты осмотра
+function _examRefreshPatient(){
+  if(typeof _openPatientId!=='undefined' && _openPatientId && document.getElementById('pt-detail')) _renderPatientCard(_openPatientId);
 }
 function _switchExamTab(){
   document.querySelectorAll('[id^=exam-tab-]').forEach(t=>t.classList.remove('active'));
@@ -424,6 +467,7 @@ function _renderCorrs(){
 function addCorrection(){_examData.corrections.push({type:'Очки для дали'});_reRenderCorrs();}
 
 async function saveExam(id,apptId,patientId,visitNum){
+  if(_examIsLocked()){ toast(t('exam_locked_save'),'info'); return _currentExamId||id||null; }
   const effectiveId = _currentExamId || id || '';
   const vs = id=>{ const el=document.getElementById(id); return el?el.value:''; };
   const data={
@@ -473,6 +517,7 @@ async function saveExam(id,apptId,patientId,visitNum){
       toast(t('card_created'),'success');
     }
     _modalDirty=false;
+    _examRefreshPatient();
     return _currentExamId||effectiveId;
   }catch(err){
     console.error('saveExam error:',err);
@@ -502,12 +547,12 @@ async function saveExam(id,apptId,patientId,visitNum){
 }
 
 async function saveAndPrint(id,apptId,patientId,visitNum){
-  const eid = await saveExam(id,apptId,patientId,visitNum);
+  const eid = _examIsLocked() ? (_currentExamId||id) : await saveExam(id,apptId,patientId,visitNum);
   if(eid) await printExam(eid);
 }
 
 async function saveBeforeEmail(id,apptId,patientId,visitNum,target){
-  const eid = await saveExam(id,apptId,patientId,visitNum);
+  const eid = _examIsLocked() ? (_currentExamId||id) : await saveExam(id,apptId,patientId,visitNum);
   if(eid) await emailExam(eid,target);
 }
 

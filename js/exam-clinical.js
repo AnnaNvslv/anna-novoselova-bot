@@ -372,38 +372,5 @@ document.addEventListener('focusout', ev=>{
   document.head.appendChild(st);
 })();
 
-// ── Карточка пациента, вкладка «Карты»: бейдж экспресс-преглед, Visus и рецепт для дали,
-//    карты из корзины не показываются. Переопределяет _examTabHtml из patients.js.
-if (typeof _examTabHtml === 'function') {
-  _examTabHtml = function(exams, pid) {
-    exams = (exams || []).filter(e => !e.deleted_at);
-    const sr = typeof _lang !== 'undefined' && _lang === 'sr';
-    const addBtn = '<div class="mb-8"><button class="btn btn-ghost btn-sm" onclick="openExamForm(\'\',\''+pid+'\')">+ '+t('exam_card_short')+'</button></div>';
-    if (!exams.length) return addBtn+'<div class="empty"><p>'+t('exam_none')+'</p></div>';
-    const rxLine = (s,c,a) => [s,c,a?'×'+a:''].filter(Boolean).join(' ') || '—';
-    return addBtn+exams.map(e =>
-      '<div class="history-item">'+
-        '<div class="history-dot" style="background:var(--primary-l);border-color:var(--primary)"></div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div class="history-date">'+t('visit')+(e.visit_number||'—')+' · '+fmt((e.created_at||'').split('T')[0])+'</div>'+
-          '<div class="history-title">'+t('exam_card')+
-            (e.express_pregled ? ' <span class="badge" style="background:#dcfce7;color:#15803d;font-size:11.5px;padding:2px 8px">⚡ '+(sr?'Ekspres pregled':'Экспресс-преглед')+'</span>' : '')+
-            (e.clinical && e.clinical.interim ? ' <span class="badge" style="background:#fff8ec;color:#b45309;font-size:11.5px;padding:2px 8px">↗ '+(sr?'Privremena korekcija':'Промежуточная коррекция')+'</span>' : '')+
-          '</div>'+
-          ((e.exam_od_with||e.exam_os_with) ? '<div class="text-sm">Visus s/k: OD '+_ce(e.exam_od_with||'—')+' · OS '+_ce(e.exam_os_with||'—')+(e.exam_ou?' · OU '+_ce(e.exam_ou):'')+'</div>' : '')+
-          ((e.rx_far_od_sph||e.rx_far_os_sph) ? '<div class="text-sm">'+t('exam_far_short')+': OD '+_ce(rxLine(e.rx_far_od_sph,e.rx_far_od_cyl,e.rx_far_od_ax))+' · OS '+_ce(rxLine(e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax))+'</div>' : '')+
-          '<div class="text-sm text-m">'+
-            ([e.rx_far_od_sph ? t('exam_far_short') : '', e.rx_comp_od_sph ? t('exam_comp_short') : '',
-              e.rx_near_od_sph ? t('exam_near_short') : '', e.rx_cl_od_sph ? t('exam_cl_short') : '']
-              .filter(Boolean).join(' · ') || t('exam_no_data'))+
-          '</div>'+
-          (e.control_date ? '<div class="text-sm" style="color:var(--warn)">'+t('exam_control')+': '+fmt(e.control_date)+'</div>' : '')+
-        '</div>'+
-        '<div class="history-actions">'+
-          '<button class="btn btn-ghost btn-sm" onclick="openExamView(\''+e.id+'\',\''+pid+'\')">'+ t('exam_open_btn')+'</button>'+
-          '<button class="btn btn-primary btn-sm" onclick="printExam(\''+e.id+'\')">🖨️</button>'+
-        '</div>'+
-      '</div>'
-    ).join('');
-  };
-}
+// Вкладка «Коррекция (RX)» в карточке пациента (Visus, экспресс, промежуточная коррекция,
+// таблицы OD/OS) теперь целиком в patients.js → _examTabHtml(). Переопределение убрано.

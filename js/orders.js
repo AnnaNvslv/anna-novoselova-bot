@@ -36,6 +36,7 @@ function _rxDioptStr(e, type) {
     const os = seg(e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax);
     if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
     if(_nz(e.rx_far_od_pd)) parts.push('PD '+e.rx_far_od_pd);
+    if(_nz(e.rx_far_os_pd)) parts.push('ADD '+e.rx_far_os_pd); // ADD для дали хранится в rx_far_os_pd
   } else if (type==='comp') {
     const od = seg(e.rx_comp_od_sph,e.rx_comp_od_cyl,e.rx_comp_od_ax);
     const os = seg(e.rx_comp_os_sph,e.rx_comp_os_cyl,e.rx_comp_os_ax);
@@ -105,6 +106,7 @@ function _filteredOrders() {
   if (q) {
     list = list.filter(o =>
       ((o.patients&&o.patients.name)||'').toLowerCase().includes(q) ||
+      tgNick(o.patients&&o.patients.telegram_username).toLowerCase().includes(q.replace(/^@/,'')) ||
       (o.order_number||'').toLowerCase().includes(q) ||
       (o.frame_code||'').toLowerCase().includes(q) ||
       (o.lens_name||'').toLowerCase().includes(q)
@@ -146,7 +148,7 @@ async function renderOrders() {
     (isAdmin() ? '<button class="btn btn-accent" onclick="openAddOrder()">+ '+t('new_order')+'</button>' : '')+
     '</div></div><div class="content"><div class="spinner">'+t('loading')+'</div></div>';
   const {data:orders} = await db.from('orders')
-    .select('*, patients(name,telegram_chat_id)')
+    .select('*, patients(name,telegram_chat_id,telegram_username)')
     .is('deleted_at', null);
   _allOrders = orders || [];
 
@@ -191,7 +193,7 @@ function _renderOrdersTable(list) {
     (sorted.length ? sorted.map(o =>
       '<tr style="cursor:pointer" onclick="openOrderCard(\''+o.id+'\')" onmouseenter="this.style.background=\'var(--surface2)\'" onmouseleave="this.style.background=\'\'">'+
         '<td class="text-m" onclick="event.stopPropagation()">'+fmt(o.order_date||( o.created_at||'').split('T')[0])+'</td>'+
-        '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span></td>'+
+        '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span> '+tgTag(o.patients&&o.patients.telegram_username)+'</td>'+
         '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span>'+(o.is_redo ? ' <span class="badge badge-warn" style="font-size:10px">&#8635;</span>' : '')+'</td>'+
         '<td><div class="fw-6" style="font-size:13.5px">'+(o.frame_code||'—')+'</div><div class="text-sm text-m">'+(o.lens_name||'—')+'</div></td>'+
         '<td style="color:var(--text-l);font-size:13px;max-width:220px">'+
@@ -221,7 +223,7 @@ function _renderOrdersTable(list) {
 
 // ═══ ORDER CARD VIEW ═══
 async function openOrderCard(id) {
-  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',id).single();
+  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('id',id).single();
   if (!o) return;
   const bal = orderBalance(o);
   const displayDate = fmt(o.order_date || (o.created_at||'').split('T')[0]);
@@ -242,14 +244,18 @@ async function openOrderCard(id) {
     '<div class="modal modal-lg">'+
       '<div class="modal-header">'+
         '<div style="flex:1;min-width:0">'+
-          '<span class="modal-title">'+t('orders')+' · '+(o.patients&&o.patients.name||'—')+'</span>'+
+          '<span class="modal-title">'+t('orders')+' · <span style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span></span> '+tgTag(o.patients&&o.patients.telegram_username)+
           '<div class="text-sm text-m mt-4">'+displayDate+' · <span class="badge '+(STATUS_BADGE[o.status]||'badge-gray')+'">'+statusLabel(o.status)+'</span>'+(o.is_redo ? ' · <span class="badge badge-warn">&#8635; Переделка</span>' : '')+(o.counts_for_salary ? ' · <span class="salary-badge">💰 10%</span>' : '')+'</div>'+
         '</div>'+
         '<div class="profile-actions">'+
           (o.status==='готов' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady(\''+o.id+'\')">📨</button>' : '')+
           (o.status==='готов' ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\');closeModal()">'+ t('issue_btn')+'</button>' : '')+
           (o.status==='выдан' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey(\''+o.id+'\')">🔁</button>' : '')+
-          (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditOrder(\''+o.id+'\')">✏️</button>' : '')+
+          (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditOrder(\''+o.id+'\')">✏️ '+t('pt_edit')+'</button>' : '')+
+          ddMenu([
+            {label:'👤 '+t('pt_open_patient'), fn:"openPatientCard('"+o.patient_id+"')"},
+            {label:'🗑 '+t('delete'), fn:"closeModal();delOrder('"+o.id+"')", danger:true, hide:!isAdmin()},
+          ])+
           '<button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>'+
         '</div>'+
       '</div>'+
@@ -288,34 +294,45 @@ function orderTotal_lenses(o) {
 
 // ═══ ORDER FORM ═══
 function openAddOrder() { openAddOrderFor(null); }
-async function openAddOrderFor(patientId) {
+// rxVal — 'examId|far|comp|near|cl': заказ «по рецепту» из карточки пациента.
+// Без rxVal для нового заказа сразу подставляется последний осмотр пациента (как в Ginter);
+// выбор всегда виден в форме и его можно сменить.
+async function openAddOrderFor(patientId, rxVal) {
   const [{data:patients}, examRes] = await Promise.all([
-    db.from('patients').select('id,name').order('name'),
+    db.from('patients').select('id,name,telegram_username').is('deleted_at',null).order('name'),
     patientId
-      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',patientId).order('created_at',{ascending:false})
+      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',patientId).is('deleted_at',null).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
-  _drawOrderForm(null, patientId, patients||[], examRes&&examRes.data||[]);
+  const exams = examRes&&examRes.data||[];
+  let pre = rxVal || '';
+  if (!pre && exams.length) {
+    const k = ['far','comp','near','cl'].find(tp => _rxDioptStr(exams[0], tp));
+    if (k) pre = exams[0].id+'|'+k;
+  }
+  _drawOrderForm(null, patientId, patients||[], exams, pre);
 }
 async function openEditOrder(id) {
   const {data:o} = await db.from('orders').select('*').eq('id',id).single();
   const [{data:patients}, examRes] = await Promise.all([
-    db.from('patients').select('id,name').order('name'),
+    db.from('patients').select('id,name,telegram_username').is('deleted_at',null).order('name'),
     o && o.patient_id
-      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',o.patient_id).order('created_at',{ascending:false})
+      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',o.patient_id).is('deleted_at',null).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
   _drawOrderForm(o, o&&o.patient_id, patients||[], examRes&&examRes.data||[]);
 }
 
-function _drawOrderForm(o, prePatient, patients, exams) {
+function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   const isEdit = !!o;
   const orderDate = (o && (o.order_date || (o.created_at||'').split('T')[0])) || today();
   const lensQty = (o && o.lens_qty != null) ? o.lens_qty : 2;
-  const isCL = o && o.type === 'МКЛ';
+  // Заказ по рецепту МКЛ → сразу тип «Контактные линзы»
+  const preCL = !o && preRx && preRx.split('|')[1] === 'cl';
+  const isCL = (o && o.type === 'МКЛ') || preCL;
   const isRedo = o && !!o.is_redo;
 
-  let selVal = '';
+  let selVal = (!o && preRx) || '';
   if (o && o.examination_id && o.prescription_label) {
     const labelMap = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl','Даль':'far','Компьютер':'comp','Близь':'near'};
     const rxType = labelMap[o.prescription_label] || '';
@@ -338,7 +355,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
             '<div class="flex items-center justify-between mb-4"><label>'+t('patient')+' *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ '+t('new_patient')+'</button></div>'+
             '<select id="o-pid" onchange="onOrderPatientChange(this.value)">'+
               '<option value="">— '+t('select_patient')+' —</option>'+
-              patients.map(p => '<option value="'+p.id+'" '+((o&&o.patient_id===p.id||prePatient===p.id)?'selected':'')+'>'+p.name+'</option>').join('')+
+              patients.map(p => '<option value="'+p.id+'" '+((o&&o.patient_id===p.id||prePatient===p.id)?'selected':'')+'>'+_escH(nameWithNick(p.name,p.telegram_username))+'</option>').join('')+
             '</select>'+
             '<div id="quick-patient-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
               '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">'+t('new_patient')+'</div>'+
@@ -358,7 +375,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
           '<div class="form-group full">'+
             '<div class="flex items-center justify-between mb-4"><label>'+rxLabel+'</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ '+t('prescription')+'</button></div>'+
             '<select id="o-rx" onchange="showRxPreview(this.value)">'+rxHtml+'</select>'+
-            '<div id="o-rx-preview" style="margin-top:8px;font-size:12.5px;color:var(--text-m);background:var(--surface2);border-radius:6px;padding:8px 12px;display:none;line-height:1.8"></div>'+
+            '<div id="o-rx-preview" style="margin-top:8px;display:none"></div>'+
             '<div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
               '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">'+t('prescription')+'</div>'+
               '<div class="form-grid">'+
@@ -401,8 +418,8 @@ function _drawOrderForm(o, prePatient, patients, exams) {
 
           '<div class="form-group"><label>'+t('order_type')+' *</label>'+
             '<select id="o-type" onchange="onOrderTypeChange(this.value)">'+
-              '<option value="Очки" '+(!o||o.type==='Очки'?'selected':'')+'>'+t('order_type_glasses')+'</option>'+
-              '<option value="МКЛ" '+(o&&o.type==='МКЛ'?'selected':'')+'>'+t('order_type_cl')+'</option>'+
+              '<option value="Очки" '+((!o&&!preCL)||(o&&o.type==='Очки')?'selected':'')+'>'+t('order_type_glasses')+'</option>'+
+              '<option value="МКЛ" '+(isCL?'selected':'')+'>'+t('order_type_cl')+'</option>'+
               '<option value="Ремонт" '+(o&&o.type==='Ремонт'?'selected':'')+'>'+t('order_type_repair')+'</option>'+
               '<option value="Другое" '+(o&&o.type==='Другое'?'selected':'')+'>'+t('no_data')+'</option>'+
             '</select>'+
@@ -426,7 +443,7 @@ function _drawOrderForm(o, prePatient, patients, exams) {
             '<div class="form-group">'+
               '<label>'+t('frame')+' (din.)</label>'+
               '<div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">'+t('no_data').replace('Nema','Osnovna').replace('Нет','Базовая')+'</label><input type="number" id="o-fprice" value="'+(o&&o.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
+                '<div><label style="font-size:10.5px;color:var(--text-l)">'+(_lang==='sr'?'Osnovna':'Базовая')+'</label><input type="number" id="o-fprice" value="'+(o&&o.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
                 '<div><label style="font-size:10.5px;color:var(--text-l)">% </label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
                 '<div><label style="font-size:10.5px;color:var(--green);font-weight:700">= din.</label><input type="number" id="o-fprice-final" value="'+(o&&o.frame_price||0)+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
               '</div>'+
@@ -555,7 +572,7 @@ async function onOrderPatientChange(pid) {
   const sel = document.getElementById('o-rx');
   const prev = document.getElementById('o-rx-preview');
   if (!pid) { sel.innerHTML = '<option value="">—</option>'; if (prev) prev.style.display='none'; return; }
-  const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).order('created_at',{ascending:false});
+  const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false});
   (exams||[]).forEach(e => { window._examCache[e.id] = e; });
   sel.innerHTML = _rxOpts(exams||[]);
   if (prev) prev.style.display = 'none';
@@ -582,7 +599,8 @@ async function showRxPreview(val) {
   else if (type==='comp') html = row('OD',e.rx_comp_od_sph,e.rx_comp_od_cyl,e.rx_comp_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_comp_os_sph,e.rx_comp_os_cyl,e.rx_comp_os_ax)+(_nz(e.rx_comp_od_pd)?' &nbsp;<b>PD:</b> '+e.rx_comp_od_pd:'')+(_nz(e.rx_comp_od_add)?' &nbsp;<b>ADD:</b> '+e.rx_comp_od_add:'');
   else if (type==='near') html = row('OD',e.rx_near_od_sph,e.rx_near_od_cyl,e.rx_near_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_near_os_sph,e.rx_near_os_cyl,e.rx_near_os_ax)+(_nz(e.rx_near_od_pd)?' &nbsp;<b>PD:</b> '+e.rx_near_od_pd:'')+(_nz(e.rx_near_od_add)?' &nbsp;<b>Degr:</b> '+e.rx_near_od_add:'');
   else if (type==='cl')  html = row('OD',e.rx_cl_od_sph,e.rx_cl_od_cyl,e.rx_cl_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_cl_os_sph,e.rx_cl_os_cyl,e.rx_cl_os_ax)+(_nz(e.rx_cl_od_bc)?' &nbsp;<b>BC:</b> '+e.rx_cl_od_bc:'')+(_nz(e.rx_cl_od_dia)?' &nbsp;<b>DIA:</b> '+e.rx_cl_od_dia:'')+(e.rx_cl_od_type?' &nbsp;'+e.rx_cl_od_type:'');
-  prev.innerHTML = html || '('+t('no_data')+')';
+  // Крупная таблица OD/OS (как во вкладке «Коррекция (RX)» карточки пациента)
+  prev.innerHTML = (html && typeof _rxTableHtml === 'function') ? _rxTableHtml(e, type) : (html || '('+t('no_data')+')');
   prev.style.display = 'block';
 }
 function recalcOrder() {
@@ -646,6 +664,7 @@ async function saveOrder(id) {
       toast(t('order_created'));
     }
     await recalcSalary(patient_id);
+    if (curSection === 'patients' && _openPatientId === patient_id) _cardTab = 'orders';
     closeModal(); render();
   } catch(err) {
     console.error('saveOrder error:', err);
@@ -670,7 +689,7 @@ async function issueOrder(id) {
   toast(t('issue_btn')+' ✓'); render();
 }
 async function notifyOrderReady(id) {
-  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',id).single();
+  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('id',id).single();
   if (!o || !o.patients || !o.patients.telegram_chat_id) { toast(t('error'), 'error'); return; }
   const bal = orderBalance(o);
   const paymentText = bal > 0
@@ -681,7 +700,7 @@ async function notifyOrderReady(id) {
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }
 async function sendFollowUpSurvey(orderId) {
-  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id)').eq('id',orderId).single();
+  const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('id',orderId).single();
   if (!o || !o.patients || !o.patients.telegram_chat_id) { toast(t('error'), 'error'); return; }
   const firstName = o.patients.name.split(' ')[0];
   const msg = 'Zdravo, '+firstName+'! 👋\n\nProšle su dve nedelje od kada ste preuzeli naocare. Zanimalo me kako se snalazite 🙂\n\n1️⃣ Kako ste sa novim naocarima?\n😊 Odlično\n🤔 Navikavam se\n😕 Imam pitanja\n\n2️⃣ Da li vam okvir odgovara?\n👍 Da\n👎 Ne\n\nNapišite direktno u odgovor na ovu poruku — Ana @AnnaNvslv će vam se javiti lično.\n\nHvala! 🙏';

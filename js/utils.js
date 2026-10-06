@@ -127,3 +127,48 @@ function overlayClick(e) {
     if(confirm(typeof t==='function'?t('close_unsaved'):'Закрыть?')) closeModal();
   }
 }
+
+// ═══ TELEGRAM-НИК рядом с именем пациента ═══
+// tgNick('@anna_x') → 'anna_x'; tgTag(username) → кликабельный @ник (t.me) или '' если ника нет.
+// {link:false} — без ссылки (для строк списка, где клик открывает карточку).
+function tgNick(u) {
+  return String(u || '').trim().replace(/^https?:\/\/t\.me\//i, '').replace(/^@+/, '').replace(/[^A-Za-z0-9_]/g, '');
+}
+function tgTag(u, opts) {
+  const n = tgNick(u); if (!n) return '';
+  if (opts && opts.link === false) return '<span class="tg-nick">@' + n + '</span>';
+  return '<a class="tg-nick" href="https://t.me/' + n + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Telegram">@' + n + '</a>';
+}
+// Имя + ник одной строкой для <option> и заголовков без HTML
+function nameWithNick(name, u) { const n = tgNick(u); return (name || '—') + (n ? '  · @' + n : ''); }
+
+// ═══ ВЫПАДАЮЩЕЕ МЕНЮ «⋯» (Изменить / Удалить / …) ═══
+// ddMenu([{label, fn, danger, hide}], btnLabel) → кнопка; меню открывается поверх всего
+// (position:fixed), поэтому не обрезается прокручиваемыми панелями и таблицами.
+function ddMenu(items, btnLabel, btnClass) {
+  const list = (items || []).filter(i => i && !i.hide);
+  if (!list.length) return '';
+  const html = list.map(i =>
+    '<button type="button" class="dd-item' + (i.danger ? ' dd-danger' : '') + '" onclick="ddClose();' + String(i.fn).replace(/"/g, '&quot;') + '">' + i.label + '</button>'
+  ).join('');
+  return '<span class="dd"><button type="button" class="btn ' + (btnClass || 'btn-ghost btn-sm') + ' dd-toggle" onclick="ddToggle(event,this)" aria-label="Меню">' + (btnLabel || '⋯') + '</button><span class="dd-menu">' + html + '</span></span>';
+}
+function ddClose() {
+  document.querySelectorAll('.dd-menu.open').forEach(m => { m.classList.remove('open'); m.style.cssText = ''; });
+}
+function ddToggle(e, btn) {
+  e.stopPropagation();
+  const menu = btn.nextElementSibling;
+  const wasOpen = menu.classList.contains('open');
+  ddClose();
+  if (wasOpen) return;
+  menu.classList.add('open');
+  const r = btn.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let left = r.right - mw; if (left < 8) left = 8;
+  let top = r.bottom + 4; if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 4);
+  menu.style.left = left + 'px'; menu.style.top = top + 'px';
+}
+document.addEventListener('click', ddClose);
+window.addEventListener('resize', ddClose);
+document.addEventListener('scroll', ddClose, true);

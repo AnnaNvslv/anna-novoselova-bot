@@ -1,0 +1,170 @@
+/* ═══ Раздел «Пациенты»: список слева + карточка справа (как в Ginter CRM) ═══ */
+.pt-content{padding-top:16px;padding-bottom:16px}
+.pt-layout{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:16px;height:calc(100vh - 118px);min-height:520px}
+.pt-list-pane{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;min-height:0}
+.pt-list-tools{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.pt-search{flex:1;min-width:0}
+.pt-search input{width:100%!important;font-size:16px}
+.pt-sort{width:auto;max-width:130px;padding:10px 8px;font-size:14px}
+.pt-count{font-size:12.5px;color:var(--text-l);padding:6px 14px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.pt-list{flex:1;overflow-y:auto;min-height:0}
+.pt-letter{position:sticky;top:0;z-index:1;background:var(--surface2);font-size:13px;font-weight:800;color:var(--primary);padding:5px 14px;border-bottom:1px solid var(--border)}
+.pt-item{display:flex;gap:11px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.pt-item:hover{background:var(--surface2)}
+.pt-item.active{background:var(--accent-l);box-shadow:inset 3px 0 0 var(--accent)}
+.pt-item.pt-flash{background:#d1fae5}
+.pt-av{width:38px!important;height:38px!important;font-size:14px!important}
+.pt-item-main{flex:1;min-width:0}
+.pt-item-name{font-size:16px;font-weight:700;line-height:1.3;word-break:break-word}
+.pt-item-meta{font-size:13px;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-item-badges{margin-top:4px}
+.pt-item-visit{font-size:12.5px;color:var(--text-m);text-align:right;white-space:nowrap;flex-shrink:0;line-height:1.35}
+.pt-item-visit span{display:block;font-size:11px;color:var(--text-l)}
+.text-l{color:var(--text-l)}
+
+.pt-detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow-y:auto;min-height:0;padding:22px 26px}
+.pt-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-m);gap:10px;font-size:16px}
+.pt-empty-ico{font-size:40px;opacity:.5}
+
+.pt-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.pt-back{display:none}
+.pt-card-id{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+.pt-card-name{font-size:23px;font-weight:800;line-height:1.25;display:flex;align-items:center;gap:8px;flex-wrap:wrap;word-break:break-word}
+.pt-card-sub{font-size:15px;color:var(--text-m);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pt-dot{color:var(--text-l)}
+.pt-link{color:var(--primary);text-decoration:none;font-weight:600}
+.pt-link:hover{text-decoration:underline}
+.pt-card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.tg-nick{display:inline-flex;align-items:center;font-size:.86em;font-weight:600;color:#0284c7;background:#e0f2fe;padding:1px 8px;border-radius:12px;text-decoration:none;white-space:nowrap;vertical-align:middle}
+a.tg-nick:hover{background:#bae6fd}
+.tg-on{font-size:12px;font-weight:700;color:var(--green);white-space:nowrap}
+.cg2-ev-nick{font-size:11px;opacity:.85}
+
+.pt-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0 6px}
+.pt-stat{background:var(--surface2);border-radius:var(--r-sm);padding:12px 14px;min-width:0}
+.pt-stat label{display:block;font-size:12px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px}
+.pt-stat b{display:block;font-size:20px;font-weight:800;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-stat small{display:block;font-size:12.5px;color:var(--text-m);margin-top:2px}
+.pt-stat-debt{background:var(--red-l)}.pt-stat-debt b{color:var(--red)}
+.pt-stat-red{color:var(--red)!important;font-weight:700}.pt-stat-blue{color:var(--blue)!important;font-weight:700}
+.pt-notes{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--r-sm);padding:10px 14px;font-size:15px;margin-top:10px;white-space:pre-wrap}
+.pt-tabs{margin-top:16px;margin-bottom:14px}
+.tab-count{display:inline-flex;min-width:22px;height:22px;padding:0 6px;align-items:center;justify-content:center;border-radius:11px;background:var(--surface2);color:var(--text-m);font-size:12.5px;font-weight:700;margin-left:4px}
+.tab.active .tab-count{background:var(--accent);color:#fff}
+.pt-tab-tools{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px}
+
+/* RX-вкладка */
+.rx-visit{border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;background:var(--surface)}
+.rx-visit[open]{border-color:#bcd7ea}
+.rx-visit>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;cursor:pointer}
+.rx-visit>summary::-webkit-details-marker{display:none}
+.rx-visit-title{font-size:16.5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rx-visit-chev{display:inline-block;transition:transform .15s;color:var(--text-l);font-size:13px}
+.rx-visit[open] .rx-visit-chev{transform:rotate(90deg)}
+.rx-visit-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rx-visit-body{padding:0 16px 14px}
+.rx-lock{font-size:13px;opacity:.7}
+.rx-view-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.rx-view{width:100%;border-collapse:collapse;table-layout:fixed}
+.rx-view th,.rx-view td{border:1px solid var(--border);padding:8px 6px;text-align:center;font-size:16.5px;font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+.rx-view th{background:var(--surface2);font-size:13px;font-weight:700;color:var(--text-m)}
+.rx-view th.rx-view-kind{color:var(--primary);font-size:14px;width:62px}
+.rx-view td{font-weight:600}
+.rx-view td.rx-eye{font-weight:800;color:var(--text-m);background:var(--surface2);font-size:14px}
+.rx-view tr:hover td{background:inherit}
+.rx-view-note{font-size:14px;color:var(--text-m);margin-top:6px}
+.rx-view-foot{margin-top:10px;font-size:14.5px;color:var(--text-m)}
+.rx-view-foot.rx-due{color:var(--red)}
+
+/* Заказы */
+.ord-card{border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;background:var(--surface)}
+.ord-card.ord-open{border-left:4px solid var(--accent)}
+.ord-card.ord-void{opacity:.6}
+.ord-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.ord-title{font-size:17px;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ord-sub{font-size:13.5px;color:var(--text-m);margin-top:3px}
+.ord-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ord-lines{margin-top:10px;border-top:1px solid var(--border)}
+.ord-line{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:15.5px;align-items:baseline}
+.ord-l{color:var(--text-m);font-size:13.5px;font-weight:600}
+.ord-n{font-weight:600;word-break:break-word}
+.ord-p{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ord-rx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:14.5px}
+.ord-rx-l{font-weight:700;color:var(--primary);margin-right:4px}
+.ord-rx-v{background:var(--surface2);border-radius:6px;padding:2px 8px;font-weight:600;font-variant-numeric:tabular-nums}
+.ord-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;background:var(--surface2);border-radius:var(--r-sm);padding:10px 14px}
+.ord-sum label{display:block;font-size:12px;font-weight:700;color:var(--text-l);text-transform:uppercase;letter-spacing:.4px}
+.ord-sum b{font-size:17px;font-variant-numeric:tabular-nums}
+.ord-sum b.ord-total{font-size:22px;color:var(--primary)}
+.ord-notes{margin-top:8px;font-size:14px;color:var(--text-m)}
+.pt-row .history-actions{align-items:center}
+
+/* Меню «⋯» */
+.dd{position:relative;display:inline-flex}
+.dd-toggle{font-weight:800;letter-spacing:1px}
+.dd-menu{display:none;position:fixed;z-index:1000;min-width:210px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px}
+.dd-menu.open{display:block}
+.dd-item{display:block;width:100%;text-align:left;background:none;border:none;font-family:inherit;font-size:15px;font-weight:500;padding:11px 12px;border-radius:8px;cursor:pointer;color:var(--text);white-space:nowrap}
+.dd-item:hover{background:var(--surface2)}
+.dd-danger{color:var(--red)}.dd-danger:hover{background:var(--red-l)}
+
+/* Карта осмотра: режим просмотра прошедшего прегледа */
+.exam-lock-banner{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--warn-l);border:1.5px solid #fcd34d;color:#92400e;border-radius:var(--r-sm);padding:10px 14px;margin-bottom:14px;font-size:15px}
+.exam-locked .exam-lock-banner{display:flex}
+.exam-unlock-btn{display:none!important}
+.exam-locked .exam-unlock-btn{display:inline-flex!important}
+.exam-locked .exam-edit-only{display:none!important}
+.exam-locked input:disabled,.exam-locked select:disabled,.exam-locked textarea:disabled{color:var(--text);-webkit-text-fill-color:var(--text);opacity:1;cursor:default;background:var(--surface)}
+.exam-locked .modal-body button:disabled{opacity:.45;cursor:not-allowed}
+
+@media(max-width:1100px){
+  .pt-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:768px){
+  .pt-content{padding:10px 10px 80px}
+  .pt-layout{display:block;height:auto;min-height:0}
+  .pt-list-pane{border-radius:var(--r-sm)}
+  .pt-list{overflow:visible}
+  .pt-layout .pt-detail{display:none}
+  .pt-layout.show-detail .pt-list-pane{display:none}
+  .pt-layout.show-detail .pt-detail{display:block;overflow:visible;padding:14px 14px 18px;border-radius:var(--r-sm)}
+  .pt-back{display:inline-flex;width:100%;justify-content:center;margin-bottom:6px;min-height:44px}
+  .pt-card-name{font-size:20px}
+  .pt-card-actions{width:100%}
+  .pt-card-actions .btn{flex:1 1 auto;justify-content:center;min-height:44px}
+  .pt-card-actions .dd{flex:0 0 auto}
+  .pt-item{padding:12px}
+  .pt-item-name{font-size:16.5px}
+  .rx-view-grid{grid-template-columns:1fr}
+  .rx-view th,.rx-view td{font-size:15px;padding:7px 3px}
+  .rx-visit>summary{padding:12px}
+  .rx-visit-actions{width:100%}
+  .rx-visit-actions .btn{flex:1 1 auto;justify-content:center;min-height:42px}
+  .ord-line{grid-template-columns:80px minmax(0,1fr);}
+  .ord-p{grid-column:2;text-align:left}
+  .ord-sum b{font-size:15px}.ord-sum b.ord-total{font-size:18px}
+  .dd-item{padding:13px 12px;font-size:16px}
+}
+@media print{.dd-menu{display:none!important}}
+.rx-visus{font-size:15px;margin-bottom:10px;color:var(--text-m)}.rx-visus b{color:var(--text)}
+.rx-view th.rx-view-kind{width:104px}
+.rx-view tr:last-child td{border-bottom:1px solid var(--border)}
+.dd-toggle.btn-accent{letter-spacing:0}
+.exam-lock-banner{position:sticky;top:0;z-index:5}
+@media(max-width:768px){.rx-view th.rx-view-kind{width:74px;font-size:12px}}
+/* Мобильный: общий CSS превращает таблицы в карточки — для RX-таблиц возвращаем обычную таблицу */
+@media(max-width:768px){
+  table.rx-view:not(.z1):not(.z2):not(.z3){display:table!important;width:100%}
+  table.rx-view:not(.z1):not(.z2):not(.z3) thead{display:table-header-group!important}
+  table.rx-view:not(.z1):not(.z2):not(.z3) tbody{display:table-row-group!important}
+  table.rx-view:not(.z1):not(.z2):not(.z3) tr,
+  table.rx-view:not(.z1):not(.z2):not(.z3) tbody tr{display:table-row!important;background:none;border:none;border-radius:0;margin:0;padding:0;box-shadow:none}
+  table.rx-view:not(.z1):not(.z2):not(.z3) th,
+  table.rx-view:not(.z1):not(.z2):not(.z3) td{display:table-cell!important;border:1px solid var(--border)!important;padding:7px 3px!important;font-size:15px;line-height:1.3}
+  table.rx-view:not(.z1):not(.z2):not(.z3) th{font-size:12px}
+  table.rx-view:not(.z1):not(.z2):not(.z3) td.rx-eye{background:var(--surface2)!important}
+}
+@media(max-width:768px){.ord-sum{gap:8px;padding:10px}.ord-sum label{font-size:10.5px;letter-spacing:0}}
+.pt-stat b{white-space:normal;overflow:visible;font-size:19px;line-height:1.25}
+@media(max-width:1320px){.pt-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}

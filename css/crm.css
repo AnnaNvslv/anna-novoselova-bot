@@ -1,3 +1,4 @@
 /* see crm-base.css + crm-mobile.css — split due to size limit */
 @import url('crm-base.css?v=2');
-@import url('crm-mobile.css');
+@import url('crm-mobile.css?v=2');
+@import url('crm-patients.css?v=1');

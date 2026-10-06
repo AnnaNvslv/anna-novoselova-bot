@@ -122,6 +122,19 @@ const TRANSLATIONS = {
     dupes_btn: 'Дубли', dupes_title: 'Возможные дубли', dupes_none: 'Дублей не найдено', dupes_keep: 'основная',
     dupes_hint: 'Совпадают фамилия, имя и дата рождения (или дата не указана). Основной остаётся самая старая карточка.',
     intake_title: 'Из анкеты онлайн-записи', intake_show: 'Анкета',
+    // PATIENTS — двухпанельный раздел (2026-10)
+    pt_search_ph: 'Имя, телефон, @ник, ID…', sort_visit_new: 'По визиту', pt_select_hint: 'Выберите пациента в списке слева',
+    pt_count_suffix: 'пац.', pt_found: 'найдено', pt_not_found: 'Никого не нашли — попробуйте часть имени или телефона',
+    pt_no_phone: 'без телефона', pt_last_visit_short: 'визит', pt_edit: 'Изменить', pt_edit_patient: 'Изменить данные',
+    pt_delete_patient: 'Удалить пациента', pt_tab_rx: 'Коррекция (RX)', pt_tab_info: 'Инфо',
+    pt_appt: 'Приём', pt_exam: 'Осмотр', pt_order: 'Заказ', pt_last_visit: 'Последний визит', pt_next: 'Запись',
+    pt_visits: 'Визитов', pt_orders_count: 'заказов', pt_paid: 'Оплачено всего', pt_incl_consult: 'из них приёмы',
+    pt_to_pay: 'к доплате по заказам', pt_no_debt: 'долгов нет', pt_revert_planned: 'Вернуть в запланированные',
+    pt_cancel_appt: 'Отменить приём', pt_open_exam: 'Открыть карту', pt_complete: 'Завершить', pt_cl_brand: 'Линзы',
+    pt_view: 'Открыть', pt_print: 'Печать', pt_express: 'экспресс', pt_confirm_delete_exam: 'Удалить карту осмотра? Её можно будет вернуть из корзины.',
+    pt_followup: 'Опрос через 2 недели', pt_interim: 'промежуточная', pt_to_work: 'В работу', pt_open_patient: 'Карточка пациента',
+    exam_locked_title: 'Преглед от', exam_locked_hint: 'только просмотр. Чтобы исправить, нажмите «Изменить»',
+    exam_unlocked: 'Карта открыта для изменений', exam_locked_save: 'Карта в режиме просмотра — нажмите «Изменить»',
   },
   sr: {
     // NAV
@@ -243,6 +256,19 @@ const TRANSLATIONS = {
     dupes_btn: 'Duplikati', dupes_title: 'Mogući duplikati', dupes_none: 'Nema duplikata', dupes_keep: 'glavni',
     dupes_hint: 'Poklapaju se prezime, ime i datum rođenja (ili datum nije unet). Glavni ostaje najstariji karton.',
     intake_title: 'Iz ankete online zakazivanja', intake_show: 'Anketa',
+    // PATIENTS — dvodelni prikaz (2026-10)
+    pt_search_ph: 'Ime, telefon, @nik, ID…', sort_visit_new: 'Po poseti', pt_select_hint: 'Izaberite pacijenta sa leve strane',
+    pt_count_suffix: 'pac.', pt_found: 'pronađeno', pt_not_found: 'Nema rezultata — probajte deo imena ili telefona',
+    pt_no_phone: 'bez telefona', pt_last_visit_short: 'poseta', pt_edit: 'Izmeni', pt_edit_patient: 'Izmeni podatke',
+    pt_delete_patient: 'Obriši pacijenta', pt_tab_rx: 'Korekcija (RX)', pt_tab_info: 'Info',
+    pt_appt: 'Pregled', pt_exam: 'Karton', pt_order: 'Porudžbina', pt_last_visit: 'Poslednja poseta', pt_next: 'Zakazano',
+    pt_visits: 'Poseta', pt_orders_count: 'porudžbina', pt_paid: 'Ukupno plaćeno', pt_incl_consult: 'od toga pregledi',
+    pt_to_pay: 'za doplatu po porudžbinama', pt_no_debt: 'bez dugovanja', pt_revert_planned: 'Vrati na zakazan',
+    pt_cancel_appt: 'Otkaži pregled', pt_open_exam: 'Otvori karton', pt_complete: 'Završi', pt_cl_brand: 'Sočiva',
+    pt_view: 'Otvori', pt_print: 'Štampa', pt_express: 'ekspres', pt_confirm_delete_exam: 'Obrisati karton pregleda? Može se vratiti iz korpe.',
+    pt_followup: 'Anketa posle 2 nedelje', pt_interim: 'privremena', pt_to_work: 'U izradu', pt_open_patient: 'Karton pacijenta',
+    exam_locked_title: 'Pregled od', exam_locked_hint: 'samo pregled. Za ispravku kliknite „Izmeni"',
+    exam_unlocked: 'Karton otvoren za izmene', exam_locked_save: 'Karton je u režimu pregleda — kliknite „Izmeni"',
   }
 };
 

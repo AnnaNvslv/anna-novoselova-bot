@@ -111,8 +111,8 @@ async function _anGenerateReport(){
   document.getElementById('an-report-area').innerHTML = `<div class="card"><div class="spinner">${t('loading')}</div></div>`;
 
   const [{data:allOrders}, {data:appts}] = await Promise.all([
-    db.from('orders').select('*, patients(name)').is('deleted_at', null),
-    db.from('appointments').select('*, patients(name)').is('deleted_at', null).eq('status','завершён')
+    db.from('orders').select('*, patients(name,telegram_username)').is('deleted_at', null),
+    db.from('appointments').select('*, patients(name,telegram_username)').is('deleted_at', null).eq('status','завершён')
       .gte('date', from).lte('date', to).order('date')
   ]);
 
@@ -167,7 +167,7 @@ function _anRenderReport(){
           <tr>
             <td class="text-m">${fmt(_anOrderDate(o))}</td>
             <td><span class="badge badge-gray" style="font-size:11px">${o.order_number||'—'}</span></td>
-            <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span></td>
+            <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span> ${tgTag(o.patients?.telegram_username)}</td>
             <td class="text-m">${o.type||'—'}</td>
             <td><div class="fw-6" style="font-size:13px">${o.frame_code||'—'}</div><div class="text-sm text-m">${o.frame_price?fmtMoney(o.frame_price):'—'}</div></td>
             <td><div class="fw-6" style="font-size:13px">${o.lens_name||'—'}</div><div class="text-sm text-m">${o.lens_price?fmtMoney(o.lens_price)+' × '+(o.lens_qty||(_anIsCL(o)?1:2)):'—'}</div></td>
@@ -193,7 +193,7 @@ function _anRenderReport(){
         <tbody>${appts.length ? appts.map(a=>`
           <tr>
             <td class="text-m">${fmt(a.date)}</td>
-            <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span></td>
+            <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span> ${tgTag(a.patients?.telegram_username)}</td>
             <td class="text-m">${apptTypeName(a.type)||'—'}</td>
             <td class="money">${fmtMoney(a.consultation_price)}</td>
             <td>${(+a.consultation_price||0)>0?'<span class="badge badge-green">Платный</span>':'<span class="badge badge-gray">Бесплатный</span>'}</td>

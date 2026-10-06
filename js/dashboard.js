@@ -4,9 +4,9 @@ async function renderDashboard() {
   const todayStr=today();
   const[{data:patients},{data:todayAppts},{data:readyOrders},{data:upcoming},{data:todayOrders},{data:todaySlots}]=await Promise.all([
     db.from('patients').select('id',{count:'exact'}).is('deleted_at',null),
-    db.from('appointments').select('*, patients(name,telegram_chat_id)').eq('date',todayStr).neq('status','отменён').is('deleted_at',null).order('time'),
-    db.from('orders').select('*, patients(name,telegram_chat_id)').eq('status','готов').is('deleted_at',null),
-    db.from('appointments').select('*, patients(name)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(6),
+    db.from('appointments').select('*, patients(name,telegram_chat_id,telegram_username)').eq('date',todayStr).neq('status','отменён').is('deleted_at',null).order('time'),
+    db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('status','готов').is('deleted_at',null),
+    db.from('appointments').select('*, patients(name,telegram_username)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(6),
     db.from('orders').select('id').eq('status','оформлен').gte('created_at',todayStr),
     db.from('available_slots').select('*').eq('date',todayStr).order('start_time'),
   ]);
@@ -31,7 +31,7 @@ async function renderDashboard() {
       return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#dbeafe;margin-bottom:6px;cursor:pointer" onclick="openPatientCard('${appt.patient_id}')">
         <div style="font-size:13px;font-weight:700;color:#1e3a8a;min-width:42px;flex-shrink:0">${tm}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:#1e3a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${appt.patients?.name?.split(' ')[0]||'—'}</div>
+          <div style="font-size:14px;font-weight:700;color:#1e3a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${appt.patients?.name?.split(' ')[0]||'—'} ${tgTag(appt.patients?.telegram_username)}</div>
           <div style="font-size:11.5px;color:#3b5dbf;opacity:.8">${apptTypeName(appt.type||'').split('(')[0]?.trim()||''}</div>
         </div>
         <span style="font-size:11px;background:#1e3a8a;color:#fff;padding:2px 8px;border-radius:10px;flex-shrink:0">${statusLabel(appt.status)}</span>
@@ -76,7 +76,7 @@ async function renderDashboard() {
         ${(readyOrders||[]).map(o=>`<div class="history-item">
           <div style="flex:1;min-width:0">
             <div class="history-date">${o.type}${o.promised_date?' · '+fmt(o.promised_date):''}</div>
-            <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</div>
+            <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'} ${tgTag(o.patients?.telegram_username)}</div>
             ${orderBalance(o)>0?`<div class="text-sm" style="color:var(--warn)">${t('balance')||'Ostatak'}: ${fmtMoney(orderBalance(o))}</div>`:''}
           </div>
           <div class="history-actions">
@@ -91,7 +91,7 @@ async function renderDashboard() {
           <div class="history-dot" style="background:var(--warn-l);border-color:var(--warn)"></div>
           <div style="flex:1;min-width:0">
             <div class="history-date">${fmt(a.date)} · ${a.time?.substr(0,5)}</div>
-            <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</div>
+            <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'} ${tgTag(a.patients?.telegram_username)}</div>
             <div class="text-sm text-m">${apptTypeName(a.type||'')}</div>
           </div>
         </div>`).join(''):`<div class="text-sm text-m" style="padding:10px 0">${t('no_planned')}</div>`}

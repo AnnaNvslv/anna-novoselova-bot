@@ -12,9 +12,9 @@ async function renderTrash() {
     {data:exams}
   ] = await Promise.all([
     db.from('patients').select('*').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
-    db.from('appointments').select('*,patients(name)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
-    db.from('orders').select('*,patients(name)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
-    db.from('examinations').select('*,patients(name)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
+    db.from('appointments').select('*,patients(name,telegram_username)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
+    db.from('orders').select('*,patients(name,telegram_username)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
+    db.from('examinations').select('*,patients(name,telegram_username)').not('deleted_at','is',null).order('deleted_at',{ascending:false}),
   ]);
 
   _trashData = {patients:patients||[], appts:appts||[], orders:orders||[], exams:exams||[]};
@@ -61,7 +61,7 @@ function _renderTrashLists() {
     ${section(t('patients')||'Pacijenti','👤', patients, p=>`
       <div style="${rowStyle}">
         <div>
-          <b>${p.name}</b><br>
+          <b>${p.name}</b> ${tgTag(p.telegram_username)}<br>
           <span class="text-sm text-m">${p.phone||''} · ${t('deleted_at')||'obrisano'}: ${fmt(p.deleted_at?.split('T')[0])}</span>
         </div>
         ${isAdmin()?restoreBtn('restorePatient',p.id):''}
@@ -69,7 +69,7 @@ function _renderTrashLists() {
     ${section(t('appointments')||'Pregledi','📅', appts, a=>`
       <div style="${rowStyle}">
         <div>
-          <b>${a.patients?.name||'—'}</b> · ${fmt(a.date)} ${a.time?.substr(0,5)}<br>
+          <b>${a.patients?.name||'—'}</b> ${tgTag(a.patients?.telegram_username)} · ${fmt(a.date)} ${a.time?.substr(0,5)}<br>
           <span class="text-sm text-m">${a.type||''} · ${t('deleted_at')||'obrisano'}: ${fmt(a.deleted_at?.split('T')[0])}</span>
         </div>
         ${isAdmin()?restoreBtn('restoreAppt',a.id):''}
@@ -77,7 +77,7 @@ function _renderTrashLists() {
     ${section(t('orders')||'Porudžbine','🛒', orders, o=>`
       <div style="${rowStyle}">
         <div>
-          <b>${o.patients?.name||'—'}</b> · ${o.type||'—'} · ${fmtMoney(orderTotal(o))}<br>
+          <b>${o.patients?.name||'—'}</b> ${tgTag(o.patients?.telegram_username)} · ${o.type||'—'} · ${fmtMoney(orderTotal(o))}<br>
           <span class="text-sm text-m">${statusLabel(o.status)} · ${t('deleted_at')||'obrisano'}: ${fmt(o.deleted_at?.split('T')[0])}</span>
         </div>
         ${isAdmin()?restoreBtn('restoreOrder',o.id):''}
@@ -85,7 +85,7 @@ function _renderTrashLists() {
     ${section(t('exam_card')||'Kartice pregleda','📋', exams, e=>`
       <div style="${rowStyle}">
         <div>
-          <b>${e.patients?.name||'—'}</b> · ${t('visit')||'Poseta'} №${e.visit_number||'—'}<br>
+          <b>${e.patients?.name||'—'}</b> ${tgTag(e.patients?.telegram_username)} · ${t('visit')||'Poseta'} №${e.visit_number||'—'}<br>
           <span class="text-sm text-m">${fmt(e.created_at?.split('T')[0])} · ${t('deleted_at')||'obrisano'}: ${fmt(e.deleted_at?.split('T')[0])}</span>
         </div>
         ${isAdmin()?restoreBtn('restoreExam',e.id):''}

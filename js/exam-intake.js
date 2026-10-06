@@ -24,11 +24,11 @@ openExamForm = async function(apptId, patientId) {
   _examIntake = await _loadApptIntake(apptId);
   return _origOpenExamForm(apptId, patientId);
 };
-openExamView = async function(examId, pid) {
+openExamView = async function(examId, pid, edit) {
   _examIntake = null;
   try {
     const {data:ex} = await db.from('examinations').select('appointment_id').eq('id', examId).single();
     _examIntake = await _loadApptIntake(ex && ex.appointment_id);
   } catch (err) {}
-  return _origOpenExamView(examId, pid);
+  return _origOpenExamView(examId, pid, edit); // edit — открыть сразу для исправления
 };

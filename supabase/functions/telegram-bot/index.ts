@@ -152,6 +152,88 @@ async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Reco
   await sendMessage(Number(myChatId), msg)
 }
 
+
+// ── Контрольный визит: Анна подтверждает приглашение кнопкой (ctlyes_/ctlno_ из send-reminders) ──
+const SHORT_CONTROL_MAX_DAYS = 100
+function dmy(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
+}
+
+async function handleControlDecision(act: string, examId: string, chat_id: number, message_id: number, origText: string) {
+  const { data: r } = await db.from('settings').select('key,value').eq('key', 'my_chat_id')
+  const myChatId = r?.[0]?.value
+  if (!myChatId || String(chat_id) !== String(myChatId)) return // кнопки работают только у Анны
+
+  const finish = async (line: string) => {
+    await fetch(`${TG}/editMessageText`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, message_id, text: `${origText}\n\n${line}`, reply_markup: { inline_keyboard: [] } }),
+    })
+  }
+
+  if (act === 'ctlno') { await finish('❌ Не приглашаем — пациенту ничего не отправлено'); return }
+
+  const { data: ex } = await db
+    .from('examinations')
+    .select('id, patient_id, created_at, control_date, clinical, appointments(patient_chat_id), patients(name, telegram_chat_id, deleted_at)')
+    .eq('id', examId)
+    .single()
+  const pt = ex?.patients as Record<string, unknown> | null
+  const patientChat = (ex?.appointments as Record<string, unknown> | null)?.patient_chat_id || pt?.telegram_chat_id
+  if (!ex || !pt || pt.deleted_at || !patientChat) { await finish('⚠️ Не отправлено: пациент удалён или Telegram не привязан'); return }
+
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Belgrade' }))
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const interim = (ex.clinical as Record<string, unknown> | null)?.interim === '1'
+  const gapDays = (new Date(ex.control_date + 'T12:00:00').getTime() - new Date(ex.created_at).getTime()) / 86400000
+  const kind = interim ? 'interim' : (gapDays <= SHORT_CONTROL_MAX_DAYS ? 'short' : 'planned')
+  const name = (pt.name as string) || ''
+  const firstName = name.split(' ')[1] || name
+  const due = ex.control_date <= todayStr ? 'уже подошёл' : `подходит ${dmy(ex.control_date)}`
+
+  let text: string
+  let button: { text: string; url: string }
+  if (kind === 'planned') {
+    text =
+`👋 ${firstName}, здравствуйте!
+
+Срок плановой проверки зрения у оптометриста Анны Новосёловой ${due}.
+
+Пора проверить, по-прежнему ли подходят очки или линзы и не изменилось ли зрение.
+
+📍 Trg Republike 25, Нови-Сад
+
+Выберите удобное время по кнопке ниже 👇`
+    button = { text: '📅 Записаться на приём', url: BOOKING_URL }
+  } else {
+    const why = kind === 'interim'
+      ? 'На контроле проверим, как идёт адаптация к очкам, и при необходимости поменяем диоптрии — следующий шаг к полной коррекции.'
+      : 'На контроле проверим, как вы видите в новой коррекции и всё ли в порядке.'
+    text =
+`👋 ${firstName}, здравствуйте!
+
+Срок контрольного визита к оптометристу Анне Новосёловой ${due}.
+
+${why}
+
+⏱ 30 минут · бесплатно
+📍 Trg Republike 25, Нови-Сад
+
+Нажмите кнопку ниже — откроется запись сразу на «Контрольный визит», вид записи выбирать не нужно 👇`
+    button = { text: '📅 Записаться на контроль', url: `${BOOKING_URL}?type=control` }
+  }
+
+  const res = await fetch(`${TG}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: Number(patientChat), text, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[button]] } }),
+  })
+  const ok = (await res.json().catch(() => ({})))?.ok
+  await finish(ok ? '✅ Приглашение отправлено пациенту' : '⚠️ Не удалось отправить (пациент мог заблокировать бота) — свяжитесь вручную')
+}
+
 async function handleCallback(callback_query: Record<string, unknown>) {
   const chat_id = (callback_query.from as Record<string,unknown>).id as number
   const data = callback_query.data as string
@@ -166,6 +248,12 @@ async function handleCallback(callback_query: Record<string, unknown>) {
   const parts = data.split('_')
   const act = parts[0]
   const id = parts.slice(1).join('_')
+
+  if (act === 'ctlyes' || act === 'ctlno') {
+    const origText = ((callback_query.message as Record<string,unknown>).text as string) || ''
+    await handleControlDecision(act, id, chat_id, message_id, origText)
+    return
+  }
 
   const { data: appt } = await db
     .from('appointments')

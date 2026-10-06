@@ -37,7 +37,8 @@ function dmy(iso: string): string {
 }
 
 // ── Напоминание о контрольном визите ──
-// Любая карта обследования с датой контроля: пишем пациенту за 3 дня до даты контроля
+// Любая карта обследования с датой контроля: за 3 дня до даты контроля спрашиваем Анну в Telegram
+// «Пригласить?» (Да/Нет); пациенту пишет telegram-bot только после «Да», нет ответа — ничего не уходит
 // (или сразу, если дата уже наступила, но не позже 14 дней после неё — старые даты не трогаем).
 // Один раз на карту (control_notified), только днём по Белграду. Не пишем, если пациент уже
 // записан на будущее или после этой карты был новый осмотр.
@@ -87,46 +88,25 @@ async function sendControlReminders(now: Date): Promise<number> {
       : kind === 'short' ? 'контрольный визит' : 'плановая проверка зрения'
 
     const name = (pt.name as string) || ''
-    const firstName = name.split(' ')[1] || name
     const chat_id = (ex.appointments as Record<string, unknown> | null)?.patient_chat_id || pt.telegram_chat_id
     const crmLink = `${CRM_URL}#patient=${ex.patient_id}`
     const due = ex.control_date <= todayStr ? 'уже подошёл' : `подходит ${dmy(ex.control_date)}`
 
-    if (chat_id) {
-      let text: string
-      let button: { text: string; url: string }
-      if (kind === 'planned') {
-        text =
-`👋 ${firstName}, здравствуйте!
+    if (chat_id && myChatId) {
+      // Пациенту сразу не пишем — сначала спрашиваем Анну. Отправка пациенту — только по кнопке «Да»
+      // (обработчик ctlyes_/ctlno_ в telegram-bot). Нет ответа — ничего не уходит.
+      await sendMessage(Number(myChatId),
+`🔔 У пациента ${due === 'уже подошёл' ? 'подошло' : 'подходит'} время: ${kindLabel} (дата ${dmy(ex.control_date)})
 
-Срок плановой проверки зрения у оптометриста Анны Новосёловой ${due}.
+Пациент: ${name}
+🗂 Профиль: ${crmLink}
 
-Пора проверить, по-прежнему ли подходят очки или линзы и не изменилось ли зрение.
-
-📍 Trg Republike 25, Нови-Сад
-
-Выберите удобное время по кнопке ниже 👇`
-        button = { text: '📅 Записаться на приём', url: BOOKING_URL }
-      } else {
-        const why = kind === 'interim'
-          ? 'На контроле проверим, как идёт адаптация к очкам, и при необходимости поменяем диоптрии — следующий шаг к полной коррекции.'
-          : 'На контроле проверим, как вы видите в новой коррекции и всё ли в порядке.'
-        text =
-`👋 ${firstName}, здравствуйте!
-
-Срок контрольного визита к оптометристу Анне Новосёловой ${due}.
-
-${why}
-
-⏱ 30 минут · бесплатно
-📍 Trg Republike 25, Нови-Сад
-
-Нажмите кнопку ниже — откроется запись сразу на «Контрольный визит», вид записи выбирать не нужно 👇`
-        button = { text: '📅 Записаться на контроль', url: `${BOOKING_URL}?type=control` }
-      }
-      await sendMessage(Number(chat_id), text, { reply_markup: { inline_keyboard: [[button]] } })
+Пригласить его?`,
+        { reply_markup: { inline_keyboard: [[
+          { text: '✅ Да', callback_data: `ctlyes_${ex.id}` },
+          { text: '❌ Нет', callback_data: `ctlno_${ex.id}` },
+        ]] } })
       sent++
-      if (myChatId) await sendMessage(Number(myChatId), `🔔 Пациенту отправлено напоминание: ${kindLabel} (дата ${dmy(ex.control_date)})\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
     } else if (myChatId) {
       await sendMessage(Number(myChatId), `🔔 Пациенту пора: ${kindLabel} (дата ${dmy(ex.control_date)}), но Telegram не привязан — свяжитесь вручную.\n\nПациент: ${name}\n🗂 Профиль: ${crmLink}`)
     }

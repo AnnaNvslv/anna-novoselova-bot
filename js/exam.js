@@ -81,15 +81,12 @@ function examUnlock(){
 // заменены на обычные текстовые поля — быстрее вводить с клавиатуры, меньше кликов.
 // Имена функций (_rs/_rsNoBtn) и id полей оставлены прежними, чтобы не трогать
 // остальной код (saveExam, печать, order-форму), который на них ссылается.
-const RX_PLACEHOLDER = {
-  sph: '−1.25', cyl: '−0.50', ax: '90', pd: '62',
-  add: '1.50', degr: '1.50', bc: '8.6', dia: '14.2', prism: '2Δ baza in'
-};
+// Плейсхолдеров-примеров нет нигде в карте (просьба Анны 2026-10-08): в режиме
+// просмотра они выглядели как внесённые данные.
 const SN = 'padding:8px 4px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;width:100%;min-width:60px;text-align:center;background:#fff;color:var(--text)';
 
 function _rs(id, type, val) {
-  const ph = RX_PLACEHOLDER[type] || '';
-  return `<input id="${id}" value="${val||''}" placeholder="${ph}" data-rx="${type}" style="${SN}" oninput="_modalDirty=true" autocomplete="off">`;
+  return `<input id="${id}" value="${val||''}" data-rx="${type}" style="${SN}" oninput="_modalDirty=true" autocomplete="off">`;
 }
 // Раньше отличалась от _rs отсутствием кнопки "+" у select — теперь оба поля одинаковые (обычный input).
 function _rsNoBtn(id, type, val) {
@@ -99,11 +96,11 @@ function _ri(id,val,narrow){return`<input id="${id}" value="${val||''}" oninput=
 }
 function _riText(id,val){return`<input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%">`;
 }
-function _comment(id,val,placeholder){
-  placeholder = placeholder || 'Комментарий (необязательно)';
+function _comment(id,val,label){
+  label = label || 'Комментарий (необязательно)';
   return`<div class="form-group full" style="margin-top:8px">
-    <label style="font-size:11px;color:var(--text-muted,#64748b)">${placeholder}</label>
-    <input id="${id}" value="${val||''}" oninput="_modalDirty=true" placeholder="${placeholder}" style="width:100%;font-size:12.5px">
+    <label style="font-size:11px;color:var(--text-muted,#64748b)">${label}</label>
+    <input id="${id}" value="${val||''}" oninput="_modalDirty=true" style="width:100%;font-size:12.5px">
   </div>`;
 }
 
@@ -356,7 +353,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>BC</label>${_rs('rcl-bc','bc',ge('rx_cl_od_bc'))}</div>
             <div class="form-group" style="max-width:80px"><label>DIA</label>${_rs('rcl-dia','dia',ge('rx_cl_od_dia'))}</div>
           </div>
-          <div class="form-group mt-8"><label>Рекомендуемые контактные линзы</label><input id="rcl-type" value="${ge('rx_cl_od_type')}" placeholder="название, производитель, режим ношения..." oninput="_modalDirty=true"></div>
+          <div class="form-group mt-8"><label>Рекомендуемые контактные линзы</label><input id="rcl-type" value="${ge('rx_cl_od_type')}" oninput="_modalDirty=true"></div>
           ${_comment('rcl-comment',ge('rx_cl_comment'),'Комментарий')}
         </div>
       </div>
@@ -392,6 +389,8 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       <button class="btn btn-accent" onclick="saveAndPrint('${e?.id||''}','${apptId}','${pid}','${visitNum}')">🖨️ ${t('btn_print')}</button>
     </div>
   </div>`;
+  // Клинические поля (exam-clinical.js) тоже без плейсхолдеров
+  document.querySelectorAll('#modal-container [placeholder]').forEach(el=>el.removeAttribute('placeholder'));
 }
 function _examClose(){
   if(_modalDirty && !_examIsLocked() && !confirm(t('close_unsaved'))) return;
@@ -436,17 +435,17 @@ function _renderCorrs(){
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr${isMKL?'':' 1fr'};gap:6px;align-items:start;margin-bottom:4px">
         <span class="text-sm fw-6 text-m" style="padding-top:18px">OD</span>
-        <div><label style="font-size:10px">Sph</label><input value="${c.od_sph||''}" placeholder="−1.25" data-rx="sph" oninput="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        <div><label style="font-size:10px">Cyl</label><input value="${c.od_cyl||''}" placeholder="−0.50" data-rx="cyl" oninput="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        <div><label style="font-size:10px">Ax</label><input value="${c.od_ax||''}" placeholder="90" data-rx="ax" oninput="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        ${isMKL?'':`<div><label style="font-size:10px">Prism</label><input value="${c.od_prism||''}" placeholder="2Δ baza in" oninput="_examData.corrections[${i}].od_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
+        <div><label style="font-size:10px">Sph</label><input value="${c.od_sph||''}" data-rx="sph" oninput="_examData.corrections[${i}].od_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><label style="font-size:10px">Cyl</label><input value="${c.od_cyl||''}" data-rx="cyl" oninput="_examData.corrections[${i}].od_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><label style="font-size:10px">Ax</label><input value="${c.od_ax||''}" data-rx="ax" oninput="_examData.corrections[${i}].od_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        ${isMKL?'':`<div><label style="font-size:10px">Prism</label><input value="${c.od_prism||''}" oninput="_examData.corrections[${i}].od_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
       </div>
       <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr${isMKL?'':' 1fr'};gap:6px;align-items:center;margin-bottom:8px">
         <span class="text-sm fw-6 text-m">OS</span>
-        <div><input value="${c.os_sph||''}" placeholder="−1.25" data-rx="sph" oninput="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        <div><input value="${c.os_cyl||''}" placeholder="−0.50" data-rx="cyl" oninput="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        <div><input value="${c.os_ax||''}" placeholder="90" data-rx="ax" oninput="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
-        ${isMKL?'':`<div><input value="${c.os_prism||''}" placeholder="2Δ baza in" oninput="_examData.corrections[${i}].os_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
+        <div><input value="${c.os_sph||''}" data-rx="sph" oninput="_examData.corrections[${i}].os_sph=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><input value="${c.os_cyl||''}" data-rx="cyl" oninput="_examData.corrections[${i}].os_cyl=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        <div><input value="${c.os_ax||''}" data-rx="ax" oninput="_examData.corrections[${i}].os_ax=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>
+        ${isMKL?'':`<div><input value="${c.os_prism||''}" oninput="_examData.corrections[${i}].os_prism=this.value;_modalDirty=true" style="width:100%;text-align:center"></div>`}
       </div>
       <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr;gap:8px;align-items:end">
         ${isMKL?`
@@ -454,13 +453,13 @@ function _renderCorrs(){
           <div class="form-group"><label>DIA</label><input value="${c.dia||''}" oninput="_examData.corrections[${i}].dia=this.value;_modalDirty=true"></div>
         `:`
           <div class="form-group"><label>PD</label><input value="${c.pd||''}" oninput="_examData.corrections[${i}].pd=this.value;_modalDirty=true"></div>
-          <div class="form-group"><label>ADD</label><input value="${c.add||''}" oninput="_examData.corrections[${i}].add=this.value;_modalDirty=true" data-rx="add" placeholder="1.50"></div>
+          <div class="form-group"><label>ADD</label><input value="${c.add||''}" oninput="_examData.corrections[${i}].add=this.value;_modalDirty=true" data-rx="add"></div>
         `}
-        <div class="form-group"><label>Тип линз</label><input value="${c.lens_type||''}" oninput="_examData.corrections[${i}].lens_type=this.value;_modalDirty=true" placeholder="напр. прогрессив"></div>
-        <div class="form-group"><label>Длительность</label><input value="${c.duration||''}" oninput="_examData.corrections[${i}].duration=this.value;_modalDirty=true" placeholder="напр. 2 года"></div>
+        <div class="form-group"><label>Тип линз</label><input value="${c.lens_type||''}" oninput="_examData.corrections[${i}].lens_type=this.value;_modalDirty=true"></div>
+        <div class="form-group"><label>Длительность</label><input value="${c.duration||''}" oninput="_examData.corrections[${i}].duration=this.value;_modalDirty=true"></div>
       </div>
       <div class="form-group mt-8"><label>Примечание</label><input value="${c.note||''}" oninput="_examData.corrections[${i}].note=this.value;_modalDirty=true" style="width:100%"></div>
-      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value;_modalDirty=true" placeholder="тип линз"></div>`:''}`+
+      ${isMKL?`<div class="form-group mt-8"><label>Вид МКЛ</label><input value="${c.cl_type||''}" oninput="_examData.corrections[${i}].cl_type=this.value;_modalDirty=true"></div>`:''}`+
     `</div>`;
   }).join('');
 }

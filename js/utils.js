@@ -24,6 +24,71 @@ const DOW_RU = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 const DOW = new Proxy({}, {get:(_,i)=>(typeof t==='function'?t('dow'):DOW_RU)[i]});
 const MONTH_RU = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 const MONTH_LABELS = new Proxy({}, {get:(_,i)=>(typeof t==='function'?t('months'):MONTH_RU)[i]});
+// ═══ ДАТА С ТОЧНОСТЬЮ: точная дата / только год / неизвестна (как в ginter-crm) ═══
+// В БД: колонка даты + колонка *_prec ('day' | 'year' | 'unknown').
+// 'year' → дата хранится как YYYY-01-01; 'unknown' → дата null.
+// В форме: dpHtml(id, date, prec) — поле даты + переключатель; dpGet(id) → {date, prec, ok}.
+// Кнопки переключателя не входят в Enter-цепочку (tabindex=-1).
+function fmtP(date, prec) {
+  if (prec === 'unknown') return t('dp_unknown_label');
+  if (prec === 'year') return date ? date.slice(0,4) + t('dp_year_suffix') : t('dp_unknown_label');
+  return fmt(date);
+}
+function dpHtml(id, date, prec, extra) {
+  prec = prec || 'day';
+  const btn = (p, l, tt) => '<button type="button" tabindex="-1" data-prec="'+p+'" title="'+t(tt)+'"'+(p===prec?' class="active"':'')+
+    ' onmousedown="event.preventDefault()" onclick="dpSet(\''+id+'\',\''+p+'\',true)">'+t(l)+'</button>';
+  return '<div class="date-prec" data-dp="'+id+'">'+
+    '<input type="date" id="'+id+'" data-prec="'+prec+'" value="'+(prec==='day' ? (date||'') : '')+'"'+(prec!=='day'?' style="display:none"':'')+(extra||'')+'>'+
+    '<input type="number" id="'+id+'-year" class="date-year" min="1950" max="2100" placeholder="'+t('dp_year_ph')+'" value="'+(prec==='year'&&date?date.slice(0,4):'')+'"'+(prec!=='year'?' style="display:none"':'')+'>'+
+    '<span class="date-none" id="'+id+'-none"'+(prec!=='unknown'?' style="display:none"':'')+'>'+t('dp_none')+'</span>'+
+    '<span class="date-prec-toggle">'+btn('day','dp_day','dp_day_t')+btn('year','dp_year','dp_year_t')+btn('unknown','dp_unknown','dp_unknown_t')+'</span>'+
+  '</div>';
+}
+function dpSet(id, prec, focus) {
+  const el = document.getElementById(id); if (!el) return;
+  const year = document.getElementById(id+'-year');
+  if (prec === 'year' && !year.value && el.value) year.value = el.value.slice(0,4);
+  if (prec === 'day' && !el.value && year.value) el.value = year.value+'-01-01';
+  el.dataset.prec = prec;
+  el.style.display = prec === 'day' ? '' : 'none';
+  year.style.display = prec === 'year' ? '' : 'none';
+  document.getElementById(id+'-none').style.display = prec === 'unknown' ? '' : 'none';
+  el.parentNode.querySelectorAll('.date-prec-toggle button').forEach(b => b.classList.toggle('active', b.dataset.prec === prec));
+  if (typeof _modalDirty !== 'undefined') _modalDirty = true;
+  if (focus) { const f = prec === 'day' ? el : prec === 'year' ? year : null; if (f) { f.focus(); if (f.select) f.select(); } }
+}
+// Записать значение в уже отрисованное поле (date — строка ISO или null).
+function dpPut(id, date, prec) {
+  const el = document.getElementById(id); if (!el) return;
+  prec = prec || 'day';
+  el.value = prec === 'day' ? (date||'') : '';
+  document.getElementById(id+'-year').value = prec === 'year' && date ? date.slice(0,4) : '';
+  dpSet(id, prec);
+}
+function dpGet(id, fallbackToday) {
+  const el = document.getElementById(id);
+  const prec = el?.dataset.prec || 'day';
+  if (prec === 'unknown') return {date:null, prec, ok:true};
+  if (prec === 'year') {
+    const y = parseInt(document.getElementById(id+'-year').value, 10);
+    if (!(y >= 1950 && y <= 2100)) return {date:null, prec, ok:false};
+    return {date: y+'-01-01', prec, ok:true};
+  }
+  return {date: (el && el.value) || (fallbackToday===false ? null : today()), prec:'day', ok:true};
+}
+// Дата обследования: exam_date, для старых записей — дата внесения.
+const examDate = e => (e && (e.exam_date || (e.created_at||'').split('T')[0])) || '';
+const fmtExamDate = e => fmtP(examDate(e), (e && e.exam_date_prec) || 'day');
+// Дата первого посещения пациента: first_visit_date, иначе дата внесения в базу.
+const patientFirstVisit = p => (p && (p.first_visit_date || (p.created_at||'').split('T')[0])) || '';
+const fmtFirstVisit = p => fmtP(patientFirstVisit(p), (p && p.first_visit_date_prec) || 'day');
+// Дата заказа: order_date, иначе дата внесения.
+const orderDateOf = o => (o && (o.order_date || (o.order_date_prec==='unknown' ? '' : (o.created_at||'').split('T')[0]))) || '';
+const fmtOrderDate = o => fmtP(orderDateOf(o), o && o.order_date_prec);
+// Дата, переходящая по цепочке «новый пациент → карта → заказ» (как pendingQuickAddDate в ginter-crm).
+let _pendingChainDate = null; // {pid, date, prec}
+
 // ═══ TOAST ═══
 function toast(msg, type='success') {
   const t=document.getElementById('toast');

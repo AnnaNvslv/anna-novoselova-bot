@@ -1,0 +1,12 @@
+/* ═══ Дата с точностью (как в ginter-crm) ═══ */
+.date-prec{display:flex;align-items:center;gap:6px}
+.date-prec>input{flex:1;min-width:0}
+.date-prec .date-none{flex:1;color:var(--text-m);font-size:14px;padding:0 4px}
+.date-prec-toggle{display:inline-flex;flex-shrink:0;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.date-prec-toggle button{border:0;background:#fff;color:var(--text-m);font:inherit;font-size:12px;padding:6px 8px;cursor:pointer;line-height:1}
+.date-prec-toggle button+button{border-left:1px solid var(--border)}
+.date-prec-toggle button.active{background:var(--accent-l);color:var(--accent-h);font-weight:600}
+.date-prec-toggle button:disabled{cursor:default;opacity:.6}
+.ex-date{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-m)}
+.ex-date .date-prec input[type=date]{padding:5px 8px;font-size:14px}
+.ex-date .date-prec input.date-year{width:90px;padding:5px 8px;font-size:14px}

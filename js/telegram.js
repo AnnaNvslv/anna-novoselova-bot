@@ -7,12 +7,14 @@ async function tgSend(chatId,text) {
 }
 
 // ═══ SALARY ═══
-async function recalcSalary(patientId) {
-  const now=new Date();
-  const m1=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];
-  const m2=new Date(now.getFullYear(),now.getMonth()+1,0).toISOString().split('T')[0];
-  const{data:orders}=await db.from('orders').select('*').eq('patient_id',patientId).gte('created_at',m1).lte('created_at',m2+'T23:59:59');
-  if(!orders)return;
+// Месяц считается по дате заказа (order_date — её часто вносят задним числом), а не по дате внесения.
+// monthOf — любая дата месяца (ISO), по умолчанию текущий месяц.
+async function recalcSalary(patientId, monthOf) {
+  const base = monthOf || today();
+  const ym = base.slice(0,7);
+  const{data:all}=await db.from('orders').select('*').eq('patient_id',patientId).is('deleted_at',null);
+  if(!all)return;
+  const orders=all.filter(o=>orderDateOf(o).slice(0,7)===ym && o.order_date_prec!=='year');
   const total=orders.reduce((s,o)=>s+orderTotal(o),0);
   const counts=total>=10000;
   for(const o of orders) await db.from('orders').update({counts_for_salary:counts}).eq('id',o.id);

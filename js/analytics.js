@@ -12,7 +12,8 @@ let _anThresholdOn = false;
 let _anThresholdVal = 10000;
 let _anSettingsLoaded = false;
 
-function _anOrderDate(o){ return o.order_date || (o.created_at ? o.created_at.split('T')[0] : ''); }
+// Заказ с неизвестной датой (order_date_prec='unknown') в отчёты по периодам не попадает.
+function _anOrderDate(o){ return orderDateOf(o); }
 function _anIsCL(o){ return o.type === 'МКЛ'; }
 function _anHadVisit(o){ return !!o.examination_id; }
 
@@ -165,7 +166,7 @@ function _anRenderReport(){
         </tr></thead>
         <tbody>${list.length ? list.map(o=>`
           <tr>
-            <td class="text-m">${fmt(_anOrderDate(o))}</td>
+            <td class="text-m">${fmtOrderDate(o)}</td>
             <td><span class="badge badge-gray" style="font-size:11px">${o.order_number||'—'}</span></td>
             <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${o.patient_id}')">${o.patients?.name||'—'}</span> ${tgTag(o.patients?.telegram_username)}</td>
             <td class="text-m">${o.type||'—'}</td>
@@ -282,7 +283,7 @@ function _anPrintReport(){
 
   const ordersRows = orders.length ? orders.map(o=>`
     <tr>
-      <td>${fmt(_anOrderDate(o))}</td>
+      <td>${fmtOrderDate(o)}</td>
       <td>${o.order_number||'—'}</td>
       <td>${o.patients?.name||'—'}</td>
       <td>${o.type||'—'}</td>

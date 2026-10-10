@@ -1,7 +1,7 @@
 // ═══ ORDERS ═══
 
 var RX_SELECT_FIELDS =
-  'id,visit_number,created_at,' +
+  'id,visit_number,created_at,exam_date,exam_date_prec,' +
   'rx_far_enabled,rx_comp_enabled,rx_near_enabled,rx_cl_enabled,' +
   'rx_far_od_sph,rx_far_od_cyl,rx_far_od_ax,rx_far_od_pd,' +
   'rx_far_os_sph,rx_far_os_cyl,rx_far_os_ax,rx_far_os_pd,' +
@@ -76,7 +76,7 @@ function _rxOpts(exams, selVal) {
   const opts = ['<option value="">— '+t('no_data')+' —</option>'];
   exams.forEach(e => {
     window._examCache[e.id] = e;
-    const d = fmt(e.created_at ? e.created_at.split('T')[0] : '');
+    const d = fmtExamDate(e);
     ['far','comp','near','cl'].forEach(type => {
       if (!_rxDioptStr(e, type)) return;
       const val = e.id+'|'+type;
@@ -128,8 +128,8 @@ function _orderRxDiopters(o) {
 
 function _sortOrders(list) {
   return list.slice().sort((a, b) => {
-    if (_ordersSort === 'date_new') return (b.order_date||b.created_at||'').localeCompare(a.order_date||a.created_at||'');
-    if (_ordersSort === 'date_old') return (a.order_date||a.created_at||'').localeCompare(b.order_date||b.created_at||'');
+    if (_ordersSort === 'date_new') return orderDateOf(b).localeCompare(orderDateOf(a)) || (b.created_at||'').localeCompare(a.created_at||'');
+    if (_ordersSort === 'date_old') return orderDateOf(a).localeCompare(orderDateOf(b)) || (a.created_at||'').localeCompare(b.created_at||'');
     if (_ordersSort === 'total_desc') return orderTotal(b) - orderTotal(a);
     if (_ordersSort === 'total_asc')  return orderTotal(a) - orderTotal(b);
     if (_ordersSort === 'promised') {
@@ -192,7 +192,7 @@ function _renderOrdersTable(list) {
     '<tbody>'+
     (sorted.length ? sorted.map(o =>
       '<tr style="cursor:pointer" onclick="openOrderCard(\''+o.id+'\')" onmouseenter="this.style.background=\'var(--surface2)\'" onmouseleave="this.style.background=\'\'">'+
-        '<td class="text-m" onclick="event.stopPropagation()">'+fmt(o.order_date||( o.created_at||'').split('T')[0])+'</td>'+
+        '<td class="text-m" onclick="event.stopPropagation()">'+fmtOrderDate(o)+'</td>'+
         '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span> '+tgTag(o.patients&&o.patients.telegram_username)+'</td>'+
         '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span>'+(o.is_redo ? ' <span class="badge badge-warn" style="font-size:10px">&#8635;</span>' : '')+'</td>'+
         '<td><div class="fw-6" style="font-size:13.5px">'+(o.frame_code||'—')+'</div><div class="text-sm text-m">'+(o.lens_name||'—')+'</div></td>'+
@@ -226,7 +226,7 @@ async function openOrderCard(id) {
   const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('id',id).single();
   if (!o) return;
   const bal = orderBalance(o);
-  const displayDate = fmt(o.order_date || (o.created_at||'').split('T')[0]);
+  const displayDate = fmtOrderDate(o);
 
   // Диоптрии рецепта, по которому оформлен заказ — подтягиваем отдельно,
   // т.к. карточку заказа можно открыть и не из списка «Заказы» (например, из карточки пациента).
@@ -301,7 +301,7 @@ async function openAddOrderFor(patientId, rxVal) {
   const [{data:patients}, examRes] = await Promise.all([
     db.from('patients').select('id,name,telegram_username').is('deleted_at',null).order('name'),
     patientId
-      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',patientId).is('deleted_at',null).order('created_at',{ascending:false})
+      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',patientId).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
   const exams = examRes&&examRes.data||[];
@@ -317,7 +317,7 @@ async function openEditOrder(id) {
   const [{data:patients}, examRes] = await Promise.all([
     db.from('patients').select('id,name,telegram_username').is('deleted_at',null).order('name'),
     o && o.patient_id
-      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',o.patient_id).is('deleted_at',null).order('created_at',{ascending:false})
+      ? db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',o.patient_id).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false})
       : Promise.resolve({data:[]})
   ]);
   _drawOrderForm(o, o&&o.patient_id, patients||[], examRes&&examRes.data||[]);
@@ -325,7 +325,18 @@ async function openEditOrder(id) {
 
 function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   const isEdit = !!o;
-  const orderDate = (o && (o.order_date || (o.created_at||'').split('T')[0])) || today();
+  // Дата заказа (как в ginter-crm): у существующего — сохранённая; у нового —
+  // дата обследования, если заказ по карте, внесённой сегодня (часто задним числом);
+  // иначе дата первого посещения только что созданного пациента; иначе сегодня.
+  let orderDate = today(), orderPrec = 'day';
+  if (o) { orderDate = o.order_date || (o.order_date_prec==='unknown' ? '' : (o.created_at||'').split('T')[0]); orderPrec = o.order_date_prec || 'day'; }
+  else {
+    const preEx = preRx ? (exams||[]).find(e => e.id === preRx.split('|')[0]) : null;
+    const chain = _pendingChainDate && _pendingChainDate.pid === prePatient ? _pendingChainDate : null;
+    if (preEx && (preEx.created_at||'').split('T')[0] === today() && preEx.exam_date) { orderDate = preEx.exam_date; orderPrec = preEx.exam_date_prec || 'day'; }
+    else if (chain) { orderDate = chain.date; orderPrec = chain.prec; }
+    _pendingChainDate = null;
+  }
   const lensQty = (o && o.lens_qty != null) ? o.lens_qty : 2;
   // Заказ по рецепту МКЛ → сразу тип «Контактные линзы»
   const preCL = !o && preRx && preRx.split('|')[1] === 'cl';
@@ -414,7 +425,7 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
           '</div>'+
 
           '<div class="form-group"><label>'+t('order_num_label')+'</label><input id="o-ordernum" value="'+(o&&o.order_number||'')+'"></div>'+
-          '<div class="form-group"><label>'+t('order_date_label')+'</label><input type="date" id="o-orderdate" value="'+orderDate+'"></div>'+
+          '<div class="form-group"><label>'+t('order_date_label')+'</label>'+dpHtml('o-orderdate', orderDate, orderPrec)+'</div>'+
 
           '<div class="form-group"><label>'+t('order_type')+' *</label>'+
             '<select id="o-type" onchange="onOrderTypeChange(this.value)">'+
@@ -466,6 +477,9 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
           '<div class="form-group"><label>'+t('work')+' (din.)</label><input type="number" id="o-wprice" value="'+(o&&o.work_price||'')+'" min="0" placeholder="0" oninput="recalcOrder()"></div>'+
           '<div class="form-group"><label>'+t('prepayment')+' (din.)</label><input type="number" id="o-prepay" value="'+(o&&o.prepayment||'')+'" min="0" placeholder="0" oninput="recalcOrder()"></div>'+
           '<div class="form-group"><label>'+t('promised_date')+'</label><input type="date" id="o-pdate" value="'+(o&&o.promised_date||'')+'"></div>'+
+          (isEdit ?
+            '<div class="form-group"><label>'+t('ready_date_label')+'</label><input type="date" id="o-rdate" value="'+(o.ready_date||'')+'"></div>'+
+            '<div class="form-group"><label>'+t('issued_label')+'</label><input type="date" id="o-idate" value="'+(o.issued_date||'')+'"></div>' : '')+
           '<div class="form-group" style="align-self:flex-end">'+
             '<div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">'+
               '<div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">'+t('total')+'</div>'+
@@ -533,7 +547,9 @@ async function saveQuickRx() {
   const {count} = await db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',pid);
   const visitNum = (count||0)+1;
   const note = (isOwn ? t('prescription')+'. ' : '') + v('qrx-note');
+  const od = dpGet('o-orderdate');
   const rxData = {patient_id:pid, visit_number:visitNum, recommendations:note||null,
+    exam_date: od.ok ? od.date : today(), exam_date_prec: od.ok ? od.prec : 'day',
     rx_far_enabled:type==='far', rx_comp_enabled:type==='comp', rx_near_enabled:type==='near', rx_cl_enabled:type==='cl'};
   if (type==='far'||type==='comp') {
     const pre = type==='far' ? 'rx_far' : 'rx_comp';
@@ -554,7 +570,7 @@ async function saveQuickRx() {
   if (!ne) { toast(t('save_error')+': '+(ne_err&&ne_err.message||''), 'error'); return; }
   window._examCache[ne.id] = ne;
   const sel = document.getElementById('o-rx');
-  const d = fmt(today());
+  const d = fmtExamDate(ne);
   ['far','comp','near','cl'].forEach(tp => {
     if (!_rxDioptStr(ne, tp)) return;
     const opt = document.createElement('option');
@@ -572,7 +588,7 @@ async function onOrderPatientChange(pid) {
   const sel = document.getElementById('o-rx');
   const prev = document.getElementById('o-rx-preview');
   if (!pid) { sel.innerHTML = '<option value="">—</option>'; if (prev) prev.style.display='none'; return; }
-  const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false});
+  const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
   (exams||[]).forEach(e => { window._examCache[e.id] = e; });
   sel.innerHTML = _rxOpts(exams||[]);
   if (prev) prev.style.display = 'none';
@@ -636,14 +652,15 @@ async function saveOrder(id) {
   const isCL = orderType === 'МКЛ';
   const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
   const lPerPiece = qty > 0 ? Math.round(lPriceFinal/qty) : lPriceFinal;
-  const orderDate = v('o-orderdate') || today();
+  const od = dpGet('o-orderdate');
+  if (!od.ok) { alert(t('dp_year_err')); return; }
   const isRedo = !!(document.getElementById('o-is-redo') && document.getElementById('o-is-redo').checked);
   const data = {
     patient_id, type:orderType,
     prescription_label: rxType ? rxLabels[rxType] : null,
     examination_id: examId || null,
     order_number: v('o-ordernum') || null,
-    order_date: orderDate,
+    order_date: od.date, order_date_prec: od.prec,
     frame_code: v('o-fcode'), frame_price: fFinal,
     lens_name: v('o-lname'), lens_price: lPerPiece, lens_qty: qty,
     work_price: v('o-wprice') ? Math.max(+v('o-wprice'),0) : null,
@@ -655,7 +672,11 @@ async function saveOrder(id) {
   try {
     if (id) {
       const st = v('o-status');
-      const {error} = await db.from('orders').update({...data, status:st}).eq('id',id);
+      // Даты «Готов»/«Выдан» правятся вручную; при смене статуса в форме и пустом поле — сегодня.
+      let ready_date = v('o-rdate') || null, issued_date = v('o-idate') || null;
+      if (st === 'готов' && !ready_date) ready_date = today();
+      if (st === 'выдан' && !issued_date) issued_date = today();
+      const {error} = await db.from('orders').update({...data, status:st, ready_date, issued_date}).eq('id',id);
       if (error) throw error;
       toast(t('order_updated'));
     } else {
@@ -663,7 +684,7 @@ async function saveOrder(id) {
       if (error) throw error;
       toast(t('order_created'));
     }
-    await recalcSalary(patient_id);
+    if (od.date && od.prec === 'day') await recalcSalary(patient_id, od.date);
     if (curSection === 'patients' && _openPatientId === patient_id) _cardTab = 'orders';
     closeModal(); render();
   } catch(err) {

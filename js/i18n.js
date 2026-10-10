@@ -3,6 +3,10 @@ let _lang = localStorage.getItem('crm_lang') || 'sr';
 
 const TRANSLATIONS = {
   ru: {
+    // DATE PRECISION
+    dp_day: 'Дата', dp_year: 'Год', dp_unknown: '?', dp_day_t: 'Точная дата', dp_year_t: 'Только год', dp_unknown_t: 'Дата неизвестна',
+    dp_year_ph: 'год', dp_none: 'неизвестна', dp_year_suffix: ' г.', dp_unknown_label: 'дата неизвестна', dp_year_err: 'Введите год (например 2021)',
+    first_visit: 'Первое посещение', exam_date_label: 'Дата обследования', ready_date_label: 'Готов',
     // NAV
     nav_dashboard: 'Главная', nav_patients: 'Пациенты', nav_appointments: 'Приёмы',
     nav_orders: 'Заказы', nav_analytics: 'Аналитика', nav_slots: 'Расписание', nav_settings: 'Настройки', nav_bookinglog: 'Лог записи',
@@ -137,6 +141,10 @@ const TRANSLATIONS = {
     exam_unlocked: 'Карта открыта для изменений', exam_locked_save: 'Карта в режиме просмотра — нажмите «Изменить»',
   },
   sr: {
+    // DATE PRECISION
+    dp_day: 'Datum', dp_year: 'Godina', dp_unknown: '?', dp_day_t: 'Tačan datum', dp_year_t: 'Samo godina', dp_unknown_t: 'Datum nepoznat',
+    dp_year_ph: 'godina', dp_none: 'nepoznat', dp_year_suffix: '. g.', dp_unknown_label: 'datum nepoznat', dp_year_err: 'Unesite godinu (npr. 2021)',
+    first_visit: 'Prva poseta', exam_date_label: 'Datum pregleda', ready_date_label: 'Gotova',
     // NAV
     nav_dashboard: 'Početna', nav_patients: 'Pacijenti', nav_appointments: 'Pregledi',
     nav_orders: 'Porudžbine', nav_analytics: 'Analitika', nav_slots: 'Raspored', nav_settings: 'Podešavanja', nav_bookinglog: 'Log zakazivanja',

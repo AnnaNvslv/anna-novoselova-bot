@@ -79,7 +79,7 @@ async function _buildPrintCard(examId) {
   const rx=f=>e?.[f]||'';
   const age=p?.dob?calcAge(p.dob):'';
   const hd=(fields)=>fields.some(f=>rx(f));
-  const date=fmt((e?.created_at||today()).split('T')[0]);
+  const date=e?fmtExamDate(e):fmt(today());
   const doctor=s.doctor_name||'Ana Novoselova';
 
   const textSec=(sr,ru,val)=>val?`<div class="pc-sec">${_pcLabel(sr,ru)}<div class="pc-text">${_pt(val)}</div></div>`:'';
@@ -190,8 +190,8 @@ async function _buildPatientPrintCard(pid) {
   const [{data:p},{data:appts},{data:orders},{data:exams}] = await Promise.all([
     db.from('patients').select('*').eq('id',pid).single(),
     db.from('appointments').select('*').eq('patient_id',pid).is('deleted_at',null).order('date',{ascending:false}),
-    db.from('orders').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false}),
-    db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false})
+    db.from('orders').select('*').eq('patient_id',pid).is('deleted_at',null).order('order_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false}),
+    db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false})
   ]);
   if(!p) return null;
   const age = p.dob ? calcAge(p.dob) : '';
@@ -215,7 +215,7 @@ async function _buildPatientPrintCard(pid) {
     const hasPrism = lastExam.rx_far_od_prism||lastExam.rx_far_os_prism;
     const hasRx = lastExam.rx_far_od_sph||lastExam.rx_far_os_sph||lastExam.rx_far_od_cyl||lastExam.rx_far_os_cyl;
     examBlock = `<div class="pc-sec">
-      ${_pcLabel('Poslednji pregled — '+_pe(lastExam.appointment_number||('poseta br. '+(lastExam.visit_number||'—')))+', '+fmt(lastExam.created_at?.split('T')[0])+(lastExam.express_pregled?' · ekspres pregled':''),'')}
+      ${_pcLabel('Poslednji pregled — '+_pe(lastExam.appointment_number||('poseta br. '+(lastExam.visit_number||'—')))+', '+fmtExamDate(lastExam)+(lastExam.express_pregled?' · ekspres pregled':''),'')}
       ${hasRx?`<div class="pc-sub-title">Naočare za daljinu</div>`+_pcEyeTable(
         ['Sph','Cyl','Ax'].concat(hasPrism?['Prizma']:[]),
         [lastExam.rx_far_od_sph,lastExam.rx_far_od_cyl,lastExam.rx_far_od_ax].concat(hasPrism?[lastExam.rx_far_od_prism]:[]),
@@ -226,7 +226,7 @@ async function _buildPatientPrintCard(pid) {
 
   const orderRows = (orders||[]).map(o=>`
     <tr>
-      <td>${fmt(o.created_at?.split('T')[0])}</td>
+      <td>${fmtOrderDate(o)}</td>
       <td class="l">${_pe(o.type||'—')}</td>
       <td>${st(o.status)}</td>
       <td class="r">${money(orderTotal(o))}</td>
@@ -243,7 +243,7 @@ async function _buildPatientPrintCard(pid) {
     <div class="pc-sec">
       ${_pcLabel('Kontakt podaci','')}
       <table class="pc-info">
-        ${(()=>{ const items=[['Telefon',_pe(p.phone||'')],['Email',_pe(p.email||'')],['Telegram',tg==='—'?'':tg],['Izvor',_pe(p.source||'')],['U bazi od',p.created_at?fmt(p.created_at.split('T')[0]):'']].filter(i=>i[1]);
+        ${(()=>{ const items=[['Telefon',_pe(p.phone||'')],['Email',_pe(p.email||'')],['Telegram',tg==='—'?'':tg],['Izvor',_pe(p.source||'')],['Prva poseta',patientFirstVisit(p)?fmtFirstVisit(p):''],['U bazi od',p.created_at?fmt(p.created_at.split('T')[0]):'']].filter(i=>i[1]);
           const rows=[]; for(let i=0;i<items.length;i+=2){ const a=items[i], b=items[i+1]; rows.push(`<tr><td>${a[0]}</td><td>${a[1]}</td><td>${b?b[0]:''}</td><td>${b?b[1]:''}</td></tr>`); } return rows.join(''); })()}
       </table>
       ${p.notes?`<div class="pc-comment"><b>Napomene:</b> ${_pt(p.notes)}</div>`:''}

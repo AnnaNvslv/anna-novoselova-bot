@@ -43,7 +43,7 @@ async function renderPatients() {
     db.from('patients').select('*').is('deleted_at',null),
     db.from('appointments').select('patient_id,date,status').is('deleted_at',null),
     db.from('orders').select('patient_id,status').is('deleted_at',null),
-    db.from('examinations').select('patient_id,control_date,created_at').is('deleted_at',null)
+    db.from('examinations').select('patient_id,control_date,created_at,exam_date,exam_date_prec').is('deleted_at',null)
   ]);
   _allPatients = patients || [];
   _patientMeta = _buildPatientMeta(appts||[], orders||[], exams||[]);
@@ -72,8 +72,9 @@ function _sortPatients(list) {
     if (_patientSort === 'name_az') return (a.name||'').localeCompare(b.name||'', 'sr');
     if (_patientSort === 'name_za') return (b.name||'').localeCompare(a.name||'', 'sr');
     if (_patientSort === 'visit_new') return lv(b).localeCompare(lv(a)) || (a.name||'').localeCompare(b.name||'', 'sr');
-    if (_patientSort === 'date_new') return (b.created_at||'').localeCompare(a.created_at||'');
-    if (_patientSort === 'date_old') return (a.created_at||'').localeCompare(b.created_at||'');
+    // «Новее/Старше» — по дате первого посещения (часто вносится задним числом), запасной вариант — дата внесения
+    if (_patientSort === 'date_new') return patientFirstVisit(b).localeCompare(patientFirstVisit(a)) || (b.created_at||'').localeCompare(a.created_at||'');
+    if (_patientSort === 'date_old') return patientFirstVisit(a).localeCompare(patientFirstVisit(b)) || (a.created_at||'').localeCompare(b.created_at||'');
     if (_patientSort === 'dob') return (a.dob||'9999').localeCompare(b.dob||'9999');
     return 0;
   });
@@ -105,7 +106,7 @@ function _buildPatientMeta(appts, orders, exams) {
   });
   exams.forEach(e => {
     const x = m(e.patient_id);
-    const d = (e.created_at || '').split('T')[0];
+    const d = e.exam_date_prec === 'unknown' ? '' : examDate(e);
     if (d && (!x.lastVisit || d > x.lastVisit)) x.lastVisit = d;
     if (e.control_date && e.control_date <= td) x.controlDue = true;
   });
@@ -401,21 +402,21 @@ async function _renderPatientCard(pid) {
     db.from('patients').select('*').eq('id',pid).single(),
     db.from('appointments').select('*').eq('patient_id',pid).is('deleted_at',null).order('date',{ascending:false}).order('time',{ascending:false}),
     db.from('orders').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false}),
-    db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null).order('created_at',{ascending:false})
+    db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false})
   ]);
   if (_openPatientId !== pid) return; // пока грузили, открыли другого пациента
   if (!p || p.deleted_at) { closePatientCard(); return; }
   const A = appts || [], O = orders || [], E = exams || [];
   (E).forEach(e => { if (window._examCache) window._examCache[e.id] = e; });
   // Заказы сортируем по дате оформления (её часто вносят задним числом)
-  O.sort((a,b) => (b.order_date||(b.created_at||'').split('T')[0]).localeCompare(a.order_date||(a.created_at||'').split('T')[0]));
+  O.sort((a,b) => orderDateOf(b).localeCompare(orderDateOf(a)) || (b.created_at||'').localeCompare(a.created_at||''));
   const age = calcAge(p.dob);
   const td = today();
 
   // ── Сводка ──
   const done = A.filter(a => a.status === 'завершён');
   const visitDates = new Set(done.map(a => a.date));
-  E.forEach(e => { const d = (e.created_at||'').split('T')[0]; if (d) visitDates.add(d); });
+  E.forEach(e => { const d = e.exam_date_prec === 'unknown' ? '' : examDate(e); if (d) visitDates.add(d); });
   const lastVisit = [...visitDates].sort().pop() || '';
   const consult = done.reduce((s,a) => s + (+a.consultation_price||0), 0);
   const paidOrders = O.reduce((s,o) => _ORDER_VOID.includes(o.status) ? s : s + (o.status === 'выдан' ? orderTotal(o) : (+o.prepayment||0)), 0);
@@ -559,9 +560,11 @@ function _examTabHtml(exams, pid) {
   if (!exams.length) return addBtn+'<div class="empty"><p>'+t('exam_none')+'</p></div>';
   const td = today();
   return addBtn+exams.map((e, i) => {
-    const d = (e.created_at||'').split('T')[0];
+    // Блокировка — по дате внесения в базу (created_at), а не по дате обследования:
+    // карта, внесённая сегодня задним числом, остаётся редактируемой до конца дня.
+    const cd = (e.created_at||'').split('T')[0];
     const kinds = _rxKindsOf(e);
-    const locked = d && d < td;
+    const locked = cd && cd < td;
     const menu = ddMenu([
       {label:'👁 '+t('pt_view'), fn:"openExamView('"+e.id+"','"+pid+"')"},
       {label:'✏️ '+t('pt_edit'), fn:"openExamView('"+e.id+"','"+pid+"',true)", hide:isErvin()},
@@ -572,7 +575,7 @@ function _examTabHtml(exams, pid) {
       '<summary>'+
         '<div class="rx-visit-title">'+
           '<span class="rx-visit-chev">▸</span>'+
-          '<b>'+t('visit')+(e.visit_number||'—')+'</b> · '+fmt(d)+
+          '<b>'+t('visit')+(e.visit_number||'—')+'</b> · '+fmtExamDate(e)+
           (locked ? ' <span class="rx-lock" title="'+t('exam_locked_hint')+'">🔒</span>' : '')+
           ' '+kinds.map(k => '<span class="chip">'+_rxKindLabel(k)+'</span>').join(' ')+
           (e.express_pregled ? ' <span class="badge badge-green">⚡ '+t('pt_express')+'</span>' : '')+
@@ -607,7 +610,6 @@ function _orderTab(orders, pid, exams) {
   const exMap = {}; (exams||[]).forEach(e => { exMap[e.id] = e; });
   return add+orders.map(o => {
     const bal = orderBalance(o);
-    const d = o.order_date || (o.created_at||'').split('T')[0];
     const rxType = o.prescription_label ? (RX_LABEL_TO_TYPE[o.prescription_label] || {'Даль':'far','Компьютер':'comp','Близь':'near'}[o.prescription_label]) : '';
     const ex = o.examination_id ? (exMap[o.examination_id] || (window._examCache||{})[o.examination_id]) : null;
     const isCL = o.type === 'МКЛ';
@@ -629,7 +631,7 @@ function _orderTab(orders, pid, exams) {
             (o.is_redo ? ' <span class="badge badge-warn">↻</span>' : '')+
             (o.counts_for_salary ? ' <span class="salary-badge">💰</span>' : '')+
           '</div>'+
-          '<div class="ord-sub">'+fmt(d)+(o.promised_date ? ' · '+t('promised_date')+': '+fmt(o.promised_date) : '')+(o.issued_date ? ' · '+t('issued_label')+': '+fmt(o.issued_date) : '')+'</div>'+
+          '<div class="ord-sub">'+fmtOrderDate(o)+(o.promised_date ? ' · '+t('promised_date')+': '+fmt(o.promised_date) : '')+(o.ready_date && !o.issued_date ? ' · '+t('ready_date_label')+': '+fmt(o.ready_date) : '')+(o.issued_date ? ' · '+t('issued_label')+': '+fmt(o.issued_date) : '')+'</div>'+
         '</div>'+
         '<div class="ord-actions">'+
           (o.status==='оформлен' && !isErvin() ? '<button class="btn btn-ghost btn-sm" onclick="updateOrderStatus(\''+o.id+'\',\'в работе\')">'+t('pt_to_work')+'</button>' : '')+
@@ -666,6 +668,7 @@ function _infoTabHtml(p, appts) {
       '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="tg-on">✈ ID '+_escH(p.telegram_chat_id)+'</span>' : '')+'</p></div>'+
       '<div class="info-item"><label>'+t('dob')+'</label><p>'+(p.dob ? fmt(p.dob)+(age ? ' ('+age+' '+t('years')+')' : '') : '—')+'</p></div>'+
       '<div class="info-item"><label>'+t('source')+'</label><p>'+_escH(p.source||'—')+'</p></div>'+
+      '<div class="info-item"><label>'+t('first_visit')+'</label><p>'+fmtFirstVisit(p)+'</p></div>'+
       '<div class="info-item"><label>'+t('in_base')+'</label><p>'+fmt((p.created_at||'').split('T')[0])+'</p></div>'+
     '</div>'+
     (p.notes ? '<div class="mb-12"><label>'+t('notes')+'</label><div class="pt-notes" style="margin-top:6px">'+_escH(p.notes)+'</div></div>' : '')+
@@ -696,6 +699,9 @@ function _patientForm(p) {
             '<input type="date" id="p-dob" value="'+(p&&p.dob||'')+'" max="'+today()+'" oninput="showAgeHint(this.value)">'+
             '<div id="age-hint" class="age-hint">'+(p&&p.dob ? calcAge(p.dob)+' '+t('years') : '')+'</div>'+
           '</div>'+
+          '<div class="form-group"><label>'+t('first_visit')+'</label>'+
+            dpHtml('p-first-visit', p ? (p.first_visit_date || (p.first_visit_date_prec==='unknown' ? '' : (p.created_at||'').split('T')[0])) : today(), p && p.first_visit_date_prec)+
+          '</div>'+
           '<div class="form-group"><label>Telegram @username</label><input id="p-tguser" value="'+(p&&p.telegram_username||'')+'"></div>'+
           '<div class="form-group"><label>Telegram Chat ID</label><input type="number" id="p-tgid" value="'+(p&&p.telegram_chat_id||'')+'" placeholder="123456789"></div>'+
           '<div class="form-group full"><label>'+t('source')+'</label>'+
@@ -719,10 +725,13 @@ async function savePatient(id) {
   const lastName = v('p-lastname'), firstName = v('p-firstname');
   if (!lastName && !firstName) { alert(t('enter_name')); return; }
   const name = [lastName, firstName].filter(Boolean).join(' ');
+  const fv = dpGet('p-first-visit');
+  if (!fv.ok) { alert(t('dp_year_err')); return; }
   const tgIdRaw = v('p-tgid');
   const telegram_chat_id = tgIdRaw ? +tgIdRaw : null;
   const data = {name, last_name:lastName||null, first_name:firstName||null, phone:v('p-phone'), email:v('p-email'), dob:v('p-dob')||null,
-    telegram_username:v('p-tguser'), telegram_chat_id, source:v('p-source'), notes:v('p-notes')};
+    telegram_username:v('p-tguser'), telegram_chat_id, source:v('p-source'), notes:v('p-notes'),
+    first_visit_date:fv.date, first_visit_date_prec:fv.prec};
   try {
     let np;
     try {
@@ -758,6 +767,8 @@ async function savePatient(id) {
       if (curSection === 'patients') render(); else openPatientCard(id);
     } else {
       toast(t('added'));
+      // Дата первого посещения переходит в первую карту обследования / заказ (цепочка как в ginter-crm)
+      _pendingChainDate = np && np.id ? {pid:np.id, date:fv.date, prec:fv.prec} : null;
       // Пациента добавляли из формы записи на приём («+ Новый пациент») — возвращаемся
       // в форму записи с уже выбранным новым пациентом, дата/время/слот сохраняются.
       if (window._apptResume && np && np.id) {

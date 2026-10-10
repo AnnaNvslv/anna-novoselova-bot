@@ -13,9 +13,13 @@ async function openExamForm(apptId,patientId){
     db.from('patients').select('*').eq('id',patientId).single(),
     apptId ? db.from('examinations').select('*').eq('appointment_id',apptId).is('deleted_at',null).order('created_at',{ascending:false}).limit(1) : Promise.resolve({data:[]}),
     db.from('examinations').select('id',{count:'exact',head:true}).eq('patient_id',patientId),
-    apptId ? db.from('appointments').select('type').eq('id',apptId).single() : Promise.resolve({data:null})
+    apptId ? db.from('appointments').select('type,date').eq('id',apptId).single() : Promise.resolve({data:null})
   ]);
   const ex = exams?.[0] || null;
+  // Дата обследования для новой карты: дата записи на приём → дата первого посещения
+  // только что созданного пациента → сегодня. Всегда можно поменять вручную.
+  const chain = _pendingChainDate && _pendingChainDate.pid === patientId ? _pendingChainDate : null;
+  _examDefaultDate = appt?.date ? {date:appt.date, prec:'day'} : chain ? {date:chain.date, prec:chain.prec} : {date:today(), prec:'day'};
   const e=ex||{};const visitNum=e.visit_number||(examCountRes?.count||0)+1;
   _currentExamId = e.id || null;
   _currentApptType = appt?.type || '';
@@ -30,6 +34,7 @@ async function openExamForm(apptId,patientId){
     }
   },120000);
 }
+let _examDefaultDate = null;
 // edit=true — открыть сразу для исправления (пункт «Изменить» в карточке пациента).
 async function openExamView(examId,pid,edit){
   _examTab='anamn';
@@ -61,7 +66,7 @@ function _examApplyLock(e, forceEdit){
 function _examSetLocked(locked, dateStr){
   const modal=document.querySelector('#modal-container .modal'); if(!modal) return;
   modal.classList.toggle('exam-locked', locked);
-  modal.querySelectorAll('input, select, textarea, .modal-body button').forEach(el=>{
+  modal.querySelectorAll('input, select, textarea, .modal-body button, .modal-header .date-prec-toggle button').forEach(el=>{
     if(el.closest('[data-nolock]')) return;
     if(locked){ if(!el.disabled){ el.disabled=true; el.dataset.lk='1'; } }
     else if(el.dataset.lk){ el.disabled=false; delete el.dataset.lk; }
@@ -174,6 +179,9 @@ function _drawExam(p,e,visitNum,apptId,apptType){
   const age = p?.dob ? calcAge(p.dob) : '';
   const dobStr = p?.dob ? fmt(p.dob) : '';
   // Галочка «Экспресс-преглед»: сохранённое значение, а для новой карты — по типу записи
+  // Дата обследования (exam_date + точность). Для старых карт без exam_date — дата внесения.
+  const exDateVal = e?.id ? (e.exam_date || (e.exam_date_prec==='unknown' ? '' : (e.created_at||'').split('T')[0])) : (_examDefaultDate?.date || today());
+  const exDatePrec = e?.id ? (e.exam_date_prec || 'day') : (_examDefaultDate?.prec || 'day');
   const isExpress = (e && typeof e.express_pregled==='boolean' && e.id) ? e.express_pregled : /Экспресс/i.test(apptType||'');
   _examData.clinicalPrev = (e && e.clinical) || {};
   const _dot = tab => (typeof _clinTabHasData==='function' && _clinTabHasData(tab,e)) ? '<span class="tab-dot"></span>' : '';
@@ -195,6 +203,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           ${age?`<span style="font-size:12px;color:var(--text-muted,#64748b)">👤 ${age} лет${dobStr?' ('+dobStr+')':''}</span>`:''}
           ${patientCode?`<span style="font-size:12px;color:var(--text-muted,#64748b);font-family:monospace;background:var(--surface2,#f1f5f9);padding:1px 6px;border-radius:4px">ID: ${patientCode}</span>`:''}
         </div>
+        <div class="ex-date"><span>${t('exam_date_label')}</span>${dpHtml('e-exam-date', exDateVal, exDatePrec, ' oninput="_modalDirty=true"')}</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="_examClose()">✕</button>
     </div>
@@ -412,8 +421,11 @@ function _switchExamTab(){
 function updateCtrlDate(m){
   if(!m) return;
   const el=document.getElementById('e-ctrl-date');
-  if(m==='w6'){ const d=new Date(); d.setDate(d.getDate()+42); el.value=d.toISOString().split('T')[0]; }
-  else el.value=addMonths(today(),+m);
+  // Отсчёт от даты обследования (если она точная), иначе от сегодня
+  const exD = document.getElementById('e-exam-date') ? dpGet('e-exam-date') : null;
+  const base = exD && exD.prec==='day' && exD.date ? exD.date : today();
+  if(m==='w6'){ const d=new Date(base+'T12:00:00'); d.setDate(d.getDate()+42); el.value=d.toISOString().split('T')[0]; }
+  else el.value=addMonths(base,+m);
   _modalDirty=true;
 }
 function _reRenderCorrs(){
@@ -468,9 +480,12 @@ function addCorrection(){_examData.corrections.push({type:'Очки для да�
 async function saveExam(id,apptId,patientId,visitNum){
   if(_examIsLocked()){ toast(t('exam_locked_save'),'info'); return _currentExamId||id||null; }
   const effectiveId = _currentExamId || id || '';
+  const exD = dpGet('e-exam-date');
+  if(!exD.ok){ toast(t('dp_year_err'),'error'); return null; }
   const vs = id=>{ const el=document.getElementById(id); return el?el.value:''; };
   const data={
     appointment_id:apptId||null,patient_id:patientId,visit_number:+visitNum,
+    exam_date:exD.date,exam_date_prec:exD.prec,
     visit_reason:[...document.querySelectorAll('input[name="visit_reason"]:checked')].map(cb=>cb.value).join(', '),
     complaints_notes:vs('e-complaints'),last_ophthalmologist:vs('e-lastoph'),
     eye_diseases_notes:vs('e-eyedis'),general_diseases_notes:vs('e-gendis'),
@@ -559,7 +574,7 @@ async function saveBeforeEmail(id,apptId,patientId,visitNum,target){
 // Сборка печатных форм (_buildPrintCard, _buildPatientPrintCard, _openPrintWindow) — в js/print.js.
 async function printExam(examId){
   const {e,p} = await _buildPrintCard(examId);
-  const date=fmt((e?.created_at||today()).split('T')[0]);
+  const date=e?fmtExamDate(e):fmt(today());
   const title=`${t('exam_card')} — ${p?.name||'pacijent'} — ${date}`;
   const html=document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);
@@ -570,7 +585,7 @@ async function emailExam(examId,target){
   const{e,p}=await _buildPrintCard(examId);
   const{data:sRows}=await db.from('settings').select('key,value').in('key',['doctor_name']);
   const s={}; (sRows||[]).forEach(r=>s[r.key]=r.value);
-  const date=fmt((e?.created_at||today()).split('T')[0]);
+  const date=e?fmtExamDate(e):fmt(today());
   const title=`${t('exam_card')} — ${p?.name||'pacijent'} — ${date}`;
   const html=document.getElementById('print-area').innerHTML;
   _openPrintWindow(title, html);

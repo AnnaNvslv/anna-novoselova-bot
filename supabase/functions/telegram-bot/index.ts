@@ -44,6 +44,38 @@ async function sendMessage(chat_id: number, text: string, extra: Record<string, 
   })
 }
 
+// ── Промокоды: код и применённая скидка хранятся в appointments.intake (скидку на приём считает триггер в базе) ──
+const PROMO_OFFERS: Record<string, string> = { P: 'на проверку', L: 'на линзы', K: 'чек-ап' }
+const escHtml = (t: string) => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))
+
+type PromoInfo = { code: string; applied: { discount: number; base_price: number } | null; pc: Record<string, unknown> | null; valid: boolean }
+
+async function getPromo(appt: Record<string, unknown>): Promise<PromoInfo | null> {
+  const intake = (appt.intake || {}) as Record<string, unknown>
+  const code = (intake.promo_code as string) || ''
+  if (!code) return null
+  const applied = (intake.promo_applied as { discount: number; base_price: number }) || null
+  const { data } = await db.from('promo_codes').select('offer,discount,valid_from,valid_to,active').eq('code', code).limit(1)
+  const pc = (data?.[0] as Record<string, unknown>) || null
+  const created = String(appt.created_at || new Date().toISOString()).slice(0, 10)
+  const valid = !!pc && !!pc.active &&
+    (!pc.valid_from || created >= String(pc.valid_from)) &&
+    (!pc.valid_to || created <= String(pc.valid_to))
+  return { code, applied, pc, valid }
+}
+
+function promoLineForAnna(p: PromoInfo | null): string {
+  if (!p) return ''
+  const c = `<b>${escHtml(p.code)}</b>`
+  if (!p.pc) return `\n🏷 Промокод: ${c}\n⚠️ нет в справочнике — проверьте`
+  const disc = Number(p.pc.discount) ? ` −${Number(p.pc.discount)}%` : ''
+  let line = `\n🏷 Промокод: ${c}${disc} ${PROMO_OFFERS[p.pc.offer as string] || ''}`
+  if (p.applied) line += `\n💰 Цена приёма: ${p.applied.base_price} → ${Math.round(p.applied.base_price * (100 - p.applied.discount) / 100)} дин.`
+  if (!p.pc.active) line += '\n⚠️ код выключен'
+  else if (!p.valid) line += '\n⚠️ код не действует на дату записи'
+  return line
+}
+
 async function handleStart(chat_id: number, username: string | undefined, payload: string) {
   if (!payload.startsWith('appt_')) {
     await sendMessage(chat_id, 'Привет! Я бот оптики Ginter. Запишитесь через форму на сайте.')
@@ -90,6 +122,11 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
     ? ''
     : '\n\nЗа 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут до.'
 
+  const promo = await getPromo(appt)
+  const lensPromoNote = promo && promo.valid && promo.pc?.offer === 'L'
+    ? `\n🏷 Промокод ${escHtml(promo.code)} — скидка на линзы для очков${promo.pc.valid_to ? ` до ${String(promo.pc.valid_to).split('-').reverse().join('.')}` : ''}. Назовите его при заказе очков в оптике.`
+    : ''
+
   const text =
 `Здравствуйте, ${firstName}!
 
@@ -104,8 +141,8 @@ https://maps.app.goo.gl/LJerB2rskqhnhES48
 Продолжительность приёма — ${duration}
 
 ${Number(appt.consultation_price) > 0
-  ? `➡️ Стоимость приёма: ${appt.consultation_price} динар.\nОплата — только наличными.\nОчки можно оплатить картой.`
-  : '➡️ Приём бесплатный.\nОчки можно оплатить картой.'}
+  ? `➡️ Стоимость приёма: ${Number(appt.consultation_price)} динар${promo?.applied ? ` (со скидкой ${promo.applied.discount}% по промокоду ${escHtml(promo.code)}, без скидки — ${promo.applied.base_price})` : ''}.\nОплата — только наличными.\nОчки можно оплатить картой.`
+  : '➡️ Приём бесплатный.\nОчки можно оплатить картой.'}${lensPromoNote}
 
 📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).${prepNote}
 
@@ -125,10 +162,10 @@ ${Number(appt.consultation_price) > 0
   await sendMessage(chat_id, text)
 
   // Уведомить Анну — теперь со ссылками
-  await notifyAnnaNewBooking(appt, patient, username)
+  await notifyAnnaNewBooking(appt, patient, username, promo)
 }
 
-async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Record<string, unknown>, tgUsername: string | undefined) {
+async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Record<string, unknown>, tgUsername: string | undefined, promo: PromoInfo | null = null) {
   const { data: r } = await db.from('settings').select('key,value').eq('key', 'my_chat_id')
   const myChatId = r?.[0]?.value
   if (!myChatId) return
@@ -147,7 +184,7 @@ async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Reco
 Пациент: ${patientName}${tgLink}
 📅 ${dateLabel} в ${time}
 Вид: ${appt.type}
-Номер: ${appt.appointment_number}${crmLink}`
+Номер: ${appt.appointment_number}${promoLineForAnna(promo)}${crmLink}`
 
   await sendMessage(Number(myChatId), msg)
 }

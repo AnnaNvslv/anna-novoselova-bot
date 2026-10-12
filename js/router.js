@@ -7,5 +7,9 @@ function nav(s) {
   render();
 }
 function render() {
-  ({dashboard:renderDashboard,patients:renderPatients,appointments:renderAppointments,orders:renderOrders,analytics:renderAnalytics,slots:renderSlots,settings:renderSettings,trash:renderTrash,bookinglog:renderBookingLog}[curSection]||renderDashboard)();
+  if(typeof checkPromoOwner==='function'&&_isOwner===null) checkPromoOwner();
+  ({dashboard:renderDashboard,patients:renderPatients,appointments:renderAppointments,orders:renderOrders,analytics:renderAnalytics,slots:renderSlots,settings:renderSettings,trash:renderTrash,bookinglog:renderBookingLog,promo:(typeof renderPromo==='function'?renderPromo:renderDashboard)}[curSection]||renderDashboard)();
 }
+
+// Промокоды: модуль грузится отдельно (страница видна только владельцу)
+(function(){var s=document.createElement('script');s.src='js/promo.js?v=1';document.body.appendChild(s);})();

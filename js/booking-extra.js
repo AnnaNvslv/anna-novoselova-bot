@@ -4,6 +4,8 @@
       (slot_type 'express' — те же окна, что у экспресс-диагностики), чтобы не пересекаться с другими записями.
    2. Прямая ссылка на вид записи: booking.html?type=control — сразу открывает календарь
       «Контрольного визита» (ссылку присылает Telegram-бот в напоминании о контроле).
+   3. Промокод из ссылки: booking.html?promo=LWEB15 — код подставляется в поле «Промокод»
+      (кнопка на странице «Акции» сайта), в т.ч. после «Ещё одна запись».
 */
 (function(){
   const control = (typeof TYPES_DATA !== 'undefined') && TYPES_DATA.find(t => t.id === 'control');
@@ -20,6 +22,20 @@
   if (typeof REASONS !== 'undefined' && REASONS.control) {
     const item = { t: 'Контроль промежуточной коррекции (замена диоптрий)', s: 'Kontrola privremene korekcije (promena dioptrije)' };
     if (!REASONS.control.some(r => r.t === item.t)) REASONS.control.unshift(item);
+  }
+
+  // ── ?promo=<код> → подставить промокод ──
+  let urlPromo = '';
+  try { urlPromo = (new URLSearchParams(location.search).get('promo') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20); } catch (e) {}
+  if (urlPromo) {
+    const fillPromo = () => { const el = document.getElementById('f-promo'); if (el && !el.value) el.value = urlPromo; };
+    document.addEventListener('DOMContentLoaded', () => {
+      fillPromo();
+      if (typeof resetBooking === 'function') {
+        const _reset = resetBooking;
+        window.resetBooking = function () { _reset.apply(this, arguments); fillPromo(); };
+      }
+    });
   }
 
   // ── ?type=<id> → сразу выбрать вид записи ──

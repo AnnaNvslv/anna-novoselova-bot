@@ -99,4 +99,5 @@ async function renderDashboard() {
     </div>
   </div>
 </div>`;
+  if(typeof renderUnclosedDashboard==='function') renderUnclosedDashboard();
 }

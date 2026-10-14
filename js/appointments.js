@@ -73,8 +73,11 @@ async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
       ${slotPickerHtml}
       <div class="form-group"><label>${t('date')} *</label><input type="date" id="a-date" value="${a?.date||preDate||today()}"></div>
       <div class="form-group"><label>${t('time')} *</label><select id="a-time">${timeOpts}</select></div>
-      <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?(a.consultation_price??0):(APPT_TYPES[0].price??3000)}"></div>
-      <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?apptDuration(a.type):APPT_TYPES[0].duration}" readonly></div>
+      <div class="form-group full" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">
+        <div class="form-group"><label>${t('appt_cost')}</label><input type="number" id="a-price" value="${a?(a.consultation_price??0):(APPT_TYPES[0].price??3000)}"></div>
+        <div class="form-group"><label>${t('duration')} (${t('duration_min')})</label><input type="number" id="a-dur" value="${a?apptDuration(a.type):APPT_TYPES[0].duration}" readonly></div>
+        <div class="form-group"><label>Промокод</label>${promoFieldHtml('a-promo',(a?.intake&&typeof a.intake==='object')?a.intake.promo_code:'','P')}</div>
+      </div>
       <div class="form-group full"><label>${t('notes_label')}</label><textarea id="a-notes">${a?.notes||''}</textarea></div>
       <div class="form-group full"><label>${t('notify_tg')}</label>
         <select id="a-notify"><option value="yes">${t('notify_yes')}</option><option value="no">${isErvin()?'Ne':'Нет'}</option></select>
@@ -85,6 +88,8 @@ async function _apptForm(a,prePatient,preDate,preTime,preSlotId){
       <button class="btn btn-accent" onclick="saveAppt('${a?.id||''}')">${isErvin()?'Zauzimi':t('save')}</button>
     </div>
   </div>`);
+  window._apptIntake=(a?.intake&&typeof a.intake==='object'&&!Array.isArray(a.intake))?a.intake:null;
+  setTimeout(()=>promoFieldInit('a-promo'),50);
 }
 function pickSlot(date,time,slotId){
   document.querySelectorAll('.slot-pick-btn').forEach(b=>{
@@ -113,6 +118,14 @@ async function saveAppt(id){
   const typeName=v('a-type');
   const dur=+(v('a-dur'))||60;
   const data={patient_id,date,time,type:typeName,notes:v('a-notes'),consultation_price:+(v('a-price'))||0};
+  // Промокод → appointments.intake.promo_code (анкету из записи не трогаем, только этот ключ)
+  const promo=promoFieldVal('a-promo');
+  const baseIntake=id?(window._apptIntake||null):null;
+  if(promo||(baseIntake&&baseIntake.promo_code)){
+    const ni=Object.assign({},baseIntake||{});
+    if(promo) ni.promo_code=promo; else delete ni.promo_code;
+    data.intake=ni;
+  }
   let apptId=id;
   let apptNum='';
   try {

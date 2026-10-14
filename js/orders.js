@@ -1,4 +1,6 @@
 // ═══ ORDERS ═══
+// Поле промокода + «Приём оплачен?» (js/promo-field.js) — подгружается отсюда, как promo.js из router.js
+(function(){var s=document.createElement('script');s.src='js/promo-field.js?v=1';document.body.appendChild(s);})();
 
 var RX_SELECT_FIELDS =
   'id,visit_number,created_at,exam_date,exam_date_prec,' +
@@ -266,6 +268,7 @@ async function openOrderCard(id) {
           '<div class="info-item"><label>'+t('prescription')+'</label><p style="color:var(--text-m)">'+(o.prescription_label||'—')+(rxDiopters?' <span style="color:var(--text);font-weight:600">— '+rxDiopters+'</span>':'')+'</p></div>'+
           '<div class="info-item"><label>'+t('promised_date')+'</label><p>'+(o.promised_date ? fmt(o.promised_date) : '—')+'</p></div>'+
           '<div class="info-item"><label>'+t('order_date_label')+'</label><p>'+displayDate+'</p></div>'+
+          (o.promo_code ? '<div class="info-item"><label>'+(_lang==='sr'?'Promo kod':'Промокод')+'</label><p><span class="badge badge-accent">'+_escH(o.promo_code)+'</span></p></div>' : '')+
         '</div>'+
         '<div class="divider"></div>'+
         '<div class="form-grid mb-12">'+
@@ -297,7 +300,12 @@ function openAddOrder() { openAddOrderFor(null); }
 // rxVal — 'examId|far|comp|near|cl': заказ «по рецепту» из карточки пациента.
 // Без rxVal для нового заказа сразу подставляется последний осмотр пациента (как в Ginter);
 // выбор всегда виден в форме и его можно сменить.
-async function openAddOrderFor(patientId, rxVal) {
+async function openAddOrderFor(patientId, rxVal, _payChecked) {
+  // Перед заказом: у пациента есть прошедший приём, который так и остался «запланирован»? → «Приём оплачен?»
+  if (patientId && !_payChecked && typeof unclosedAppts === 'function') {
+    const un = await unclosedAppts(patientId);
+    if (un.length) { askApptPaid(un[0], skipped => openAddOrderFor(patientId, rxVal, skipped)); return; }
+  }
   const [{data:patients}, examRes] = await Promise.all([
     db.from('patients').select('id,name,telegram_username').is('deleted_at',null).order('name'),
     patientId
@@ -340,7 +348,8 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   const lensQty = (o && o.lens_qty != null) ? o.lens_qty : 2;
   // Заказ по рецепту МКЛ → сразу тип «Контактные линзы»
   const preCL = !o && preRx && preRx.split('|')[1] === 'cl';
-  const isCL = (o && o.type === 'МКЛ') || preCL;
+  const curType = o ? (o.type || 'Очки') : (preCL ? 'МКЛ' : 'Очки');
+  const isCL = curType === 'МКЛ';
   const isRedo = o && !!o.is_redo;
 
   let selVal = (!o && preRx) || '';
@@ -353,141 +362,141 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   const rxHtml = _rxOpts(exams, selVal);
   const rxCount = exams.length;
   const rxLabel = t('prescription') + (rxCount ?
-    ' <span style="color:var(--accent);font-size:11px;font-weight:600">('+rxCount+')</span>' :
-    ' <span style="color:var(--text-l);font-size:11px">— '+t('exam_none')+'</span>');
+    ' <span class="of-count">('+rxCount+')</span>' :
+    ' <span class="of-count of-count-none">— '+t('exam_none')+'</span>');
+
+  const typeBtns = [['Очки',t('order_type_glasses')],['МКЛ',t('order_type_cl')],['Ремонт',t('order_type_repair')],['Другое',t('no_data')]]
+    .map(([val,lbl]) => '<button type="button" data-type="'+val+'"'+(curType===val?' class="active"':'')+' onclick="setOrderTypeBtn(\''+val+'\')">'+lbl+'</button>').join('');
+  const extraOpen = !!(o && (o.notes || o.is_redo));
+  const total0 = (o&&o.frame_price||0)+(o&&o.lens_price||0)*(isCL?1:lensQty)+(o&&o.work_price||0);
+  const numIn = (id, val, attrs) => '<input type="number" id="'+id+'" value="'+(val==null?'':val)+'" min="0" placeholder="0" '+(attrs||'')+'>';
 
   openModal(
-    '<div class="modal modal-xl">'+
-      '<div class="modal-header"><span class="modal-title">'+(isEdit ? t('edit_order') : t('new_order'))+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
-      '<div class="modal-body">'+
-        '<div class="form-grid">'+
+    '<div class="modal modal-xl of-modal">'+
+      '<div class="modal-header of-head">'+
+        '<span class="modal-title">'+(isEdit ? t('edit_order') : t('new_order'))+'</span>'+
+        '<div class="of-type-toggle">'+typeBtns+'</div>'+
+        '<input type="hidden" id="o-type" value="'+curType+'">'+
+        '<button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>'+
+      '</div>'+
+      '<div class="modal-body of-body">'+
 
-          '<div class="form-group full">'+
-            '<div class="flex items-center justify-between mb-4"><label>'+t('patient')+' *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ '+t('new_patient')+'</button></div>'+
-            '<select id="o-pid" onchange="onOrderPatientChange(this.value)">'+
-              '<option value="">— '+t('select_patient')+' —</option>'+
-              patients.map(p => '<option value="'+p.id+'" '+((o&&o.patient_id===p.id||prePatient===p.id)?'selected':'')+'>'+_escH(nameWithNick(p.name,p.telegram_username))+'</option>').join('')+
-            '</select>'+
-            '<div id="quick-patient-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
-              '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">'+t('new_patient')+'</div>'+
-              '<div class="form-grid">'+
-                '<div class="form-group full"><label>'+t('full_name')+' *</label><input id="qp-name"></div>'+
-                '<div class="form-group"><label>'+t('phone')+'</label><input id="qp-phone"></div>'+
-                '<div class="form-group"><label>Email</label><input id="qp-email"></div>'+
-                '<div class="form-group"><label>Telegram @username</label><input id="qp-tg"></div>'+
-              '</div>'+
-              '<div class="flex gap-8 mt-8">'+
-                '<button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">'+t('save')+'</button>'+
-                '<button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">'+t('cancel')+'</button>'+
-              '</div>'+
+        // Пациент
+        '<div class="of-field">'+
+          '<div class="of-label-row"><label>'+t('patient')+' *</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickPatient()">+ '+t('new_patient')+'</button></div>'+
+          '<select id="o-pid" onchange="onOrderPatientChange(this.value)">'+
+            '<option value="">— '+t('select_patient')+' —</option>'+
+            patients.map(p => '<option value="'+p.id+'" '+((o&&o.patient_id===p.id||prePatient===p.id)?'selected':'')+'>'+_escH(nameWithNick(p.name,p.telegram_username))+'</option>').join('')+
+          '</select>'+
+          '<div id="quick-patient-form" class="of-sub" style="display:none">'+
+            '<div class="of-sub-title">'+t('new_patient')+'</div>'+
+            '<div class="form-grid">'+
+              '<div class="form-group full"><label>'+t('full_name')+' *</label><input id="qp-name"></div>'+
+              '<div class="form-group"><label>'+t('phone')+'</label><input id="qp-phone"></div>'+
+              '<div class="form-group"><label>Email</label><input id="qp-email"></div>'+
+              '<div class="form-group"><label>Telegram @username</label><input id="qp-tg"></div>'+
+            '</div>'+
+            '<div class="flex gap-8 mt-8">'+
+              '<button class="btn btn-accent btn-sm" onclick="saveQuickPatient()">'+t('save')+'</button>'+
+              '<button class="btn btn-ghost btn-sm" onclick="toggleQuickPatient()">'+t('cancel')+'</button>'+
             '</div>'+
           '</div>'+
+          '<div id="o-unclosed"></div>'+
+        '</div>'+
 
-          '<div class="form-group full">'+
-            '<div class="flex items-center justify-between mb-4"><label>'+rxLabel+'</label><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ '+t('prescription')+'</button></div>'+
-            '<select id="o-rx" onchange="showRxPreview(this.value)">'+rxHtml+'</select>'+
-            '<div id="o-rx-preview" style="margin-top:8px;display:none"></div>'+
-            '<div id="quick-rx-form" style="display:none;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;margin-top:8px">'+
-              '<div style="font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px">'+t('prescription')+'</div>'+
-              '<div class="form-grid">'+
-                '<div class="form-group"><label>'+t('appt_type')+'</label>'+
-                  '<select id="qrx-type" onchange="updateQuickRxFields()">'+
-                    '<option value="far">'+t('rx_far')+'</option>'+
-                    '<option value="comp">'+t('rx_comp')+'</option>'+
-                    '<option value="near">'+t('rx_near')+'</option>'+
-                    '<option value="cl">'+t('rx_cl')+'</option>'+
-                  '</select>'+
-                '</div>'+
-                '<div class="form-group" style="align-self:flex-end">'+
-                  '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">'+
-                    '<input type="checkbox" id="qrx-own" style="width:auto"> '+t('prescription')+' ('+t('exam_open_btn')+')'+
-                  '</label>'+
-                '</div>'+
-              '</div>'+
-              '<div id="qrx-fields" style="margin-top:10px">'+
-                '<table class="rx-table" style="margin-bottom:8px">'+
-                  '<tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>'+
-                  '<tr><td>OD</td><td><input id="qrx-od-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-ax" style="min-width:52px;text-align:center"></td></tr>'+
-                  '<tr><td>OS</td><td><input id="qrx-os-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-ax" style="min-width:52px;text-align:center"></td></tr>'+
-                '</table>'+
-                '<div class="flex gap-8" id="qrx-shared-fields">'+
-                  '<div class="form-group" style="max-width:80px"><label id="qrx-pd-label">PD</label><input id="qrx-pd" style="text-align:center"></div>'+
-                  '<div class="form-group" style="max-width:80px" id="qrx-add-wrap"><label id="qrx-add-label">ADD</label><input id="qrx-add" style="text-align:center"></div>'+
-                '</div>'+
-                '<div class="form-group mt-8" id="qrx-cl-type-wrap" style="display:none"><label>'+t('rx_cl')+'</label><input id="qrx-cl-type"></div>'+
-                '<div class="form-group mt-8"><label>'+t('notes')+'</label><input id="qrx-note"></div>'+
-              '</div>'+
-              '<div class="flex gap-8 mt-10">'+
-                '<button class="btn btn-accent btn-sm" onclick="saveQuickRx()">'+t('save')+'</button>'+
-                '<button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">'+t('cancel')+'</button>'+
-              '</div>'+
+        // Дата + № заказа
+        '<div class="of-grid2">'+
+          '<div class="of-field"><label>'+t('order_date_label')+'</label>'+dpHtml('o-orderdate', orderDate, orderPrec)+'</div>'+
+          '<div class="of-field"><label>'+t('order_num_label')+'</label><input id="o-ordernum" value="'+(o&&o.order_number||'')+'"></div>'+
+        '</div>'+
+
+        // Рецепт
+        '<div class="of-section"><span>'+rxLabel+'</span><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ '+t('prescription')+'</button></div>'+
+        '<select id="o-rx" onchange="showRxPreview(this.value)">'+rxHtml+'</select>'+
+        '<div id="o-rx-preview" style="margin-top:8px;display:none"></div>'+
+        '<div id="quick-rx-form" class="of-sub" style="display:none">'+
+          '<div class="of-sub-title">'+t('prescription')+'</div>'+
+          '<div class="form-grid">'+
+            '<div class="form-group"><label>'+t('appt_type')+'</label>'+
+              '<select id="qrx-type" onchange="updateQuickRxFields()">'+
+                '<option value="far">'+t('rx_far')+'</option>'+
+                '<option value="comp">'+t('rx_comp')+'</option>'+
+                '<option value="near">'+t('rx_near')+'</option>'+
+                '<option value="cl">'+t('rx_cl')+'</option>'+
+              '</select>'+
+            '</div>'+
+            '<div class="form-group" style="align-self:flex-end">'+
+              '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500">'+
+                '<input type="checkbox" id="qrx-own" style="width:auto"> '+t('prescription')+' ('+t('exam_open_btn')+')'+
+              '</label>'+
             '</div>'+
           '</div>'+
-
-          '<div class="form-group"><label>'+t('order_num_label')+'</label><input id="o-ordernum" value="'+(o&&o.order_number||'')+'"></div>'+
-          '<div class="form-group"><label>'+t('order_date_label')+'</label>'+dpHtml('o-orderdate', orderDate, orderPrec)+'</div>'+
-
-          '<div class="form-group"><label>'+t('order_type')+' *</label>'+
-            '<select id="o-type" onchange="onOrderTypeChange(this.value)">'+
-              '<option value="Очки" '+((!o&&!preCL)||(o&&o.type==='Очки')?'selected':'')+'>'+t('order_type_glasses')+'</option>'+
-              '<option value="МКЛ" '+(isCL?'selected':'')+'>'+t('order_type_cl')+'</option>'+
-              '<option value="Ремонт" '+(o&&o.type==='Ремонт'?'selected':'')+'>'+t('order_type_repair')+'</option>'+
-              '<option value="Другое" '+(o&&o.type==='Другое'?'selected':'')+'>'+t('no_data')+'</option>'+
-            '</select>'+
+          '<div id="qrx-fields" style="margin-top:10px">'+
+            '<table class="rx-table" style="margin-bottom:8px">'+
+              '<tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th></tr>'+
+              '<tr><td>OD</td><td><input id="qrx-od-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-od-ax" style="min-width:52px;text-align:center"></td></tr>'+
+              '<tr><td>OS</td><td><input id="qrx-os-sph" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-cyl" style="min-width:52px;text-align:center"></td><td><input id="qrx-os-ax" style="min-width:52px;text-align:center"></td></tr>'+
+            '</table>'+
+            '<div class="flex gap-8" id="qrx-shared-fields">'+
+              '<div class="form-group" style="max-width:80px"><label id="qrx-pd-label">PD</label><input id="qrx-pd" style="text-align:center"></div>'+
+              '<div class="form-group" style="max-width:80px" id="qrx-add-wrap"><label id="qrx-add-label">ADD</label><input id="qrx-add" style="text-align:center"></div>'+
+            '</div>'+
+            '<div class="form-group mt-8" id="qrx-cl-type-wrap" style="display:none"><label>'+t('rx_cl')+'</label><input id="qrx-cl-type"></div>'+
+            '<div class="form-group mt-8"><label>'+t('notes')+'</label><input id="qrx-note"></div>'+
           '</div>'+
-
-          '<div class="form-group" style="align-self:flex-end">'+
-            '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;padding:10px 0">'+
-              '<input type="checkbox" id="o-is-redo" style="width:auto;width:16px;height:16px;cursor:pointer"'+(isRedo?' checked':'')+'>'+
-              ' &#8635; Переделка'+
-            '</label>'+
+          '<div class="flex gap-8 mt-10">'+
+            '<button class="btn btn-accent btn-sm" onclick="saveQuickRx()">'+t('save')+'</button>'+
+            '<button class="btn btn-ghost btn-sm" onclick="toggleQuickRx()">'+t('cancel')+'</button>'+
           '</div>'+
+        '</div>'+
 
+        // Оправа: код · цена · % · итого
+        '<div id="o-frame-block"'+(isCL?' style="display:none"':'')+'>'+
+          '<div class="of-section"><span>'+t('frame')+'</span></div>'+
+          '<div class="of-row of-row-frame">'+
+            '<div><label>'+t('frame_code')+'</label><input id="o-fcode" value="'+_escH(o&&o.frame_code||'')+'"></div>'+
+            '<div><label>'+(_lang==='sr'?'cena':'цена')+'</label>'+numIn('o-fprice', o&&o.frame_price||'', 'class="of-num" onfocus="if(+this.value===0)this.value=\'\'" oninput="recalcOrder()"')+'</div>'+
+            '<div><label>'+(_lang==='sr'?'pop. %':'скидка %')+'</label><input type="number" id="o-fdisc" class="of-num" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
+            '<div><label class="of-res">= din.</label><input type="number" id="o-fprice-final" class="of-num of-final" value="'+(o&&o.frame_price||0)+'" readonly tabindex="-1"></div>'+
+          '</div>'+
+        '</div>'+
+
+        // Линзы: название · цена/шт · % · шт · итого
+        '<div class="of-section"><span id="o-lens-label">'+(isCL ? t('order_type_cl') : t('lenses'))+'</span></div>'+
+        '<div class="of-row of-row-lens">'+
+          '<div><label>'+t('lens_name')+'</label><input id="o-lname" value="'+_escH(o&&o.lens_name||'')+'"></div>'+
+          '<div><label>'+(_lang==='sr'?'cena/kom':'цена/шт')+'</label>'+numIn('o-lprice', o&&o.lens_price||'', 'class="of-num" data-enter-jump="save" onfocus="if(+this.value===0)this.value=\'\'" oninput="recalcOrder()"')+'</div>'+
+          '<div><label>'+(_lang==='sr'?'pop. %':'скидка %')+'</label><input type="number" id="o-ldisc" class="of-num" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
+          '<div id="o-lqty-wrap"'+(isCL?' style="visibility:hidden"':'')+'><label>'+(_lang==='sr'?'kom':'шт')+'</label><select id="o-lqty" onchange="recalcOrder()"><option value="2" '+(lensQty!==1?'selected':'')+'>2</option><option value="1" '+(lensQty===1?'selected':'')+'>1</option></select></div>'+
+          '<div><label class="of-res">= din.</label><input type="number" id="o-lprice-final" class="of-num of-final" value="'+(isCL?(o&&o.lens_price||0):((o&&o.lens_price||0)*lensQty))+'" readonly tabindex="-1"></div>'+
+        '</div>'+
+
+        // Работа · срок · промокод  |  Итого
+        '<div class="of-sum-row">'+
+          '<div class="of-grid2">'+
+            '<div class="of-field"><label>'+t('work')+' (din.)</label>'+numIn('o-wprice', o&&o.work_price||'', 'class="of-num" oninput="recalcOrder()"')+'</div>'+
+            '<div class="of-field"><label>'+t('promised_date')+'</label><input type="date" id="o-pdate" value="'+(o&&o.promised_date||'')+'"></div>'+
+            '<div class="of-field of-span2"><label>'+(_lang==='sr'?'Promo kod':'Промокод')+'</label>'+promoFieldHtml('o-promo', o&&o.promo_code||'', 'L')+'</div>'+
+          '</div>'+
+          '<div class="of-total">'+
+            '<div class="of-total-row"><span>'+t('total')+'</span><span id="o-total-display">'+fmtMoney(total0)+'</span></div>'+
+            '<div class="of-total-paid">✓ '+(_lang==='sr'?'Plaćeno u celosti':'Оплачено полностью')+'</div>'+
+          '</div>'+
+        '</div>'+
+
+        // Свёрнутое: переделка, статус и даты, комментарий
+        '<button type="button" class="of-collapse" aria-expanded="'+extraOpen+'" onclick="toggleOrderExtra(this)">'+
+          '<span>'+(_lang==='sr'?'Prepravka, status i datumi, komentar':'Переделка, статус и даты, комментарий')+'</span><span class="chev">▾</span>'+
+        '</button>'+
+        '<div id="o-extra"'+(extraOpen?'':' hidden')+'>'+
+          '<label class="of-check"><input type="checkbox" id="o-is-redo"'+(isRedo?' checked':'')+'> &#8635; '+(_lang==='sr'?'Prepravka':'Переделка')+'</label>'+
           (isEdit ?
-            '<div class="form-group"><label>'+t('status')+'</label>'+
-              '<select id="o-status">'+ORDER_STATUSES_ALL.map(s => '<option '+(o&&o.status===s?'selected':'')+' value="'+s+'">'+statusLabel(s)+'</option>').join('')+'</select>'+
-            '</div>' :
-            '<div></div>')+
-
-          '<div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">'+
-            '<div class="form-group"><label>'+t('frame_code')+'</label><input id="o-fcode" value="'+(o&&o.frame_code||'')+'"></div>'+
-            '<div class="form-group">'+
-              '<label>'+t('frame')+' (din.)</label>'+
-              '<div style="display:grid;grid-template-columns:1fr 60px 1fr;gap:6px;align-items:flex-end">'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">'+(_lang==='sr'?'Osnovna':'Базовая')+'</label><input type="number" id="o-fprice" value="'+(o&&o.frame_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">% </label><input type="number" id="o-fdisc" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
-                '<div><label style="font-size:10.5px;color:var(--green);font-weight:700">= din.</label><input type="number" id="o-fprice-final" value="'+(o&&o.frame_price||0)+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-
-          '<div class="form-group full" style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:flex-start">'+
-            '<div class="form-group"><label>'+t('lens_name')+'</label><input id="o-lname" value="'+(o&&o.lens_name||'')+'"></div>'+
-            '<div class="form-group">'+
-              '<label id="o-lens-label">'+t('lenses')+' (din.)</label>'+
-              '<div style="display:grid;grid-template-columns:1fr 60px '+(isCL?'':'80px ')+'1fr;gap:6px;align-items:flex-end">'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">Base</label><input type="number" id="o-lprice" data-enter-jump="save" value="'+(o&&o.lens_price||'')+'" min="0" placeholder="0" onfocus="if(+this.value===0)this.value=\'\'" onblur="if(this.value===\'\')this.value=0" oninput="recalcOrder()"></div>'+
-                '<div><label style="font-size:10.5px;color:var(--text-l)">% </label><input type="number" id="o-ldisc" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
-                (isCL ? '' : '<div id="o-lqty-wrap"><label style="font-size:10.5px;color:var(--text-l)">kom</label><select id="o-lqty" onchange="recalcOrder()" style="padding:8px 4px"><option value="2" '+(lensQty!==1?'selected':'')+'>2</option><option value="1" '+(lensQty===1?'selected':'')+'>1</option></select></div>')+
-                '<div><label style="font-size:10.5px;color:var(--green);font-weight:700" id="o-lens-result-label">= din.</label><input type="number" id="o-lprice-final" value="'+(isCL?(o&&o.lens_price||0):((o&&o.lens_price||0)*lensQty))+'" min="0" readonly style="background:var(--green-l);font-weight:700"></div>'+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-
-          '<div class="form-group"><label>'+t('work')+' (din.)</label><input type="number" id="o-wprice" value="'+(o&&o.work_price||'')+'" min="0" placeholder="0" oninput="recalcOrder()"></div>'+
-          '<div class="form-group"><label>'+t('prepayment')+' (din.)</label><input type="number" id="o-prepay" value="'+(o&&o.prepayment||'')+'" min="0" placeholder="0" oninput="recalcOrder()"></div>'+
-          '<div class="form-group"><label>'+t('promised_date')+'</label><input type="date" id="o-pdate" value="'+(o&&o.promised_date||'')+'"></div>'+
-          (isEdit ?
-            '<div class="form-group"><label>'+t('ready_date_label')+'</label><input type="date" id="o-rdate" value="'+(o.ready_date||'')+'"></div>'+
-            '<div class="form-group"><label>'+t('issued_label')+'</label><input type="date" id="o-idate" value="'+(o.issued_date||'')+'"></div>' : '')+
-          '<div class="form-group" style="align-self:flex-end">'+
-            '<div style="background:var(--accent-l);border:2px solid var(--accent);border-radius:10px;padding:12px 16px">'+
-              '<div style="font-size:10px;color:var(--accent-h);font-weight:700;letter-spacing:.5px;margin-bottom:3px">'+t('total')+'</div>'+
-              '<div id="o-total-display" style="font-size:22px;font-weight:800;color:var(--primary);letter-spacing:-1px">'+ fmtMoney((o&&o.frame_price||0)+(o&&o.lens_price||0)*lensQty+(o&&o.work_price||0))+'</div>'+
-              '<div id="o-balance-display" style="font-size:11px;color:var(--accent-h);margin-top:3px;font-weight:600">'+t('balance')+': '+fmtMoney(Math.max((o&&o.frame_price||0)+(o&&o.lens_price||0)*lensQty+(o&&o.work_price||0)-(o&&o.prepayment||0),0))+'</div>'+
-            '</div>'+
-          '</div>'+
-          '<div class="form-group full"><label>'+t('notes')+'</label><textarea id="o-notes">'+(o&&o.notes||'')+'</textarea></div>'+
+            '<div class="of-grid3">'+
+              '<div class="of-field"><label>'+t('status')+'</label><select id="o-status">'+ORDER_STATUSES_ALL.map(s => '<option '+(o.status===s?'selected':'')+' value="'+s+'">'+statusLabel(s)+'</option>').join('')+'</select></div>'+
+              '<div class="of-field"><label>'+t('ready_date_label')+'</label><input type="date" id="o-rdate" value="'+(o.ready_date||'')+'"></div>'+
+              '<div class="of-field"><label>'+t('issued_label')+'</label><input type="date" id="o-idate" value="'+(o.issued_date||'')+'"></div>'+
+            '</div>' : '')+
+          '<div class="of-field"><label>'+t('notes')+'</label><textarea id="o-notes" rows="2">'+_escH(o&&o.notes||'')+'</textarea></div>'+
         '</div>'+
       '</div>'+
       '<div class="modal-footer">'+
@@ -497,14 +506,31 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
     '</div>'
   );
   if (selVal) setTimeout(() => showRxPreview(selVal), 100);
+  setTimeout(() => promoFieldInit('o-promo'), 50);
+  if (!isEdit && prePatient) orderUnclosedBanner(prePatient);
+}
+
+function setOrderTypeBtn(type) {
+  const inp = document.getElementById('o-type'); if (!inp) return;
+  inp.value = type;
+  document.querySelectorAll('.of-type-toggle button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  _modalDirty = true;
+  onOrderTypeChange(type);
+}
+function toggleOrderExtra(btn) {
+  const box = document.getElementById('o-extra'); if (!box) return;
+  box.hidden = !box.hidden;
+  btn.setAttribute('aria-expanded', String(!box.hidden));
 }
 
 function onOrderTypeChange(type) {
   const isCL = type === 'МКЛ';
   const lensLabel = document.getElementById('o-lens-label');
   const qtyWrap = document.getElementById('o-lqty-wrap');
-  if (lensLabel) lensLabel.textContent = (isCL ? t('order_type_cl') : t('lenses')) + ' (din.)';
-  if (qtyWrap) qtyWrap.style.display = isCL ? 'none' : '';
+  const frame = document.getElementById('o-frame-block');
+  if (lensLabel) lensLabel.textContent = isCL ? t('order_type_cl') : t('lenses');
+  if (qtyWrap) qtyWrap.style.visibility = isCL ? 'hidden' : '';
+  if (frame) frame.style.display = isCL ? 'none' : '';
   recalcOrder();
 }
 
@@ -587,6 +613,7 @@ async function saveQuickRx() {
 async function onOrderPatientChange(pid) {
   const sel = document.getElementById('o-rx');
   const prev = document.getElementById('o-rx-preview');
+  orderUnclosedBanner(pid);
   if (!pid) { sel.innerHTML = '<option value="">—</option>'; if (prev) prev.style.display='none'; return; }
   const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
   (exams||[]).forEach(e => { window._examCache[e.id] = e; });
@@ -633,11 +660,8 @@ function recalcOrder() {
   const lFinal = lPer*qty;
   if (document.getElementById('o-lprice-final')) document.getElementById('o-lprice-final').value = lFinal;
   const work = +document.getElementById('o-wprice')?.value||0;
-  const prepay = +document.getElementById('o-prepay')?.value||0;
   const total = fFinal+lFinal+work;
-  const balance = Math.max(total-prepay,0);
   if (document.getElementById('o-total-display')) document.getElementById('o-total-display').textContent = fmtMoney(total);
-  if (document.getElementById('o-balance-display')) document.getElementById('o-balance-display').textContent = t('balance')+': '+fmtMoney(balance);
 }
 function applyDiscount() {}
 function calcTotal() {}
@@ -664,7 +688,9 @@ async function saveOrder(id) {
     frame_code: v('o-fcode'), frame_price: fFinal,
     lens_name: v('o-lname'), lens_price: lPerPiece, lens_qty: qty,
     work_price: v('o-wprice') ? Math.max(+v('o-wprice'),0) : null,
-    prepayment: Math.max(+v('o-prepay')||0, 0),
+    // Предоплаты в форме нет: заказ всегда считается оплаченным полностью
+    prepayment: fFinal + lPerPiece*qty + (v('o-wprice') ? Math.max(+v('o-wprice'),0) : 0),
+    promo_code: promoFieldVal('o-promo'),
     promised_date: v('o-pdate') || null,
     notes: v('o-notes'),
     is_redo: isRedo

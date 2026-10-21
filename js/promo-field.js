@@ -3,7 +3,7 @@
 // Сохраняется в orders.promo_code и appointments.intake.promo_code — оба уже учитываются в promo_stats().
 
 var _pfCodes = null, _pfLoadedAt = 0;
-var PF_OFFERS = { P: 'Проверка', L: 'Линзы', K: 'Чек-ап' };
+var PF_OFFERS = { P: 'Проверка', L: 'Линзы', K: 'Чек-ап', PL: 'Проверка + линзы' };
 
 function _pfEsc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function _pfNorm(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20); }
@@ -41,7 +41,7 @@ async function _pfOpen(inp) {
   const prefer = wrap.dataset.prefer;
   const q = _pfNorm(inp.value);
   let items = codes.filter(c => !q || c.code.includes(q));
-  items = items.slice().sort((a, b) => ((b.offer === prefer) - (a.offer === prefer)) || a.code.localeCompare(b.code));
+  items = items.slice().sort((a, b) => ((b.offer.includes(prefer)) - (a.offer.includes(prefer))) || a.code.localeCompare(b.code));
   let html = items.map(c =>
     '<div class="pf-item" onmousedown="event.preventDefault();_pfPick(\'' + inp.id + '\',\'' + _pfEsc(c.code) + '\')">' +
       '<span class="pf-code">' + _pfEsc(c.code) + '</span>' +
@@ -142,6 +142,7 @@ async function _apdNoShow(id) { if (await _apdCancel(id)) _apdGo(false); }
 async function orderUnclosedBanner(pid) {
   const box = document.getElementById('o-unclosed'); if (!box) return;
   box.innerHTML = '';
+  orderPromoFromAppt(pid);
   if (!pid) return;
   const list = await unclosedAppts(pid);
   if (!list.length || v('o-pid') !== pid) return;
@@ -152,6 +153,40 @@ async function orderUnclosedBanner(pid) {
       '<button class="btn btn-success btn-sm" onclick="_obPay(\'' + a.id + '\',' + _apdPrice(a) + ')">✓ Да, ' + fmtMoney(_apdPrice(a)) + '</button>' +
       '<button class="btn btn-ghost btn-sm" onclick="_obNoShow(\'' + a.id + '\')">🚫 Не пришёл</button>' +
     '</span></div>';
+}
+// Промокод, с которым пациент записался на приём (за последние 60 дней), — плашка над формой заказа.
+// Коды на линзы (L, PL) подставляются в поле «Промокод», если оно пустое; P — только плашка (код был на преглед).
+async function orderPromoFromAppt(pid) {
+  const form = document.getElementById('o-unclosed'); if (!form) return;
+  let box = document.getElementById('o-appt-promo');
+  if (!box) { box = document.createElement('div'); box.id = 'o-appt-promo'; form.parentNode.insertBefore(box, form); }
+  const inp = document.getElementById('o-promo');
+  const clearAuto = () => { if (inp && inp.dataset.auto && inp.value === inp.dataset.auto) { inp.value = ''; _pfHint('o-promo'); } if (inp) delete inp.dataset.auto; };
+  box.innerHTML = '';
+  if (!pid) { clearAuto(); return; }
+  const todayL = _pfLocalDate();
+  const from = new Date(); from.setDate(from.getDate() - 60);
+  const { data } = await db.from('appointments').select('date,status,intake')
+    .eq('patient_id', pid).is('deleted_at', null).neq('status', 'отменён')
+    .gte('date', _pfLocalDate(from)).lte('date', todayL)
+    .order('date', { ascending: false }).limit(10);
+  if (v('o-pid') !== pid) return;
+  const a = (data || []).find(x => apptPromoCode(x));
+  if (!a) { clearAuto(); return; }
+  const code = apptPromoCode(a);
+  const pc = await promoInfo(code);
+  if (v('o-pid') !== pid) return;
+  const live = pc && pc.active && (!pc.valid_to || todayL <= pc.valid_to) && (!pc.valid_from || todayL >= pc.valid_from);
+  const lensCode = live && (pc.offer === 'L' || pc.offer === 'PL');
+  if (inp && lensCode && !inp.value) { inp.value = code; inp.dataset.auto = code; _modalDirty = true; _pfHint('o-promo'); }
+  let warn = '';
+  if (pc && pc.offer === 'PL' && a.date !== todayL) warn = '<div style="margin-top:4px;color:#b45309;font-weight:600">⚠️ Преглед был ' + fmt(a.date) + ' — скидка на линзы действует только при заказе в день прегледа</div>';
+  if (pc && pc.offer === 'P') warn = '<div style="margin-top:4px;color:var(--text-m)">Код был на преглед — на линзы скидки нет</div>';
+  box.innerHTML = '<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13.5px;color:#78350f;line-height:1.45">' +
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + promoChip(code, true) +
+    '<span>записан(а) по промокоду · преглед ' + fmt(a.date) + '</span></div>' +
+    '<div style="margin-top:4px">' + _pfEsc(promoTerms(pc, a.date)) + (lensCode && inp && inp.value === code ? ' · <b>подставлен в заказ</b>' : '') + '</div>' + warn +
+  '</div>';
 }
 async function _obPay(id, price) { if (await _apdComplete(id, price)) orderUnclosedBanner(v('o-pid')); }
 async function _obNoShow(id) { if (await _apdCancel(id)) orderUnclosedBanner(v('o-pid')); }

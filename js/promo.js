@@ -1,5 +1,5 @@
 // ═══ ПРОМОКОДЫ (только для владельца — защита на уровне базы: RLS + is_owner()) ═══
-const PROMO_OFFERS = { P: 'Проверка', L: 'Линзы', K: 'Чек-ап' };
+const PROMO_OFFERS = { P: 'Проверка', L: 'Линзы', K: 'Чек-ап', PL: 'Проверка + линзы' };
 const PROMO_CHANNELS = [
   ['SP','Чат специалистов'],['NS1','TG-чат НС 1'],['NS2','TG-чат НС 2'],['NS3','TG-чат НС 3'],
   ['NS4','TG-чат НС 4'],['NS5','TG-чат НС 5'],['TG','Свой канал'],['BV','Bela Vrana'],
@@ -20,6 +20,16 @@ function _pDate(d) { if (!d) return '—'; const [y,m,dd] = d.split('-'); return
 function _pMoney(n) { return Math.round(+n||0).toLocaleString('ru-RU') + ' RSD'; }
 function _pPct(a, b) { return b ? Math.round(a*100/b) + '%' : '—'; }
 function _pIso(d) { return d.toISOString().slice(0,10); }
+// Код действует: включён и срок не вышел
+function _pLive(r, today) { return !!r.active && (!r.valid_to || r.valid_to >= today) && (!r.valid_from || r.valid_from <= today); }
+function _pState(r, today) {
+  if (!r.active) return '<span style="color:var(--text-m)">выкл.</span>';
+  if (r.valid_to && r.valid_to < today) return '<span style="color:#d97706">истёк</span>';
+  if (r.valid_from && r.valid_from > today) return '<span style="color:#d97706">с ' + _pDate(r.valid_from) + '</span>';
+  return '<span style="color:#16a34a">активен</span>';
+}
+function _pTerm(r) { return r.valid_from || r.valid_to ? _pDate(r.valid_from) + ' – ' + (r.valid_to ? _pDate(r.valid_to) : 'бессрочно') : '—'; }
+const _P_DIM = ' style="background:#f3f4f6;color:#9ca3af"';
 function _pNorm(s) { return String(s||'').toUpperCase().replace(/[\s\-_]/g,''); }
 
 function promoPreset(p) {
@@ -51,38 +61,39 @@ async function renderPromo() {
     c.innerHTML = '<div class="topbar"><h1>Промокоды</h1></div><div class="content"><div class="card" style="padding:20px;color:#dc2626">Ошибка: '+_pEsc((st.error||src.error||reg.error).message)+'</div></div>';
     return;
   }
-  const stats = st.data || [], sources = src.data || [], codes = reg.data || [];
+  const stats = st.data || [], sources = src.data || [];
   const today = _pIso(new Date());
+  const codes = (reg.data || []).slice().sort((a, b) => _pLive(b, today) - _pLive(a, today));
 
-  const tot = stats.reduce((a,r) => ({ b:a.b+r.bookings, c:a.c+r.came, o:a.o+r.patients_ordered, rev:a.rev+(+r.revenue) }), {b:0,c:0,o:0,rev:0});
+  const tot = stats.reduce((a,r) => ({ b:a.b+r.bookings, c:a.c+r.came, o:a.o+r.patients_ordered, n:a.n+r.orders_cnt, rev:a.rev+(+r.revenue) }), {b:0,c:0,o:0,n:0,rev:0});
   const tile = (lbl, val, sub) => '<div class="card" style="padding:14px 16px;flex:1;min-width:130px"><div style="font-size:12px;color:var(--text-m)">'+lbl+'</div><div style="font-size:24px;font-weight:800">'+val+'</div>'+(sub?'<div style="font-size:12px;color:var(--text-m)">'+sub+'</div>':'')+'</div>';
 
   const statRows = stats.length ? stats.map(r => {
     const badge = !r.registered ? '<span style="font-size:11px;color:#d97706"> не в справочнике</span>' : '';
-    return '<tr>'+
+    return '<tr'+(r.registered && !_pLive(r, today) ? _P_DIM : '')+'>'+
       '<td style="font-weight:700;white-space:nowrap">'+_pEsc(r.code)+badge+'</td>'+
       '<td>'+_pEsc(PROMO_OFFERS[r.offer]||'—')+(+r.discount?' −'+(+r.discount)+'%':'')+'</td>'+
       '<td>'+_pEsc(r.channel_label||r.channel||'—')+'</td>'+
+      '<td style="white-space:nowrap">'+(r.registered ? _pTerm(r)+'<br><span style="font-size:12px">'+_pState(r, today)+'</span>' : '—')+'</td>'+
       '<td style="text-align:right">'+r.bookings+'</td>'+
       '<td style="text-align:right">'+r.came+' <span style="color:var(--text-m);font-size:12px">'+_pPct(r.came,r.bookings)+'</span></td>'+
-      '<td style="text-align:right">'+r.patients_ordered+' <span style="color:var(--text-m);font-size:12px">'+_pPct(r.patients_ordered,r.came)+'</span></td>'+
+      '<td style="text-align:right;white-space:nowrap">'+r.patients_ordered+(r.orders_cnt>r.patients_ordered?' <span style="color:var(--text-m);font-size:12px">('+r.orders_cnt+' зак.)</span>':'')+'</td>'+
       '<td style="text-align:right;white-space:nowrap">'+_pMoney(r.revenue)+'</td>'+
-      '<td style="text-align:right;white-space:nowrap">'+(r.lens_orders ? r.lens_orders+' / '+_pMoney(r.lens_revenue) : '—')+'</td>'+
+      '<td style="text-align:right;white-space:nowrap">'+(r.lens_orders ? r.lens_orders+' из '+r.orders_cnt : '—')+'</td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-m)">Нет данных за период</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-m)">Нет данных за период</td></tr>';
 
   const srcRows = sources.length ? sources.map(r =>
     '<tr><td>'+_pEsc(r.source)+'</td><td style="text-align:right">'+r.bookings+'</td><td style="text-align:right">'+r.came+'</td></tr>'
   ).join('') : '<tr><td colspan="3" style="text-align:center;padding:16px;color:var(--text-m)">Нет данных</td></tr>';
 
   const regRows = codes.length ? codes.map(r => {
-    const expired = r.valid_to && r.valid_to < today;
-    const state = !r.active ? '<span style="color:var(--text-m)">выкл.</span>' : expired ? '<span style="color:#d97706">истёк</span>' : '<span style="color:#16a34a">активен</span>';
-    return '<tr>'+
+    const state = _pState(r, today);
+    return '<tr'+(_pLive(r, today) ? '' : _P_DIM)+'>'+
       '<td style="font-weight:700">'+_pEsc(r.code)+'</td>'+
       '<td>'+_pEsc(PROMO_OFFERS[r.offer])+(+r.discount?' −'+(+r.discount)+'%':'')+'</td>'+
       '<td>'+_pEsc(r.channel_label||r.channel)+'</td>'+
-      '<td style="white-space:nowrap">'+_pDate(r.valid_from)+' – '+_pDate(r.valid_to)+'</td>'+
+      '<td style="white-space:nowrap">'+_pTerm(r)+'</td>'+
       '<td>'+state+'</td>'+
       '<td style="font-size:12.5px;color:var(--text-m)">'+_pEsc(r.note||'')+'</td>'+
       '<td style="white-space:nowrap"><button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="togglePromo(\''+_pEsc(r.code)+'\','+(!r.active)+')">'+(r.active?'Выключить':'Включить')+'</button> '+
@@ -108,12 +119,12 @@ async function renderPromo() {
     '</div>'+
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'+
       tile('Записей по кодам', tot.b)+tile('Пришли', tot.c, _pPct(tot.c,tot.b)+' от записей')+
-      tile('Заказали очки', tot.o, _pPct(tot.o,tot.c)+' от пришедших')+tile('Сумма заказов', _pMoney(tot.rev))+
+      tile('Заказали по кодам', tot.o, 'пациентов · '+tot.n+' заказов')+tile('Сумма заказов', _pMoney(tot.rev))+
     '</div>'+
     '<div class="card" style="padding:0;overflow-x:auto;margin-bottom:14px">'+
       '<div style="padding:12px 16px;font-weight:700">Статистика по кодам</div>'+
-      '<table style="width:100%;border-collapse:collapse"><thead><tr>'+th('Код')+th('Скидка')+th('Канал')+thr('Записались')+thr('Пришли')+thr('Заказали')+thr('Сумма заказов')+thr('Заказы с кодом на линзы')+'</tr></thead><tbody>'+statRows+'</tbody></table>'+
-      '<div style="padding:8px 16px 12px;font-size:12px;color:var(--text-m)">«Заказали» — заказы пациента в дату приёма и позже. «Заказы с кодом на линзы» — где код указан в самом заказе.</div>'+
+      '<table style="width:100%;border-collapse:collapse"><thead><tr>'+th('Код')+th('Скидка')+th('Канал')+th('Срок')+thr('Записались')+thr('Пришли')+thr('Заказали')+thr('Сумма заказов')+thr('Код в заказе')+'</tr></thead><tbody>'+statRows+'</tbody></table>'+
+      '<div style="padding:8px 16px 12px;font-size:12px;color:var(--text-m)">«Записались / Пришли» — онлайн-записи с этим кодом. «Заказали» — пациенты (и заказы) по коду: код указан в заказе, а если в заказе кода нет — код, с которым пациент записался на приём. Каждый заказ считается только одному коду. «Код в заказе» — сколько из этих заказов с кодом, вписанным в сам заказ. Серым — выключенные и истёкшие коды.</div>'+
     '</div>'+
     '<div class="card" style="padding:0;overflow-x:auto;margin-bottom:14px">'+
       '<div style="padding:12px 16px;font-weight:700">Откуда узнали (все записи за период)</div>'+
@@ -122,7 +133,7 @@ async function renderPromo() {
     '<div class="card" style="padding:16px;margin-bottom:14px">'+
       '<div style="font-weight:700;margin-bottom:10px">Новый промокод</div>'+
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">'+
-        '<div class="form-group"><label>На что</label><select id="pr-offer" onchange="_promoPreview()"><option value="P">P — Проверка</option><option value="L">L — Линзы</option><option value="K">K — Чек-ап (без скидки)</option></select></div>'+
+        '<div class="form-group"><label>На что</label><select id="pr-offer" onchange="_promoPreview()"><option value="P">P — Проверка</option><option value="L">L — Линзы</option><option value="PL">PL — Проверка + линзы</option><option value="K">K — Чек-ап (без скидки)</option></select></div>'+
         '<div class="form-group"><label>Канал</label><select id="pr-ch" onchange="_promoPreview()">'+chOpts+'<option value="_">Другой…</option></select></div>'+
         '<div class="form-group" id="pr-chx-wrap" style="display:none"><label>Код канала</label><input id="pr-chx" placeholder="NS6" style="width:90px" oninput="_promoPreview()"></div>'+
         '<div class="form-group"><label>Название канала</label><input id="pr-chl" placeholder="напр. Мамы НС"></div>'+

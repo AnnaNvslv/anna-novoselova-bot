@@ -22,7 +22,7 @@ function _renderApptTable(){
         <td><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'}</span> ${tgTag(a.patients?.telegram_username)}</td>
         <td><span class="badge badge-accent" style="font-size:11px">${a.appointment_number||'—'}</span></td>
         <td><b>${fmt(a.date)}</b> в ${a.time?.substr(0,5)}</td>
-        <td style="font-size:13.5px">${a.type||'—'}</td>
+        <td style="font-size:13.5px">${a.type||'—'} ${promoBadge(a)}</td>
         <td class="money text-m">${a.consultation_price?fmtMoney(a.consultation_price):'—'}</td>
         <td><span class="badge ${STATUS_BADGE[a.status]||'badge-gray'}">${statusLabel(a.status)}</span></td>
         <td><div class="appt-actions">

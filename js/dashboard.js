@@ -34,7 +34,7 @@ async function renderDashboard() {
           <div style="font-size:14px;font-weight:700;color:#1e3a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${appt.patients?.name?.split(' ')[0]||'—'} ${tgTag(appt.patients?.telegram_username)}</div>
           <div style="font-size:11.5px;color:#3b5dbf;opacity:.8">${apptTypeName(appt.type||'').split('(')[0]?.trim()||''}</div>
         </div>
-        <span style="font-size:11px;background:#1e3a8a;color:#fff;padding:2px 8px;border-radius:10px;flex-shrink:0">${statusLabel(appt.status)}</span>
+        ${promoBadge(appt)}<span style="font-size:11px;background:#1e3a8a;color:#fff;padding:2px 8px;border-radius:10px;flex-shrink:0">${statusLabel(appt.status)}</span>
       </div>`;
     }
     if(slot&&!slot.is_booked){
@@ -92,7 +92,7 @@ async function renderDashboard() {
           <div style="flex:1;min-width:0">
             <div class="history-date">${fmt(a.date)} · ${a.time?.substr(0,5)}</div>
             <div class="history-title" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard('${a.patient_id}')">${a.patients?.name||'—'} ${tgTag(a.patients?.telegram_username)}</div>
-            <div class="text-sm text-m">${apptTypeName(a.type||'')}</div>
+            <div class="text-sm text-m">${apptTypeName(a.type||'')} ${promoBadge(a)}</div>
           </div>
         </div>`).join(''):`<div class="text-sm text-m" style="padding:10px 0">${t('no_planned')}</div>`}
       </div>

@@ -12,4 +12,4 @@ function render() {
 }
 
 // Промокоды: модуль грузится отдельно (страница видна только владельцу)
-(function(){var s=document.createElement('script');s.src='js/promo.js?v=1';document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='js/promo.js?v=2';document.body.appendChild(s);})();

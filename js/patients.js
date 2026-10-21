@@ -3,6 +3,7 @@
 // На мобильном — сначала список, по тапу карточка с кнопкой «← Пациенты».
 let _allPatients = [];
 let _lastAddedPatientId = null;
+let _justAddedPatient = null; // только что созданный пациент — гарантированно есть в списке после сохранения
 let _patientMeta = {};
 let _patientSort = 'name_az'; // name_az | name_za | date_new | date_old | dob | visit_new
 let _patientQuery = '';
@@ -46,6 +47,8 @@ async function renderPatients() {
     db.from('examinations').select('patient_id,control_date,created_at,exam_date,exam_date_prec').is('deleted_at',null)
   ]);
   _allPatients = patients || [];
+  if (_justAddedPatient && !_allPatients.some(p => p.id === _justAddedPatient.id)) _allPatients.push(_justAddedPatient);
+  _justAddedPatient = null;
   _patientMeta = _buildPatientMeta(appts||[], orders||[], exams||[]);
   filterPatientsUI(_patientQuery);
   const lst = document.getElementById('pt-list'); if (lst && prevScroll) lst.scrollTop = prevScroll;
@@ -57,7 +60,7 @@ async function renderPatients() {
   }
   if (_lastAddedPatientId) {
     const r = document.getElementById('pt-item-'+_lastAddedPatientId);
-    if (r) { r.scrollIntoView({block:'center'}); r.classList.add('pt-flash'); setTimeout(() => r.classList.remove('pt-flash'), 2500); }
+    if (r) { r.classList.add('active'); r.scrollIntoView({block:'center'}); r.classList.add('pt-flash'); setTimeout(() => r.classList.remove('pt-flash'), 2500); }
     _lastAddedPatientId = null;
   }
 }
@@ -781,6 +784,8 @@ async function savePatient(id) {
       _lastAddedPatientId = np && np.id;
       closeModal();
       if (np && np.id) {
+        _justAddedPatient = np;
+        _patientQuery = ''; // сбрасываем поиск, иначе новый пациент может не попасть в отфильтрованный список
         _openPatientId = np.id; _ptShowDetail = true; _cardTab = 'rx';
         if (curSection === 'patients') render(); else openPatientCard(np.id);
       } else render();

@@ -45,7 +45,7 @@ async function sendMessage(chat_id: number, text: string, extra: Record<string, 
 }
 
 // ── Промокоды: код и применённая скидка хранятся в appointments.intake (скидку на приём считает триггер в базе) ──
-const PROMO_OFFERS: Record<string, string> = { P: 'на проверку', L: 'на линзы', K: 'чек-ап' }
+const PROMO_OFFERS: Record<string, string> = { P: 'на проверку', L: 'на линзы', K: 'чек-ап', PL: 'на проверку и линзы (линзы — при заказе в день приёма)' }
 const escHtml = (t: string) => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))
 
 type PromoInfo = { code: string; applied: { discount: number; base_price: number } | null; pc: Record<string, unknown> | null; valid: boolean }
@@ -125,6 +125,8 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
   const promo = await getPromo(appt)
   const lensPromoNote = promo && promo.valid && promo.pc?.offer === 'L'
     ? `\n🏷 Промокод ${escHtml(promo.code)} — скидка на линзы для очков${promo.pc.valid_to ? ` до ${String(promo.pc.valid_to).split('-').reverse().join('.')}` : ''}. Назовите его при заказе очков в оптике.`
+    : promo && promo.valid && promo.pc?.offer === 'PL'
+    ? `\n🏷 По промокоду ${escHtml(promo.code)} также −${Number(promo.pc.discount)}% на линзы для очков — при заказе очков в день приёма.`
     : ''
 
   const text =

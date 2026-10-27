@@ -91,8 +91,11 @@ async function renderAnalytics(){
     <div id="an-report-area">
       ${_anReportData ? '' : `<div class="card"><div class="empty"><p>Выберите период и нажмите «Сформировать отчёт»</p></div></div>`}
     </div>
+
+    <div id="an-fl" style="margin-top:12px"></div>
   `;
   if (_anReportData) _anRenderReport();
+  if (typeof _flLoad === 'function') _flLoad();
 }
 
 function _anSetPeriod(p){ _anPeriod = p; renderAnalytics(); }

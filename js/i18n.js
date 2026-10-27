@@ -81,6 +81,16 @@ const TRANSLATIONS = {
     booking_added: 'Запись добавлена', slot_added: 'Слот добавлен', schedule_settings: 'Настройки расписания',
     // ANALYTICS
     analytics: 'Аналитика', admin_only: 'Только для администратора',
+    // ANALYTICS — оправы и линзы по периодам (analytics-fl.js)
+    fl_title: 'Оправы и линзы по периодам', fl_by_month: 'По месяцам', fl_by_year: 'По годам',
+    fl_yoy_note: '%cy с 1 января по %d в сравнении с тем же периодом %py', fl_was: 'было', fl_no_compare: 'нет данных за прошлый год',
+    fl_revenue: 'Выручка', fl_orders: 'Заказов', fl_check: 'Средний чек', fl_frame_avg: 'Ср. цена оправы', fl_lens_pair: 'Ср. цена пары линз',
+    fl_chart_title: 'Выручка: оправы, линзы, МКЛ, работа', fl_frames: 'Оправы', fl_lenses: 'Очковые линзы', fl_cl: 'МКЛ', fl_work: 'Работа',
+    fl_year: 'Год', fl_month: 'Месяц', fl_of_them_cl: 'из них МКЛ', fl_frames_sold: 'Оправ продано', fl_client_frames: 'Оправ клиента',
+    fl_frames_sum: 'Оправы, сумма', fl_lenses_sum: 'Линзы, сумма', fl_cl_sum: 'МКЛ, сумма',
+    fl_frames_by_price: 'Оправы по цене (доля, дин.)', fl_lenses_by_price: 'Очковые линзы по цене за 1 шт. (доля штук, дин.)',
+    fl_no_data: 'Нет данных', fl_load_error: 'Не удалось загрузить заказы',
+    fl_footnote: 'Сумма заказа = оправа + линзы × кол-во + работа. Возвраты и удалённые заказы не учитываются. Оправа клиента — заказ очков без цены оправы. В режиме «По месяцам» — последние 24 месяца, диапазоны цен — последние 12.',
     revenue: 'Выручка / месяц', avg_check: 'Средний чек', total_orders: 'Всего заказов',
     my_salary: 'Моя зарплата / месяц', salary_calc: 'Расчёт зарплаты (текущий месяц)',
     appt_cost_salary: 'Стоимость приёмов (3000 дин. × %s):', orders_over: 'Заказы пациентов ≥10 000 дин. (×%s):',
@@ -219,6 +229,16 @@ const TRANSLATIONS = {
     booking_added: 'Termin dodat', slot_added: 'Termin dodat', schedule_settings: 'Podešavanja rasporeda',
     // ANALYTICS
     analytics: 'Analitika', admin_only: 'Samo za administratora',
+    // ANALYTICS — okviri i stakla po periodima (analytics-fl.js)
+    fl_title: 'Okviri i stakla po periodima', fl_by_month: 'Mesečno', fl_by_year: 'Godišnje',
+    fl_yoy_note: '%cy od 1. januara do %d u poređenju sa istim periodom %py', fl_was: 'bilo', fl_no_compare: 'nema podataka za prošlu godinu',
+    fl_revenue: 'Promet', fl_orders: 'Porudžbina', fl_check: 'Prosečna porudžbina', fl_frame_avg: 'Prosečan okvir', fl_lens_pair: 'Prosečan par stakala',
+    fl_chart_title: 'Promet: okviri, stakla, sočiva, izrada', fl_frames: 'Okviri', fl_lenses: 'Stakla', fl_cl: 'Kontaktna sočiva', fl_work: 'Izrada',
+    fl_year: 'Godina', fl_month: 'Mesec', fl_of_them_cl: 'od toga sočiva', fl_frames_sold: 'Prodato okvira', fl_client_frames: 'Klijentovih okvira',
+    fl_frames_sum: 'Okviri, ukupno', fl_lenses_sum: 'Stakla, ukupno', fl_cl_sum: 'Sočiva, ukupno',
+    fl_frames_by_price: 'Okviri po ceni (udeo, din.)', fl_lenses_by_price: 'Stakla po ceni za 1 kom. (udeo komada, din.)',
+    fl_no_data: 'Nema podataka', fl_load_error: 'Greška pri učitavanju porudžbina',
+    fl_footnote: 'Iznos porudžbine = okvir + stakla × kol. + izrada. Povrati i obrisane porudžbine se ne računaju. Klijentov okvir — porudžbina naočara bez cene okvira. Mesečno — poslednja 24 meseca, cenovni razredi — poslednjih 12.',
     revenue: 'Prihod / mesec', avg_check: 'Prosečna cena', total_orders: 'Ukupno porudžbina',
     my_salary: 'Moja plata / mesec', salary_calc: 'Obračun plate (tekući mesec)',
     appt_cost_salary: 'Cena pregleda (3000 din. × %s):', orders_over: 'Porudžbine pacijenata ≥10 000 din. (×%s):',

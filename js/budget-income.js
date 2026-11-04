@@ -11,8 +11,8 @@ async function fetchAnyaOpticaSalary(month){
     const to=`${month}-${String(lastDay).padStart(2,'0')}T23:59:59`;
     const{data:appts}=await bdb.from('appointments').select('consultation_price').eq('status','завершён').gte('date',from).lte('date',`${month}-${String(lastDay).padStart(2,'0')}`).is('deleted_at',null);
     const apptTotal=(appts||[]).reduce((s,a)=>s+(+a.consultation_price||0),0);
-    const{data:orders}=await bdb.from('orders').select('frame_price,lens_price,work_price').eq('counts_for_salary',true).gte('created_at',from).lte('created_at',to);
-    const ordersBonus=(orders||[]).reduce((s,o)=>s+((+o.frame_price||0)+(+o.lens_price||0)*2+(+o.work_price||0))*0.1,0);
+    const{data:orders}=await bdb.from('orders').select('frame_price,lens_price,lens_qty,work_price').eq('counts_for_salary',true).gte('created_at',from).lte('created_at',to);
+    const ordersBonus=(orders||[]).reduce((s,o)=>s+((+o.frame_price||0)+(+o.lens_price||0)*((+o.lens_qty)||2)+(+o.work_price||0))*0.1,0);
     return Math.round(apptTotal+ordersBonus);
   }catch(e){console.error(e);return 0;}
 }

@@ -88,6 +88,131 @@ function _rxOpts(exams, selVal) {
   return opts.join('');
 }
 
+// ═══ КОМПЛЕКТЫ ЗАКАЗА: несколько рецептов / оправ / линз в одном заказе (как в ginter-crm) ═══
+// Хранение: orders.items (jsonb) — [{exam_id, rx_type, frame_code, frame_base, frame_disc, frame_price,
+//   lens_name, lens_base, lens_disc, lens_price (за шт. со скидкой), lens_qty}].
+// Плоские поля заказа (frame_price, lens_price, lens_qty, frame_code, lens_name, examination_id,
+// prescription_label) сохраняются как сводка по всем комплектам — аналитика, дашборд, бюджет
+// и orderTotal() работают без изменений.
+var RX_TYPE_LABEL = {far:'Daljina', comp:'Računar', near:'Blizina', cl:'KS'};
+var _RX_LABEL_ANY = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl','Даль':'far','Компьютер':'comp','Близь':'near'};
+var _ofSets = [];   // черновик комплектов в открытой форме
+var _ofExams = [];  // осмотры пациента для выбора рецепта
+
+function orderSets(o) {
+  if (!o) return [];
+  if (Array.isArray(o.items) && o.items.length) return o.items;
+  const rxType = o.prescription_label ? (_RX_LABEL_ANY[o.prescription_label] || null) : null;
+  return [{exam_id:o.examination_id||null, rx_type:rxType,
+    frame_code:o.frame_code||'', frame_base:+o.frame_price||0, frame_disc:0, frame_price:+o.frame_price||0,
+    lens_name:o.lens_name||'', lens_base:+o.lens_price||0, lens_disc:0, lens_price:+o.lens_price||0,
+    lens_qty:(+o.lens_qty)||2}];
+}
+function orderExamIds(o) {
+  const ids = orderSets(o).map(s => s.exam_id).filter(Boolean);
+  if (o.examination_id) ids.push(o.examination_id);
+  return ids;
+}
+function _setLensSum(s) { return Math.round((+s.lens_price||0) * (+s.lens_qty||0)); }
+
+// Блоки комплектов для просмотра (карточка заказа, вкладка «Заказы» пациента)
+function orderSetsViewHtml(o, exMap) {
+  const isCL = o.type === 'МКЛ';
+  const sets = orderSets(o);
+  const multi = sets.length > 1;
+  const line = (lbl, name, price) => '<div class="ord-line"><span class="ord-l">'+lbl+'</span><span class="ord-n">'+(name ? _escH(name) : (name === '' ? '' : '—'))+'</span><span class="ord-p">'+price+'</span></div>';
+  return sets.map((s, i) => {
+    const ex = s.exam_id ? ((exMap||{})[s.exam_id] || (window._examCache||{})[s.exam_id]) : null;
+    const qty = +s.lens_qty || 0;
+    const lensSum = _setLensSum(s);
+    const disc = (v) => +v ? ' <span class="of-set-disc">−'+(+v)+'%</span>' : '';
+    const rx = s.rx_type ? '<div class="ord-rx"><span class="ord-rx-l">'+(multi?(i+1)+'. ':'')+'RX · '+_rxKindLabel(s.rx_type)+(ex && ex.visit_number ? ' · '+t('visit')+ex.visit_number : '')+'</span>'+
+        (ex ? _rxDioptStr(ex, s.rx_type).split(' | ').map(x => '<span class="ord-rx-v">'+_escH(x)+'</span>').join('') : '')+'</div>'
+      : (multi ? '<div class="ord-rx"><span class="ord-rx-l">'+(i+1)+'. '+t('prescription')+' —</span></div>' : '');
+    return '<div class="'+(multi?'ord-set':'')+'">'+rx+
+      '<div class="ord-lines">'+
+        (!isCL ? line(t('frame'), s.frame_code, (+s.frame_price ? fmtMoney(s.frame_price) : '—')+disc(s.frame_disc)) : '')+
+        line(isCL ? t('order_type_cl') : _ofLbl('Линзы','Stakla'), s.lens_name, +s.lens_price ? (qty>1 ? qty+' × '+fmtMoney(s.lens_price)+' = ' : '')+'<b>'+fmtMoney(lensSum)+'</b>'+disc(s.lens_disc) : '—')+
+      '</div></div>';
+  }).join('') + (o.work_price ? '<div class="ord-lines">'+line(t('work'), '', fmtMoney(o.work_price))+'</div>' : '');
+}
+
+function _ofLbl(ru, sr) { return _lang==='sr' ? sr : ru; }
+function _newSet(rx) { return {rx:rx||'', frame_code:'', frame_base:'', frame_disc:'', lens_name:'', lens_base:'', lens_disc:'', lens_qty:2}; }
+function _setFromStored(s) {
+  return {rx: (s.exam_id && s.rx_type) ? s.exam_id+'|'+s.rx_type : '',
+    frame_code:s.frame_code||'', frame_base: (s.frame_base!=null ? s.frame_base : s.frame_price) || '', frame_disc:+s.frame_disc||'',
+    lens_name:s.lens_name||'', lens_base: (s.lens_base!=null ? s.lens_base : s.lens_price) || '', lens_disc:+s.lens_disc||'',
+    lens_qty: s.lens_qty!=null ? +s.lens_qty : 2};
+}
+function _ofIsCL() { return (document.getElementById('o-type') && document.getElementById('o-type').value) === 'МКЛ'; }
+
+function _ofSetsHtml() {
+  const isCL = _ofIsCL();
+  const multi = _ofSets.length > 1;
+  const esc = x => _escH(x==null?'':String(x));
+  const num = (id, val, field, i, extra) => '<input type="number" id="'+id+'" class="of-num" min="0" placeholder="0" value="'+esc(val)+'" oninput="ofSetInput('+i+',\''+field+'\',this.value)" '+(extra||'')+'>';
+  return _ofSets.map((s, i) => {
+    const last = i === _ofSets.length-1;
+    return '<div class="of-set'+(multi?' of-set-multi':'')+'">'+
+      '<div class="of-set-head">'+
+        (multi ? '<span class="of-set-num">'+(i+1)+'</span>' : '')+
+        '<select id="o-rx-'+i+'" onchange="ofSetInput('+i+',\'rx\',this.value);showRxPreview(this.value,'+i+')">'+_rxOpts(_ofExams, s.rx)+'</select>'+
+        (multi ? '<button type="button" class="of-set-del" title="'+_ofLbl('Убрать','Ukloni')+'" onclick="removeOrderSet('+i+')">×</button>' : '')+
+      '</div>'+
+      '<div id="o-rx-preview-'+i+'" class="of-set-prev" style="display:none"></div>'+
+      '<div class="of-row of-row-frame"'+(isCL?' style="display:none"':'')+'>'+
+        '<div><label>'+t('frame')+' · '+_ofLbl('код','šifra')+'</label><input id="o-fcode-'+i+'" value="'+esc(s.frame_code)+'" oninput="ofSetInput('+i+',\'frame_code\',this.value)"></div>'+
+        '<div><label>'+_ofLbl('цена','cena')+'</label>'+num('o-fprice-'+i, s.frame_base, 'frame_base', i)+'</div>'+
+        '<div><label>'+_ofLbl('скидка %','pop. %')+'</label>'+num('o-fdisc-'+i, s.frame_disc, 'frame_disc', i, 'max="100"')+'</div>'+
+        '<div><label class="of-res">= din.</label><input type="number" id="o-ffinal-'+i+'" class="of-num of-final" readonly tabindex="-1"></div>'+
+      '</div>'+
+      '<div class="of-row of-row-lens">'+
+        '<div><label>'+(isCL ? t('order_type_cl') : _ofLbl('Линзы','Stakla'))+'</label><input id="o-lname-'+i+'" value="'+esc(s.lens_name)+'" oninput="ofSetInput('+i+',\'lens_name\',this.value)"></div>'+
+        '<div><label>'+_ofLbl('цена/шт','cena/kom')+'</label>'+num('o-lprice-'+i, s.lens_base, 'lens_base', i, last?'data-enter-jump="save"':'')+'</div>'+
+        '<div><label>'+_ofLbl('скидка %','pop. %')+'</label>'+num('o-ldisc-'+i, s.lens_disc, 'lens_disc', i, 'max="100"')+'</div>'+
+        '<div'+(isCL?' style="visibility:hidden"':'')+'><label>'+_ofLbl('шт','kom')+'</label><select id="o-lqty-'+i+'" onchange="ofSetInput('+i+',\'lens_qty\',this.value)"><option value="2"'+(+s.lens_qty!==1?' selected':'')+'>2</option><option value="1"'+(+s.lens_qty===1?' selected':'')+'>1</option></select></div>'+
+        '<div><label class="of-res">= din.</label><input type="number" id="o-lfinal-'+i+'" class="of-num of-final" readonly tabindex="-1"></div>'+
+      '</div>'+
+    '</div>';
+  }).join('') +
+  '<button type="button" class="btn btn-ghost btn-sm of-add-set" onclick="addOrderSet()">+ '+
+    (isCL ? _ofLbl('Ещё рецепт / линзы','Još recept / sočiva') : _ofLbl('Ещё очки (другой рецепт, оправа, линзы)','Još naočara (drugi recept, okvir, stakla)'))+'</button>';
+}
+function renderOrderSets() {
+  const box = document.getElementById('o-sets'); if (!box) return;
+  box.innerHTML = _ofSetsHtml();
+  _ofSets.forEach((s, i) => { if (s.rx) showRxPreview(s.rx, i); });
+  recalcOrder();
+}
+function ofSetInput(i, field, val) {
+  if (!_ofSets[i]) return;
+  _ofSets[i][field] = val;
+  _modalDirty = true;
+  if (field !== 'rx' && field !== 'frame_code' && field !== 'lens_name') recalcOrder();
+}
+function addOrderSet() {
+  _ofSets.push(_newSet(''));
+  renderOrderSets();
+  const sel = document.getElementById('o-rx-'+(_ofSets.length-1)); if (sel) sel.focus();
+}
+function removeOrderSet(i) {
+  const s = _ofSets[i];
+  const filled = s && (s.frame_code || +s.frame_base || s.lens_name || +s.lens_base);
+  if (filled && !confirm(_ofLbl('Убрать этот комплект из заказа?','Ukloniti ovu stavku iz porudžbine?'))) return;
+  _ofSets.splice(i, 1);
+  if (!_ofSets.length) _ofSets.push(_newSet(''));
+  renderOrderSets();
+}
+// Итоги комплекта по черновику: оправа и линзы со скидкой
+function _ofCalcSet(s, isCL) {
+  const pct = x => Math.min(Math.max(+x||0, 0), 100);
+  const frame = isCL ? 0 : Math.round((+s.frame_base||0)*(1-pct(s.frame_disc)/100));
+  const lensPer = Math.round((+s.lens_base||0)*(1-pct(s.lens_disc)/100));
+  const qty = isCL ? 1 : (+s.lens_qty===1 ? 1 : 2);
+  return {frame, lensPer, qty, lens: lensPer*qty};
+}
+
 function _ordersSortBarHtml() {
   const opts = [
     ['date_new',   t('sort_date_new')],
@@ -127,6 +252,20 @@ function _orderRxDiopters(o) {
   if (!type || !e) return '';
   return _rxDioptStr(e, type);
 }
+// Колонки «Оправа / линзы» и «Рецепт» в списке заказов — по строке на комплект
+function _orderListItemsHtml(o) {
+  return orderSets(o).map(st =>
+    '<div class="fw-6" style="font-size:13.5px">'+_escH(st.frame_code||'—')+'</div><div class="text-sm text-m">'+_escH(st.lens_name||'—')+'</div>'
+  ).join('<div style="height:4px"></div>');
+}
+function _orderListRxHtml(o) {
+  const parts = orderSets(o).filter(st => st.rx_type).map(st => {
+    const e = st.exam_id ? (_ordersExamMap[st.exam_id] || window._examCache[st.exam_id]) : null;
+    const d = e ? _rxDioptStr(e, st.rx_type) : '';
+    return '<div style="font-weight:600;color:var(--text-m)">'+RX_TYPE_LABEL[st.rx_type]+'</div>'+(d ? '<div style="margin-top:2px;color:var(--text)">'+d+'</div>' : '');
+  });
+  return parts.length ? parts.join('<div style="height:4px"></div>') : '—';
+}
 
 function _sortOrders(list) {
   return list.slice().sort((a, b) => {
@@ -155,7 +294,7 @@ async function renderOrders() {
   _allOrders = orders || [];
 
   // Подтягиваем рецепты, на которые ссылаются заказы, чтобы показать диоптрии в списке
-  const examIds = [...new Set(_allOrders.map(o => o.examination_id).filter(Boolean))];
+  const examIds = [...new Set([].concat(..._allOrders.map(orderExamIds)))];
   _ordersExamMap = {};
   if (examIds.length) {
     const {data: exs} = await db.from('examinations').select(RX_SELECT_FIELDS).in('id', examIds);
@@ -197,11 +336,8 @@ function _renderOrdersTable(list) {
         '<td class="text-m" onclick="event.stopPropagation()">'+fmtOrderDate(o)+'</td>'+
         '<td onclick="event.stopPropagation()"><span class="table-name" style="cursor:pointer;color:var(--primary)" onclick="openPatientCard(\''+o.patient_id+'\')">'+(o.patients&&o.patients.name||'—')+'</span> '+tgTag(o.patients&&o.patients.telegram_username)+'</td>'+
         '<td><span class="badge badge-gray" style="font-size:11px">'+(o.order_number||'—')+'</span>'+(o.is_redo ? ' <span class="badge badge-warn" style="font-size:10px">&#8635;</span>' : '')+'</td>'+
-        '<td><div class="fw-6" style="font-size:13.5px">'+(o.frame_code||'—')+'</div><div class="text-sm text-m">'+(o.lens_name||'—')+'</div></td>'+
-        '<td style="color:var(--text-l);font-size:13px;max-width:220px">'+
-          (o.prescription_label ? '<div style="font-weight:600;color:var(--text-m)">'+o.prescription_label+'</div>' : '—')+
-          (_orderRxDiopters(o) ? '<div style="margin-top:2px;color:var(--text)">'+_orderRxDiopters(o)+'</div>' : '')+
-        '</td>'+
+        '<td>'+_orderListItemsHtml(o)+'</td>'+
+        '<td style="color:var(--text-l);font-size:13px;max-width:220px">'+_orderListRxHtml(o)+'</td>'+
         '<td class="money">'+fmtMoney(orderTotal(o))+'</td>'+
         '<td class="text-m">'+(o.promised_date ? fmt(o.promised_date) : '—')+'</td>'+
         '<td onclick="event.stopPropagation()">'+
@@ -232,15 +368,10 @@ async function openOrderCard(id) {
 
   // Диоптрии рецепта, по которому оформлен заказ — подтягиваем отдельно,
   // т.к. карточку заказа можно открыть и не из списка «Заказы» (например, из карточки пациента).
-  let rxDiopters = '';
-  if (o.examination_id && o.prescription_label) {
-    let e = window._examCache && window._examCache[o.examination_id];
-    if (!e) {
-      const {data:ed} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('id',o.examination_id).single();
-      e = ed; if (e) window._examCache[e.id] = e;
-    }
-    const rxType = RX_LABEL_TO_TYPE[o.prescription_label];
-    if (e && rxType) rxDiopters = _rxDioptStr(e, rxType);
+  const needIds = [...new Set(orderExamIds(o))].filter(id => !window._examCache[id]);
+  if (needIds.length) {
+    const {data:exs} = await db.from('examinations').select(RX_SELECT_FIELDS).in('id', needIds);
+    (exs||[]).forEach(e => { window._examCache[e.id] = e; });
   }
   openModal(
     '<div class="modal modal-lg">'+
@@ -265,20 +396,12 @@ async function openOrderCard(id) {
         '<div class="info-grid mb-12">'+
           '<div class="info-item"><label>'+t('order_num_label')+'</label><p style="font-weight:700;font-size:15px">'+(o.order_number||'—')+'</p></div>'+
           '<div class="info-item"><label>'+t('order_type')+'</label><p>'+o.type+'</p></div>'+
-          '<div class="info-item"><label>'+t('prescription')+'</label><p style="color:var(--text-m)">'+(o.prescription_label||'—')+(rxDiopters?' <span style="color:var(--text);font-weight:600">— '+rxDiopters+'</span>':'')+'</p></div>'+
           '<div class="info-item"><label>'+t('promised_date')+'</label><p>'+(o.promised_date ? fmt(o.promised_date) : '—')+'</p></div>'+
           '<div class="info-item"><label>'+t('order_date_label')+'</label><p>'+displayDate+'</p></div>'+
           (o.promo_code ? '<div class="info-item"><label>'+(_lang==='sr'?'Promo kod':'Промокод')+'</label><p><span class="badge badge-accent">'+_escH(o.promo_code)+'</span></p></div>' : '')+
         '</div>'+
         '<div class="divider"></div>'+
-        '<div class="form-grid mb-12">'+
-          '<div class="form-group"><label>'+t('frame_code')+'</label><input value="'+(o.frame_code||'—')+'" readonly></div>'+
-          '<div class="form-group"><label>'+t('frame_price_label')+'</label><input value="'+fmtMoney(o.frame_price)+'" readonly></div>'+
-          '<div class="form-group"><label>'+t('lens_name')+'</label><input value="'+(o.lens_name||'—')+'" readonly></div>'+
-          '<div class="form-group"><label>'+t('lens_price_label')+' ('+( o.lens_qty||2)+' × '+fmtMoney(o.lens_price)+')</label><input value="'+fmtMoney(orderTotal_lenses(o))+'" readonly></div>'+
-          '<div class="form-group"><label>'+t('work_price_label')+'</label><input value="'+(o.work_price ? fmtMoney(o.work_price) : '—')+'" readonly></div>'+
-          '<div class="form-group"><label>'+t('prepayment_label')+'</label><input value="'+fmtMoney(o.prepayment)+'" readonly></div>'+
-        '</div>'+
+        '<div class="mb-12">'+orderSetsViewHtml(o, window._examCache)+'</div>'+
         '<div style="background:'+(bal>0?'var(--warn-l)':'var(--green-l)')+';border:1.5px solid '+(bal>0?'var(--warn)':'var(--green)')+';border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
           '<div><div class="text-sm text-m mb-4">'+t('total')+'</div><div style="font-size:22px;font-weight:800;color:var(--primary)">'+fmtMoney(orderTotal(o))+'</div></div>'+
           '<div style="text-align:right"><div class="text-sm text-m mb-4">'+t('extra_payment')+'</div><div style="font-size:22px;font-weight:800;color:'+(bal>0?'var(--warn)':'var(--green)')+'">'+fmtMoney(bal)+'</div></div>'+
@@ -313,7 +436,7 @@ async function openAddOrderFor(patientId, rxVal, _payChecked) {
       : Promise.resolve({data:[]})
   ]);
   const exams = examRes&&examRes.data||[];
-  let pre = rxVal || '';
+  let pre = rxVal || '';   // 'examId|type' или несколько через ';'
   if (!pre && exams.length) {
     const k = ['far','comp','near','cl'].find(tp => _rxDioptStr(exams[0], tp));
     if (k) pre = exams[0].id+'|'+k;
@@ -339,27 +462,23 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   let orderDate = today(), orderPrec = 'day';
   if (o) { orderDate = o.order_date || (o.order_date_prec==='unknown' ? '' : (o.created_at||'').split('T')[0]); orderPrec = o.order_date_prec || 'day'; }
   else {
-    const preEx = preRx ? (exams||[]).find(e => e.id === preRx.split('|')[0]) : null;
+    const preEx = preRx ? (exams||[]).find(e => e.id === preRx.split(';')[0].split('|')[0]) : null;
     const chain = _pendingChainDate && _pendingChainDate.pid === prePatient ? _pendingChainDate : null;
     if (preEx && (preEx.created_at||'').split('T')[0] === today() && preEx.exam_date) { orderDate = preEx.exam_date; orderPrec = preEx.exam_date_prec || 'day'; }
     else if (chain) { orderDate = chain.date; orderPrec = chain.prec; }
     _pendingChainDate = null;
   }
-  const lensQty = (o && o.lens_qty != null) ? o.lens_qty : 2;
   // Заказ по рецепту МКЛ → сразу тип «Контактные линзы»
-  const preCL = !o && preRx && preRx.split('|')[1] === 'cl';
+  const preCL = !o && preRx && preRx.split(';').every(x => x.split('|')[1] === 'cl');
   const curType = o ? (o.type || 'Очки') : (preCL ? 'МКЛ' : 'Очки');
   const isCL = curType === 'МКЛ';
   const isRedo = o && !!o.is_redo;
 
-  let selVal = (!o && preRx) || '';
-  if (o && o.examination_id && o.prescription_label) {
-    const labelMap = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl','Даль':'far','Компьютер':'comp','Близь':'near'};
-    const rxType = labelMap[o.prescription_label] || '';
-    if (rxType) selVal = o.examination_id + '|' + rxType;
-  }
-
-  const rxHtml = _rxOpts(exams, selVal);
+  // Комплекты: у заказа — сохранённые; у нового — по выбранным рецептам (или один пустой)
+  _ofExams = exams || [];
+  _ofSets = o ? orderSets(o).map(_setFromStored)
+              : (preRx ? preRx.split(';').filter(Boolean).map(r => _newSet(r)) : []);
+  if (!_ofSets.length) _ofSets = [_newSet('')];
   const rxCount = exams.length;
   const rxLabel = t('prescription') + (rxCount ?
     ' <span class="of-count">('+rxCount+')</span>' :
@@ -368,7 +487,6 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
   const typeBtns = [['Очки',t('order_type_glasses')],['МКЛ',t('order_type_cl')],['Ремонт',t('order_type_repair')],['Другое',t('no_data')]]
     .map(([val,lbl]) => '<button type="button" data-type="'+val+'"'+(curType===val?' class="active"':'')+' onclick="setOrderTypeBtn(\''+val+'\')">'+lbl+'</button>').join('');
   const extraOpen = !!(o && (o.notes || o.is_redo));
-  const total0 = (o&&o.frame_price||0)+(o&&o.lens_price||0)*(isCL?1:lensQty)+(o&&o.work_price||0);
   const numIn = (id, val, attrs) => '<input type="number" id="'+id+'" value="'+(val==null?'':val)+'" min="0" placeholder="0" '+(attrs||'')+'>';
 
   openModal(
@@ -410,10 +528,8 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
           '<div class="of-field"><label>'+t('order_num_label')+'</label><input id="o-ordernum" value="'+(o&&o.order_number||'')+'"></div>'+
         '</div>'+
 
-        // Рецепт
+        // Рецепт · оправа · линзы — комплектами (несколько очков в одном заказе)
         '<div class="of-section"><span>'+rxLabel+'</span><button class="btn btn-ghost btn-xs" onclick="toggleQuickRx()">+ '+t('prescription')+'</button></div>'+
-        '<select id="o-rx" onchange="showRxPreview(this.value)">'+rxHtml+'</select>'+
-        '<div id="o-rx-preview" style="margin-top:8px;display:none"></div>'+
         '<div id="quick-rx-form" class="of-sub" style="display:none">'+
           '<div class="of-sub-title">'+t('prescription')+'</div>'+
           '<div class="form-grid">'+
@@ -450,26 +566,7 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
           '</div>'+
         '</div>'+
 
-        // Оправа: код · цена · % · итого
-        '<div id="o-frame-block"'+(isCL?' style="display:none"':'')+'>'+
-          '<div class="of-section"><span>'+t('frame')+'</span></div>'+
-          '<div class="of-row of-row-frame">'+
-            '<div><label>'+t('frame_code')+'</label><input id="o-fcode" value="'+_escH(o&&o.frame_code||'')+'"></div>'+
-            '<div><label>'+(_lang==='sr'?'cena':'цена')+'</label>'+numIn('o-fprice', o&&o.frame_price||'', 'class="of-num" onfocus="if(+this.value===0)this.value=\'\'" oninput="recalcOrder()"')+'</div>'+
-            '<div><label>'+(_lang==='sr'?'pop. %':'скидка %')+'</label><input type="number" id="o-fdisc" class="of-num" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
-            '<div><label class="of-res">= din.</label><input type="number" id="o-fprice-final" class="of-num of-final" value="'+(o&&o.frame_price||0)+'" readonly tabindex="-1"></div>'+
-          '</div>'+
-        '</div>'+
-
-        // Линзы: название · цена/шт · % · шт · итого
-        '<div class="of-section"><span id="o-lens-label">'+(isCL ? t('order_type_cl') : t('lenses'))+'</span></div>'+
-        '<div class="of-row of-row-lens">'+
-          '<div><label>'+t('lens_name')+'</label><input id="o-lname" value="'+_escH(o&&o.lens_name||'')+'"></div>'+
-          '<div><label>'+(_lang==='sr'?'cena/kom':'цена/шт')+'</label>'+numIn('o-lprice', o&&o.lens_price||'', 'class="of-num" data-enter-jump="save" onfocus="if(+this.value===0)this.value=\'\'" oninput="recalcOrder()"')+'</div>'+
-          '<div><label>'+(_lang==='sr'?'pop. %':'скидка %')+'</label><input type="number" id="o-ldisc" class="of-num" value="0" min="0" max="100" placeholder="0" oninput="recalcOrder()"></div>'+
-          '<div id="o-lqty-wrap"'+(isCL?' style="visibility:hidden"':'')+'><label>'+(_lang==='sr'?'kom':'шт')+'</label><select id="o-lqty" onchange="recalcOrder()"><option value="2" '+(lensQty!==1?'selected':'')+'>2</option><option value="1" '+(lensQty===1?'selected':'')+'>1</option></select></div>'+
-          '<div><label class="of-res">= din.</label><input type="number" id="o-lprice-final" class="of-num of-final" value="'+(isCL?(o&&o.lens_price||0):((o&&o.lens_price||0)*lensQty))+'" readonly tabindex="-1"></div>'+
-        '</div>'+
+        '<div id="o-sets"></div>'+
 
         // Работа · срок · промокод  |  Итого
         '<div class="of-sum-row">'+
@@ -479,7 +576,7 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
             '<div class="of-field of-span2"><label>'+(_lang==='sr'?'Promo kod':'Промокод')+'</label>'+promoFieldHtml('o-promo', o&&o.promo_code||'', 'L')+'</div>'+
           '</div>'+
           '<div class="of-total">'+
-            '<div class="of-total-row"><span>'+t('total')+'</span><span id="o-total-display">'+fmtMoney(total0)+'</span></div>'+
+            '<div class="of-total-row"><span>'+t('total')+'</span><span id="o-total-display">'+fmtMoney(0)+'</span></div>'+
             '<div class="of-total-paid">✓ '+(_lang==='sr'?'Plaćeno u celosti':'Оплачено полностью')+'</div>'+
           '</div>'+
         '</div>'+
@@ -505,7 +602,7 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
       '</div>'+
     '</div>'
   );
-  if (selVal) setTimeout(() => showRxPreview(selVal), 100);
+  renderOrderSets();
   setTimeout(() => promoFieldInit('o-promo'), 50);
   if (!isEdit && prePatient) orderUnclosedBanner(prePatient);
 }
@@ -524,14 +621,7 @@ function toggleOrderExtra(btn) {
 }
 
 function onOrderTypeChange(type) {
-  const isCL = type === 'МКЛ';
-  const lensLabel = document.getElementById('o-lens-label');
-  const qtyWrap = document.getElementById('o-lqty-wrap');
-  const frame = document.getElementById('o-frame-block');
-  if (lensLabel) lensLabel.textContent = isCL ? t('order_type_cl') : t('lenses');
-  if (qtyWrap) qtyWrap.style.visibility = isCL ? 'hidden' : '';
-  if (frame) frame.style.display = isCL ? 'none' : '';
-  recalcOrder();
+  renderOrderSets();
 }
 
 function toggleQuickPatient() {
@@ -595,33 +685,27 @@ async function saveQuickRx() {
   const {data:ne, error:ne_err} = await db.from('examinations').insert(rxData).select().single();
   if (!ne) { toast(t('save_error')+': '+(ne_err&&ne_err.message||''), 'error'); return; }
   window._examCache[ne.id] = ne;
-  const sel = document.getElementById('o-rx');
-  const d = fmtExamDate(ne);
-  ['far','comp','near','cl'].forEach(tp => {
-    if (!_rxDioptStr(ne, tp)) return;
-    const opt = document.createElement('option');
-    const val = ne.id+'|'+tp;
-    opt.value = val; opt.textContent = _rxOptLabel(ne, tp, d);
-    if (tp === type) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  sel.value = ne.id+'|'+type;
+  _ofExams = [ne].concat(_ofExams);
+  // Новый рецепт → в первый комплект без рецепта, иначе новым комплектом
+  const val = ne.id+'|'+type;
+  const free = _ofSets.find(st => !st.rx);
+  if (free) free.rx = val; else _ofSets.push(_newSet(val));
   toggleQuickRx();
   toast(t('save_card'));
-  await showRxPreview(ne.id+'|'+type);
+  renderOrderSets();
 }
 async function onOrderPatientChange(pid) {
-  const sel = document.getElementById('o-rx');
-  const prev = document.getElementById('o-rx-preview');
   orderUnclosedBanner(pid);
-  if (!pid) { sel.innerHTML = '<option value="">—</option>'; if (prev) prev.style.display='none'; return; }
+  _ofSets.forEach(st => { st.rx = ''; });
+  if (!pid) { _ofExams = []; renderOrderSets(); return; }
   const {data:exams} = await db.from('examinations').select(RX_SELECT_FIELDS).eq('patient_id',pid).is('deleted_at',null).order('exam_date',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});
   (exams||[]).forEach(e => { window._examCache[e.id] = e; });
-  sel.innerHTML = _rxOpts(exams||[]);
-  if (prev) prev.style.display = 'none';
+  _ofExams = exams || [];
+  renderOrderSets();
 }
-async function showRxPreview(val) {
-  const prev = document.getElementById('o-rx-preview');
+async function showRxPreview(val, idx) {
+  const prev = document.getElementById('o-rx-preview-'+(idx||0));
+  if (!prev) return;
   if (!val) { prev.style.display = 'none'; return; }
   const [examId, type] = val.split('|');
   if (!examId || !type) { prev.style.display = 'none'; return; }
@@ -647,48 +731,53 @@ async function showRxPreview(val) {
   prev.style.display = 'block';
 }
 function recalcOrder() {
-  const fBase = +document.getElementById('o-fprice')?.value||0;
-  const fDisc = Math.min(Math.max(+document.getElementById('o-fdisc')?.value||0,0),100);
-  const fFinal = Math.round(fBase*(1-fDisc/100));
-  if (document.getElementById('o-fprice-final')) document.getElementById('o-fprice-final').value = fFinal;
-  const lBase = +document.getElementById('o-lprice')?.value||0;
-  const lDisc = Math.min(Math.max(+document.getElementById('o-ldisc')?.value||0,0),100);
-  const lPer = Math.round(lBase*(1-lDisc/100));
-  const orderType = document.getElementById('o-type')?.value||'Очки';
-  const isCL = orderType === 'МКЛ';
-  const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
-  const lFinal = lPer*qty;
-  if (document.getElementById('o-lprice-final')) document.getElementById('o-lprice-final').value = lFinal;
-  const work = +document.getElementById('o-wprice')?.value||0;
-  const total = fFinal+lFinal+work;
-  if (document.getElementById('o-total-display')) document.getElementById('o-total-display').textContent = fmtMoney(total);
+  const isCL = _ofIsCL();
+  let total = 0;
+  _ofSets.forEach((st, i) => {
+    const c = _ofCalcSet(st, isCL);
+    const ff = document.getElementById('o-ffinal-'+i); if (ff) ff.value = c.frame;
+    const lf = document.getElementById('o-lfinal-'+i); if (lf) lf.value = c.lens;
+    total += c.frame + c.lens;
+  });
+  total += Math.max(+(document.getElementById('o-wprice') && document.getElementById('o-wprice').value)||0, 0);
+  const el = document.getElementById('o-total-display'); if (el) el.textContent = fmtMoney(total);
 }
 function applyDiscount() {}
 function calcTotal() {}
 async function saveOrder(id) {
   const patient_id = v('o-pid'); if (!patient_id) { alert(t('select_patient')); return; }
-  const rxSel = (document.getElementById('o-rx') && document.getElementById('o-rx').value) || '';
-  const [examId, rxType] = rxSel.split('|');
-  const rxLabels = {far:'Daljina', comp:'Računar', near:'Blizina', cl:'KS'};
-  const fFinal = Math.max(+(document.getElementById('o-fprice-final')?.value||v('o-fprice'))||0, 0);
-  const lPriceFinal = Math.max(+(document.getElementById('o-lprice-final')?.value)||0, 0);
   const orderType = v('o-type');
   const isCL = orderType === 'МКЛ';
-  const qty = isCL ? 1 : +(document.getElementById('o-lqty')?.value||2);
-  const lPerPiece = qty > 0 ? Math.round(lPriceFinal/qty) : lPriceFinal;
+  // Комплекты → items; пустые (без рецепта, оправы и линз) не сохраняются
+  const items = _ofSets.map(st => {
+    const c = _ofCalcSet(st, isCL);
+    const [exam_id, rx_type] = (st.rx||'').split('|');
+    return {exam_id: exam_id||null, rx_type: rx_type||null,
+      frame_code: isCL ? '' : (st.frame_code||'').trim(), frame_base: isCL ? 0 : Math.max(+st.frame_base||0,0), frame_disc: isCL ? 0 : Math.max(+st.frame_disc||0,0), frame_price: c.frame,
+      lens_name: (st.lens_name||'').trim(), lens_base: Math.max(+st.lens_base||0,0), lens_disc: Math.max(+st.lens_disc||0,0), lens_price: c.lensPer, lens_qty: c.qty};
+  }).filter(it => it.exam_id || it.frame_code || it.frame_base || it.lens_name || it.lens_base);
+  // Сводка в плоские поля (аналитика, дашборд, бюджет, orderTotal)
+  const fFinal = items.reduce((a, it) => a + it.frame_price, 0);
+  const lensSum = items.reduce((a, it) => a + it.lens_price*it.lens_qty, 0);
+  const qty = items.reduce((a, it) => a + it.lens_qty, 0) || (isCL ? 1 : 2);
+  const lPerPiece = lensSum / qty;
+  const firstRx = items.find(it => it.exam_id && it.rx_type);
+  const joinU = arr => [...new Set(arr.filter(Boolean))].join(' + ') || null;
   const od = dpGet('o-orderdate');
   if (!od.ok) { alert(t('dp_year_err')); return; }
   const isRedo = !!(document.getElementById('o-is-redo') && document.getElementById('o-is-redo').checked);
   const data = {
     patient_id, type:orderType,
-    prescription_label: rxType ? rxLabels[rxType] : null,
-    examination_id: examId || null,
+    items,
+    prescription_label: firstRx ? RX_TYPE_LABEL[firstRx.rx_type] : null,
+    examination_id: firstRx ? firstRx.exam_id : null,
     order_number: v('o-ordernum') || null,
     order_date: od.date, order_date_prec: od.prec,
-    frame_code: v('o-fcode'), frame_price: fFinal,
-    lens_name: v('o-lname'), lens_price: lPerPiece, lens_qty: qty,
+    frame_code: joinU(items.map(it => it.frame_code)), frame_price: fFinal,
+    lens_name: joinU(items.map(it => it.lens_name)), lens_price: lPerPiece, lens_qty: qty,
     work_price: v('o-wprice') ? Math.max(+v('o-wprice'),0) : null,
     // Предоплаты в форме нет: заказ всегда считается оплаченным полностью
+    // та же формула, что orderTotal(): frame_price + lens_price*lens_qty + work_price
     prepayment: fFinal + lPerPiece*qty + (v('o-wprice') ? Math.max(+v('o-wprice'),0) : 0),
     promo_code: promoFieldVal('o-promo'),
     promised_date: v('o-pdate') || null,

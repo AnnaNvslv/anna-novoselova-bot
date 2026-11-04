@@ -54,6 +54,22 @@ input.of-final{background:var(--green-l)!important;color:var(--text)!important;f
 .pf-hint.ok{color:var(--green);font-weight:600}
 .pf-hint.warn{color:var(--warn)}
 
+/* ═══ Комплекты заказа: несколько рецептов / оправ / линз ═══ */
+.of-set{margin-bottom:10px}
+.of-set-multi{border:1.5px solid var(--border);border-radius:12px;padding:10px 12px 2px}
+.of-set-head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.of-set-head select{flex:1;min-width:0}
+.of-set-num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center}
+.of-set-del{flex:none;border:0;background:none;color:var(--red);font-size:22px;line-height:1;padding:4px 8px;cursor:pointer;border-radius:8px}
+.of-set-del:hover{background:var(--red-l)}
+.of-set-prev{margin:-2px 0 10px}
+.of-add-set{width:100%;border:1.5px dashed var(--border)!important;margin:2px 0 12px;justify-content:center}
+.of-set-disc{color:var(--green);font-size:12.5px;font-weight:700}
+.ord-set{border:1px solid var(--border);border-radius:10px;padding:2px 12px 0;margin-top:10px}
+.ord-set .ord-rx{margin-top:8px}
+.ord-set .ord-lines{border-top:0;margin-top:4px}
+.ord-set .ord-line:last-child{border-bottom:0}
+
 @media(max-width:768px){
   .of-head{flex-wrap:wrap}
   .of-type-toggle{order:3;flex-basis:100%}

@@ -556,7 +556,9 @@ function _rxTableHtml(e, k) {
 function _rxOrderBtn(e, pid, kinds) {
   if (!isAdmin() || !kinds.length) return '';
   if (kinds.length === 1) return '<button class="btn btn-accent btn-sm" onclick="openAddOrderFor(\''+pid+'\',\''+e.id+'|'+kinds[0]+'\')">→ '+t('pt_order')+'</button>';
-  return ddMenu(kinds.map(k => ({label:'→ '+t('pt_order')+': '+_rxKindLabel(k), fn:"openAddOrderFor('"+pid+"','"+e.id+"|"+k+"')"})), '→ '+t('pt_order')+' ▾', 'btn-accent btn-sm');
+  return ddMenu(kinds.map(k => ({label:'→ '+t('pt_order')+': '+_rxKindLabel(k), fn:"openAddOrderFor('"+pid+"','"+e.id+"|"+k+"')"}))
+    .concat([{label:'→ '+t('pt_order')+': '+kinds.map(_rxKindLabel).join(' + '), fn:"openAddOrderFor('"+pid+"','"+kinds.map(k => e.id+'|'+k).join(';')+"')"}]),
+    '→ '+t('pt_order')+' ▾', 'btn-accent btn-sm');
 }
 function _examTabHtml(exams, pid) {
   const addBtn = !isErvin() ? '<div class="pt-tab-tools"><button class="btn btn-ghost btn-sm" onclick="openExamForm(\'\',\''+pid+'\')">+ '+t('pt_exam')+'</button></div>' : '';
@@ -613,10 +615,6 @@ function _orderTab(orders, pid, exams) {
   const exMap = {}; (exams||[]).forEach(e => { exMap[e.id] = e; });
   return add+orders.map(o => {
     const bal = orderBalance(o);
-    const rxType = o.prescription_label ? (RX_LABEL_TO_TYPE[o.prescription_label] || {'Даль':'far','Компьютер':'comp','Близь':'near'}[o.prescription_label]) : '';
-    const ex = o.examination_id ? (exMap[o.examination_id] || (window._examCache||{})[o.examination_id]) : null;
-    const isCL = o.type === 'МКЛ';
-    const qty = isCL ? 1 : (+o.lens_qty || 2);
     const menu = ddMenu([
       {label:'👁 '+t('pt_view'), fn:"openOrderCard('"+o.id+"')"},
       {label:'✏️ '+t('pt_edit'), fn:"openEditOrder('"+o.id+"')", hide:!isAdmin()},
@@ -624,7 +622,6 @@ function _orderTab(orders, pid, exams) {
       {label:'🔁 '+t('pt_followup'), fn:"sendFollowUpSurvey('"+o.id+"')", hide:o.status!=='выдан'||isErvin()},
       {label:'🗑 '+t('delete'), fn:"delOrder('"+o.id+"')", danger:true, hide:!isAdmin()},
     ]);
-    const line = (lbl, name, price) => '<div class="ord-line"><span class="ord-l">'+lbl+'</span><span class="ord-n">'+(name ? _escH(name) : (name === '' ? '' : '—'))+'</span><span class="ord-p">'+price+'</span></div>';
     return '<div class="ord-card ord-'+(o.status==='выдан'?'done':_ORDER_VOID.includes(o.status)?'void':'open')+'">'+
       '<div class="ord-head">'+
         '<div style="min-width:0">'+
@@ -643,13 +640,8 @@ function _orderTab(orders, pid, exams) {
           menu+
         '</div>'+
       '</div>'+
-      '<div class="ord-lines">'+
-        (!isCL ? line(t('frame'), o.frame_code, o.frame_price ? fmtMoney(o.frame_price) : '—') : '')+
-        line(isCL ? t('order_type_cl') : t('lenses'), o.lens_name, o.lens_price ? (qty>1 ? qty+' × '+fmtMoney(o.lens_price)+' = ' : '')+'<b>'+fmtMoney((+o.lens_price||0)*qty)+'</b>' : '—')+
-        (o.work_price ? line(t('work'), '', fmtMoney(o.work_price)) : '')+
-      '</div>'+
-      (rxType ? '<div class="ord-rx"><span class="ord-rx-l">RX · '+_rxKindLabel(rxType)+(ex && ex.visit_number ? ' · '+t('visit')+ex.visit_number : '')+'</span>'+
-        (ex ? _rxDioptStr(ex, rxType).split(' | ').map(s => '<span class="ord-rx-v">'+_escH(s)+'</span>').join('') : '')+'</div>' : '')+
+      // Комплекты заказа (несколько рецептов / оправ / линз) — orders.js → orderSetsViewHtml
+      orderSetsViewHtml(o, exMap)+
       '<div class="ord-sum">'+
         '<div><label>'+t('total')+'</label><b class="ord-total">'+fmtMoney(orderTotal(o))+'</b></div>'+
         '<div><label>'+t('prepayment')+'</label><b>'+fmtMoney(o.prepayment)+'</b></div>'+

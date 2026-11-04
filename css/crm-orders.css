@@ -70,6 +70,13 @@ input.of-final{background:var(--green-l)!important;color:var(--text)!important;f
 .ord-set .ord-lines{border-top:0;margin-top:4px}
 .ord-set .ord-line:last-child{border-bottom:0}
 
+/* ═══ Карта: назначение рецепта и доп. рецепты на очки ═══ */
+.rx-section-title .rx-purpose{display:inline-block;width:auto;margin-left:6px;padding:4px 28px 4px 10px;font-size:15px;font-weight:700;color:var(--primary);border:1.5px solid var(--border);border-radius:8px;background-color:#fff}
+.rx-extra .rx-section-title{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.rx-extra-del{margin-left:auto;border:0;background:none;color:var(--red);font-size:22px;line-height:1;padding:2px 8px;border-radius:8px;cursor:pointer}
+.rx-extra-del:hover{background:var(--red-l)}
+.rx-extra-add{width:100%;border:1.5px dashed var(--border)!important;margin:0 0 16px;justify-content:center}
+
 @media(max-width:768px){
   .of-head{flex-wrap:wrap}
   .of-type-toggle{order:3;flex-basis:100%}

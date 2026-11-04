@@ -150,21 +150,15 @@ async function _buildPrintCard(examId) {
     </div>`:''}
     ${clin(['subj','bino','accom','extra'])}
     ${e?.clinical?.interim?`<div class="pc-interim"><b>Privremena korekcija za adaptaciju <span class="pc-ru" style="color:#b45309">· Промежуточная коррекция</span></b>Preporučuju se budžetska sočiva. Kontrolni pregled za 6–8 nedelja, zatim promena dioptrije ka punoj korekciji.<br><span style="color:#9a5a1e">Рекомендованы бюджетные линзы. Контроль через 6–8 недель, затем замена диоптрий в сторону полной коррекции.</span></div>`:''}
-    ${hd(['rx_far_od_sph','rx_far_os_sph','rx_far_od_cyl','rx_far_os_cyl'])?rxBlock(
-      'Parametri za izradu naočara za daljinu','Очки для дали',
-      [{v1:rx('rx_far_od_sph'),v2:rx('rx_far_od_cyl'),v3:rx('rx_far_od_ax'),v4:rx('rx_far_od_prism')},{v1:rx('rx_far_os_sph'),v2:rx('rx_far_os_cyl'),v3:rx('rx_far_os_ax'),v4:rx('rx_far_os_prism')}],
-      [{label:'PD',val:rx('rx_far_od_pd')},{label:'ADD',val:rx('rx_far_os_pd')}],
-      rx('rx_far_comment')):''}
-    ${hd(['rx_comp_od_sph','rx_comp_os_sph','rx_comp_od_cyl','rx_comp_os_cyl'])?rxBlock(
-      'Parametri za izradu naočara za rad na računaru','Очки для компьютера',
-      [{v1:rx('rx_comp_od_sph'),v2:rx('rx_comp_od_cyl'),v3:rx('rx_comp_od_ax'),v4:rx('rx_comp_od_prism')},{v1:rx('rx_comp_os_sph'),v2:rx('rx_comp_os_cyl'),v3:rx('rx_comp_os_ax'),v4:rx('rx_comp_os_prism')}],
-      [{label:'PD',val:rx('rx_comp_od_pd')},{label:'ADD',val:rx('rx_comp_od_add')}],
-      rx('rx_comp_comment')):''}
-    ${hd(['rx_near_od_sph','rx_near_os_sph','rx_near_od_cyl','rx_near_os_cyl'])?rxBlock(
-      'Parametri za izradu naočara za blizinu','Очки для близи',
-      [{v1:rx('rx_near_od_sph'),v2:rx('rx_near_od_cyl'),v3:rx('rx_near_od_ax'),v4:rx('rx_near_od_prism')},{v1:rx('rx_near_os_sph'),v2:rx('rx_near_os_cyl'),v3:rx('rx_near_os_ax'),v4:rx('rx_near_os_prism')}],
-      [{label:'PD',val:rx('rx_near_od_pd')},{label:'Degr',val:rx('rx_near_od_add')}],
-      rx('rx_near_comment')):''}
+    ${['far','comp','near'].concat(rxExtraList(e).map(x=>x.id)).map(k=>{
+      // Рецепты на очки с назначением (основные + дополнительные) — rxGet в orders.js
+      const r=rxGet(e,k); if(!r||!_rxDioptStr(e,k)) return '';
+      const pv=x=>(x==null?'':String(x));
+      return rxBlock('Parametri za izradu naočara '+rxPurposeLabel(r.purpose,false,'sr'),'Очки '+rxPurposeLabel(r.purpose,false,'ru'),
+        [{v1:pv(r.od.sph),v2:pv(r.od.cyl),v3:pv(r.od.ax),v4:pv(r.od.prism)},{v1:pv(r.os.sph),v2:pv(r.os.cyl),v3:pv(r.os.ax),v4:pv(r.os.prism)}],
+        [{label:'PD',val:pv(r.pd)},{label:r.addL,val:pv(r.add)}],
+        pv(r.comment));
+    }).join('')}
     ${hd(['rx_cl_od_sph','rx_cl_os_sph','rx_cl_od_cyl','rx_cl_os_cyl','rx_cl_od_bc','rx_cl_od_type'])?`<div class="pc-sec pc-rx">
       ${_pcLabel('Parametri za porudžbinu kontaktnih sočiva','Контактные линзы')}
       ${_pcEyeTable(['Sph','Cyl','Ax'],[rx('rx_cl_od_sph'),rx('rx_cl_od_cyl'),rx('rx_cl_od_ax')],[rx('rx_cl_os_sph'),rx('rx_cl_os_cyl'),rx('rx_cl_os_ax')])}

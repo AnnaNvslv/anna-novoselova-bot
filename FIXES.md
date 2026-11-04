@@ -100,6 +100,14 @@
 
 ## 📋 Журнал изменений
 
+### 2026-11-04 (2) — Назначение рецепта + несколько рецептов на очки в одной карте
+- **БД** (миграция через MCP `exam_rx_purpose_extra`): `examinations.rx_far_purpose`, `rx_comp_purpose`, `rx_near_purpose` (text; пусто = назначение блока по умолчанию), `rx_extra jsonb default '[]'` — доп. рецепты `[{id:'x…', purpose, od_sph, od_cyl, od_ax, od_prism, os_*, pd, add, comment}]`
+- Назначения (`RX_PURPOSES` в orders.js): far — для дали, constant — для постоянного ношения, comp — для компьютера, near — для близи, prog — прогрессивные линзы, bifo — бифокальные линзы
+- **Карта, вкладка «Рецепты»** (exam.js): в заголовке каждого блока очков — выпадающий список назначения; кнопка «+ Ещё рецепт на очки» добавляет блок (по умолчанию «для постоянного ношения»), «← Скопировать из первого рецепта», × удаляет
+- **Общий доступ к рецептам** (orders.js): `rxGet(e,k)` / `rxAllKeys(e)` / `_rxKindLabel(k,e)` — ключ рецепта `far|comp|near|cl|x…`. На нём работают: выбор рецепта в заказе, комплекты заказа (`items.rx_type` = ключ), вкладка «Коррекция (RX)» и «→ Заказ», печать карты (блоки «Parametri za izradu naočara <назначение>»). `prescription_label` заказа = короткое назначение по-сербски
+- Проверено в headless Chrome: сохранение назначений и доп. рецепта, выбор в заказе, вкладка RX
+- Версии: crm.css 8 (crm-orders.css 3), orders 19, patients 19, exam 22, print 5
+
 ### 2026-11-04 — Несколько рецептов / оправ / линз в одном заказе (как в ginter-crm)
 - **БД** (миграция через MCP `orders_items_multi_rx`): `orders.items jsonb` — комплекты заказа `[{exam_id, rx_type, frame_code, frame_base, frame_disc, frame_price, lens_name, lens_base, lens_disc, lens_price (за шт. со скидкой), lens_qty}]`
 - Плоские поля заказа = сводка по комплектам: `frame_price` = Σ оправ, `lens_qty` = Σ шт., `lens_price` = Σ линз / шт., `frame_code`/`lens_name` через « + », `examination_id`/`prescription_label` = первый комплект с рецептом. Поэтому `orderTotal()`, аналитика, дашборд, бюджет не менялись. Старые заказы без `items` показываются и редактируются как один комплект (`orderSets(o)`)

@@ -528,36 +528,33 @@ function _apptTab(appts, pid, exams) {
 }
 
 // ── Вкладка «Коррекция (RX)»: данные коррекции каждого осмотра таблицами OD/OS ──
-const _RX_KINDS = ['far','comp','near','cl'];
-function _rxKindLabel(k) {
-  return {far:t('exam_far_short'), comp:t('exam_comp_short'), near:t('exam_near_short'), cl:t('exam_cl_short')}[k] || k;
-}
-function _rxKindsOf(e) { return _RX_KINDS.filter(k => _rxDioptStr(e, k)); }
+// Ключи и названия рецептов (с назначением и доп. рецептами) — js/orders.js: rxGet, rxAllKeys, _rxKindLabel
+function _rxKindsOf(e) { return rxAllKeys(e).filter(k => _rxDioptStr(e, k)); }
 function _rxv(x) { return _nz(x) ? _escH(x) : '—'; }
 function _rxTableHtml(e, k) {
-  if (k === 'cl') {
-    return '<table class="rx-view"><thead><tr><th class="rx-view-kind">'+_rxKindLabel(k)+'</th><th>Sph</th><th>Cyl</th><th>Ax</th><th>BC</th><th>DIA</th></tr></thead><tbody>'+
-      '<tr><td class="rx-eye">OD</td><td>'+_rxv(e.rx_cl_od_sph)+'</td><td>'+_rxv(e.rx_cl_od_cyl)+'</td><td>'+_rxv(e.rx_cl_od_ax)+'</td><td rowspan="2">'+_rxv(e.rx_cl_od_bc)+'</td><td rowspan="2">'+_rxv(e.rx_cl_od_dia)+'</td></tr>'+
-      '<tr><td class="rx-eye">OS</td><td>'+_rxv(e.rx_cl_os_sph)+'</td><td>'+_rxv(e.rx_cl_os_cyl)+'</td><td>'+_rxv(e.rx_cl_os_ax)+'</td></tr>'+
+  const r = rxGet(e, k); if (!r) return '';
+  const lbl = _rxKindLabel(k, e);
+  if (r.cl) {
+    return '<table class="rx-view"><thead><tr><th class="rx-view-kind">'+lbl+'</th><th>Sph</th><th>Cyl</th><th>Ax</th><th>BC</th><th>DIA</th></tr></thead><tbody>'+
+      '<tr><td class="rx-eye">OD</td><td>'+_rxv(r.od.sph)+'</td><td>'+_rxv(r.od.cyl)+'</td><td>'+_rxv(r.od.ax)+'</td><td rowspan="2">'+_rxv(r.bc)+'</td><td rowspan="2">'+_rxv(r.dia)+'</td></tr>'+
+      '<tr><td class="rx-eye">OS</td><td>'+_rxv(r.os.sph)+'</td><td>'+_rxv(r.os.cyl)+'</td><td>'+_rxv(r.os.ax)+'</td></tr>'+
       '</tbody></table>'+
-      (e.rx_cl_od_type ? '<div class="rx-view-note">'+t('pt_cl_brand')+': <b>'+_escH(e.rx_cl_od_type)+'</b></div>' : '')+
-      (e.rx_cl_comment ? '<div class="rx-view-note">'+_escH(e.rx_cl_comment)+'</div>' : '');
+      (r.type ? '<div class="rx-view-note">'+t('pt_cl_brand')+': <b>'+_escH(r.type)+'</b></div>' : '')+
+      (r.comment ? '<div class="rx-view-note">'+_escH(r.comment)+'</div>' : '');
   }
-  const P = 'rx_'+k;
-  const add = k==='far' ? e.rx_far_os_pd : e[P+'_od_add'];   // для дали ADD хранится в rx_far_os_pd
-  const addL = k==='near' ? 'Degr' : 'Add';
-  const hasPrism = _nz(e[P+'_od_prism']) || _nz(e[P+'_os_prism']);
-  return '<table class="rx-view"><thead><tr><th class="rx-view-kind">'+_rxKindLabel(k)+'</th><th>Sph</th><th>Cyl</th><th>Ax</th>'+(hasPrism?'<th>Prism</th>':'')+'<th>'+addL+'</th><th>PD</th></tr></thead><tbody>'+
-    '<tr><td class="rx-eye">OD</td><td>'+_rxv(e[P+'_od_sph'])+'</td><td>'+_rxv(e[P+'_od_cyl'])+'</td><td>'+_rxv(e[P+'_od_ax'])+'</td>'+(hasPrism?'<td>'+_rxv(e[P+'_od_prism'])+'</td>':'')+'<td rowspan="2">'+_rxv(add)+'</td><td rowspan="2">'+_rxv(e[P+'_od_pd'])+'</td></tr>'+
-    '<tr><td class="rx-eye">OS</td><td>'+_rxv(e[P+'_os_sph'])+'</td><td>'+_rxv(e[P+'_os_cyl'])+'</td><td>'+_rxv(e[P+'_os_ax'])+'</td>'+(hasPrism?'<td>'+_rxv(e[P+'_os_prism'])+'</td>':'')+'</tr>'+
+  const hasPrism = _nz(r.od.prism) || _nz(r.os.prism);
+  const addL = r.addL === 'Degr' ? 'Degr' : 'Add';
+  return '<table class="rx-view"><thead><tr><th class="rx-view-kind">'+lbl+'</th><th>Sph</th><th>Cyl</th><th>Ax</th>'+(hasPrism?'<th>Prism</th>':'')+'<th>'+addL+'</th><th>PD</th></tr></thead><tbody>'+
+    '<tr><td class="rx-eye">OD</td><td>'+_rxv(r.od.sph)+'</td><td>'+_rxv(r.od.cyl)+'</td><td>'+_rxv(r.od.ax)+'</td>'+(hasPrism?'<td>'+_rxv(r.od.prism)+'</td>':'')+'<td rowspan="2">'+_rxv(r.add)+'</td><td rowspan="2">'+_rxv(r.pd)+'</td></tr>'+
+    '<tr><td class="rx-eye">OS</td><td>'+_rxv(r.os.sph)+'</td><td>'+_rxv(r.os.cyl)+'</td><td>'+_rxv(r.os.ax)+'</td>'+(hasPrism?'<td>'+_rxv(r.os.prism)+'</td>':'')+'</tr>'+
     '</tbody></table>'+
-    (e[P+'_comment'] ? '<div class="rx-view-note">'+_escH(e[P+'_comment'])+'</div>' : '');
+    (r.comment ? '<div class="rx-view-note">'+_escH(r.comment)+'</div>' : '');
 }
 function _rxOrderBtn(e, pid, kinds) {
   if (!isAdmin() || !kinds.length) return '';
   if (kinds.length === 1) return '<button class="btn btn-accent btn-sm" onclick="openAddOrderFor(\''+pid+'\',\''+e.id+'|'+kinds[0]+'\')">→ '+t('pt_order')+'</button>';
-  return ddMenu(kinds.map(k => ({label:'→ '+t('pt_order')+': '+_rxKindLabel(k), fn:"openAddOrderFor('"+pid+"','"+e.id+"|"+k+"')"}))
-    .concat([{label:'→ '+t('pt_order')+': '+kinds.map(_rxKindLabel).join(' + '), fn:"openAddOrderFor('"+pid+"','"+kinds.map(k => e.id+'|'+k).join(';')+"')"}]),
+  return ddMenu(kinds.map(k => ({label:'→ '+t('pt_order')+': '+_rxKindLabel(k, e), fn:"openAddOrderFor('"+pid+"','"+e.id+"|"+k+"')"}))
+    .concat([{label:'→ '+t('pt_order')+': '+kinds.map(k => _rxKindLabel(k, e)).join(' + '), fn:"openAddOrderFor('"+pid+"','"+kinds.map(k => e.id+'|'+k).join(';')+"')"}]),
     '→ '+t('pt_order')+' ▾', 'btn-accent btn-sm');
 }
 function _examTabHtml(exams, pid) {
@@ -582,7 +579,7 @@ function _examTabHtml(exams, pid) {
           '<span class="rx-visit-chev">▸</span>'+
           '<b>'+t('visit')+(e.visit_number||'—')+'</b> · '+fmtExamDate(e)+
           (locked ? ' <span class="rx-lock" title="'+t('exam_locked_hint')+'">🔒</span>' : '')+
-          ' '+kinds.map(k => '<span class="chip">'+_rxKindLabel(k)+'</span>').join(' ')+
+          ' '+kinds.map(k => '<span class="chip">'+_rxKindLabel(k, e)+'</span>').join(' ')+
           (e.express_pregled ? ' <span class="badge badge-green">⚡ '+t('pt_express')+'</span>' : '')+
           (e.clinical && e.clinical.interim ? ' <span class="badge badge-warn">↗ '+t('pt_interim')+'</span>' : '')+
         '</div>'+

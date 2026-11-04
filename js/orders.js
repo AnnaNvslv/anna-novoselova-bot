@@ -12,7 +12,10 @@ var RX_SELECT_FIELDS =
   'rx_near_od_sph,rx_near_od_cyl,rx_near_od_ax,rx_near_od_pd,rx_near_od_add,' +
   'rx_near_os_sph,rx_near_os_cyl,rx_near_os_ax,' +
   'rx_cl_od_sph,rx_cl_od_cyl,rx_cl_od_ax,rx_cl_od_bc,rx_cl_od_dia,rx_cl_od_type,' +
-  'rx_cl_os_sph,rx_cl_os_cyl,rx_cl_os_ax';
+  'rx_cl_os_sph,rx_cl_os_cyl,rx_cl_os_ax,' +
+  'rx_far_od_prism,rx_far_os_prism,rx_comp_od_prism,rx_comp_os_prism,rx_near_od_prism,rx_near_os_prism,' +
+  'rx_far_comment,rx_comp_comment,rx_near_comment,rx_cl_comment,' +
+  'rx_far_purpose,rx_comp_purpose,rx_near_purpose,rx_extra';
 
 var _ordersSort = 'date_new'; // date_new | date_old | total_desc | total_asc | promised
 var _allOrders = [];
@@ -20,51 +23,91 @@ var _ordersSearchQuery = '';
 var _ordersExamMap = {}; // examination_id -> examination row, для отображения диоптрий рецепта в списке заказов
 var RX_LABEL_TO_TYPE = {'Daljina':'far','Računar':'comp','Blizina':'near','KS':'cl'};
 
+// ═══ РЕЦЕПТЫ: назначение + несколько рецептов на очки в одной карте ═══
+// Три основных блока карты (rx_far_*, rx_comp_*, rx_near_*) имеют выбираемое назначение
+// (rx_*_purpose; пусто = по умолчанию блока). Дополнительные рецепты — examinations.rx_extra
+// [{id:'x…', purpose, od_sph, od_cyl, od_ax, od_prism, os_*, pd, add, comment}].
+// Ключ рецепта: 'far' | 'comp' | 'near' | 'cl' | id доп. рецепта ('x…') — так он хранится в заказе.
+var RX_PURPOSES = [
+  ['far',      'для дали',               'za daljinu',        'Даль',          'Daljina'],
+  ['constant', 'для постоянного ношения','za stalno nošenje', 'Пост. ношение', 'Stalno nošenje'],
+  ['comp',     'для компьютера',         'za računar',        'Компьютер',     'Računar'],
+  ['near',     'для близи',              'za blizinu',        'Близь',         'Blizina'],
+  ['prog',     'прогрессивные линзы',    'progresivna stakla','Прогрессивные', 'Progresivna'],
+  ['bifo',     'бифокальные линзы',      'bifokalna stakla',  'Бифокальные',   'Bifokalna'],
+];
+function rxPurposeLabel(p, short, lang) {
+  const r = RX_PURPOSES.find(x => x[0] === p); if (!r) return p || '';
+  const sr = (lang || _lang) === 'sr';
+  return short ? (sr ? r[4] : r[3]) : (sr ? r[2] : r[1]);
+}
+function rxPurposeOptions(sel) {
+  return RX_PURPOSES.map(r => '<option value="'+r[0]+'"'+(r[0]===sel?' selected':'')+'>'+r[1]+'</option>').join('');
+}
+function rxExtraList(e) { return (e && Array.isArray(e.rx_extra)) ? e.rx_extra : []; }
+// Единый вид рецепта по ключу
+function rxGet(e, k) {
+  if (!e) return null;
+  if (k === 'cl') return {k, cl:true, purpose:'cl',
+    od:{sph:e.rx_cl_od_sph,cyl:e.rx_cl_od_cyl,ax:e.rx_cl_od_ax}, os:{sph:e.rx_cl_os_sph,cyl:e.rx_cl_os_cyl,ax:e.rx_cl_os_ax},
+    bc:e.rx_cl_od_bc, dia:e.rx_cl_od_dia, type:e.rx_cl_od_type, comment:e.rx_cl_comment};
+  if (k === 'far' || k === 'comp' || k === 'near') {
+    const P = 'rx_'+k;
+    return {k, purpose: e[P+'_purpose'] || k,
+      od:{sph:e[P+'_od_sph'],cyl:e[P+'_od_cyl'],ax:e[P+'_od_ax'],prism:e[P+'_od_prism']},
+      os:{sph:e[P+'_os_sph'],cyl:e[P+'_os_cyl'],ax:e[P+'_os_ax'],prism:e[P+'_os_prism']},
+      pd:e[P+'_od_pd'], add: k==='far' ? e.rx_far_os_pd : e[P+'_od_add'],   // для дали ADD хранится в rx_far_os_pd
+      addL: k==='near' ? 'Degr' : 'ADD', comment:e[P+'_comment']};
+  }
+  const x = rxExtraList(e).find(r => r.id === k); if (!x) return null;
+  return {k, extra:true, purpose:x.purpose||'far',
+    od:{sph:x.od_sph,cyl:x.od_cyl,ax:x.od_ax,prism:x.od_prism}, os:{sph:x.os_sph,cyl:x.os_cyl,ax:x.os_ax,prism:x.os_prism},
+    pd:x.pd, add:x.add, addL:(x.purpose==='near'?'Degr':'ADD'), comment:x.comment};
+}
+// Все ключи рецептов карты (по порядку: даль, комп., близь, доп. рецепты, МКЛ)
+function rxAllKeys(e) { return ['far','comp','near'].concat(rxExtraList(e).map(x => x.id), ['cl']); }
+
 function _nz(val) {
   return (val != null && val !== '' && val !== '0.00' && val !== '0') ? String(val) : null;
 }
 
 function _rxDioptStr(e, type) {
-  if (!e) return '';
-  const seg = (sph, cyl, ax) => {
-    const s = _nz(sph); const c = _nz(cyl); const a = _nz(ax);
+  const r = rxGet(e, type); if (!r) return '';
+  const seg = (o) => {
+    const s = _nz(o.sph); const c = _nz(o.cyl); const a = _nz(o.ax);
     if (!s && !c) return null;
-    let r = s||'—'; if(c) r += ' / '+c; if(a) r += ' ax'+a;
-    return r;
+    let x = s||'—'; if(c) x += ' / '+c; if(a) x += ' ax'+a;
+    return x;
   };
-  let parts = [];
-  if (type==='far') {
-    const od = seg(e.rx_far_od_sph,e.rx_far_od_cyl,e.rx_far_od_ax);
-    const os = seg(e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax);
-    if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(_nz(e.rx_far_od_pd)) parts.push('PD '+e.rx_far_od_pd);
-    if(_nz(e.rx_far_os_pd)) parts.push('ADD '+e.rx_far_os_pd); // ADD для дали хранится в rx_far_os_pd
-  } else if (type==='comp') {
-    const od = seg(e.rx_comp_od_sph,e.rx_comp_od_cyl,e.rx_comp_od_ax);
-    const os = seg(e.rx_comp_os_sph,e.rx_comp_os_cyl,e.rx_comp_os_ax);
-    if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(_nz(e.rx_comp_od_pd))  parts.push('PD '+e.rx_comp_od_pd);
-    if(_nz(e.rx_comp_od_add)) parts.push('ADD '+e.rx_comp_od_add);
-  } else if (type==='near') {
-    const od = seg(e.rx_near_od_sph,e.rx_near_od_cyl,e.rx_near_od_ax);
-    const os = seg(e.rx_near_os_sph,e.rx_near_os_cyl,e.rx_near_os_ax);
-    if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(_nz(e.rx_near_od_pd))  parts.push('PD '+e.rx_near_od_pd);
-    if(_nz(e.rx_near_od_add)) parts.push('Degr '+e.rx_near_od_add);
-  } else if (type==='cl') {
-    const od = seg(e.rx_cl_od_sph,e.rx_cl_od_cyl,e.rx_cl_od_ax);
-    const os = seg(e.rx_cl_os_sph,e.rx_cl_os_cyl,e.rx_cl_os_ax);
-    if(od) parts.push('OD '+od); if(os) parts.push('OS '+os);
-    if(_nz(e.rx_cl_od_bc))  parts.push('BC '+e.rx_cl_od_bc);
-    if(_nz(e.rx_cl_od_dia)) parts.push('DIA '+e.rx_cl_od_dia);
-    if(e.rx_cl_od_type) parts.push(e.rx_cl_od_type);
+  const parts = [];
+  const od = seg(r.od), os = seg(r.os);
+  if (od) parts.push('OD '+od); if (os) parts.push('OS '+os);
+  if (!od && !os) return '';
+  if (r.cl) {
+    if(_nz(r.bc))  parts.push('BC '+r.bc);
+    if(_nz(r.dia)) parts.push('DIA '+r.dia);
+    if(r.type) parts.push(r.type);
+  } else {
+    if(_nz(r.pd))  parts.push('PD '+r.pd);
+    if(_nz(r.add)) parts.push(r.addL+' '+r.add);
   }
   return parts.join(' | ');
 }
+// Короткое название рецепта: назначение (с учётом выбранного в карте)
+function _rxKindLabel(k, e) {
+  if (k === 'cl') return t('exam_cl_short');
+  const r = e ? rxGet(e, k) : null;
+  return rxPurposeLabel(r ? r.purpose : k, true);
+}
+// Название для orders.prescription_label (всегда по-сербски, как раньше)
+function _rxLabelSr(e, k) {
+  if (k === 'cl') return 'KS';
+  const r = e ? rxGet(e, k) : null;
+  return rxPurposeLabel(r ? r.purpose : k, true, 'sr');
+}
 
 function _rxOptLabel(e, type, d) {
-  const labels = {far:t('exam_far_short'), comp:t('exam_comp_short'), near:t('exam_near_short'), cl:t('exam_cl_short')};
-  const base = t('visit')+(e.visit_number||'?')+' ('+d+') — '+(labels[type]||type);
+  const base = t('visit')+(e.visit_number||'?')+' ('+d+') — '+_rxKindLabel(type, e);
   const diopt = _rxDioptStr(e, type);
   return diopt ? base+' | '+diopt : base;
 }
@@ -79,7 +122,7 @@ function _rxOpts(exams, selVal) {
   exams.forEach(e => {
     window._examCache[e.id] = e;
     const d = fmtExamDate(e);
-    ['far','comp','near','cl'].forEach(type => {
+    rxAllKeys(e).forEach(type => {
       if (!_rxDioptStr(e, type)) return;
       const val = e.id+'|'+type;
       opts.push('<option value="'+val+'"'+(selVal===val?' selected':'')+'>'+_rxOptLabel(e, type, d)+'</option>');
@@ -126,7 +169,7 @@ function orderSetsViewHtml(o, exMap) {
     const qty = +s.lens_qty || 0;
     const lensSum = _setLensSum(s);
     const disc = (v) => +v ? ' <span class="of-set-disc">−'+(+v)+'%</span>' : '';
-    const rx = s.rx_type ? '<div class="ord-rx"><span class="ord-rx-l">'+(multi?(i+1)+'. ':'')+'RX · '+_rxKindLabel(s.rx_type)+(ex && ex.visit_number ? ' · '+t('visit')+ex.visit_number : '')+'</span>'+
+    const rx = s.rx_type ? '<div class="ord-rx"><span class="ord-rx-l">'+(multi?(i+1)+'. ':'')+'RX · '+_rxKindLabel(s.rx_type, ex)+(ex && ex.visit_number ? ' · '+t('visit')+ex.visit_number : '')+'</span>'+
         (ex ? _rxDioptStr(ex, s.rx_type).split(' | ').map(x => '<span class="ord-rx-v">'+_escH(x)+'</span>').join('') : '')+'</div>'
       : (multi ? '<div class="ord-rx"><span class="ord-rx-l">'+(i+1)+'. '+t('prescription')+' —</span></div>' : '');
     return '<div class="'+(multi?'ord-set':'')+'">'+rx+
@@ -262,7 +305,7 @@ function _orderListRxHtml(o) {
   const parts = orderSets(o).filter(st => st.rx_type).map(st => {
     const e = st.exam_id ? (_ordersExamMap[st.exam_id] || window._examCache[st.exam_id]) : null;
     const d = e ? _rxDioptStr(e, st.rx_type) : '';
-    return '<div style="font-weight:600;color:var(--text-m)">'+RX_TYPE_LABEL[st.rx_type]+'</div>'+(d ? '<div style="margin-top:2px;color:var(--text)">'+d+'</div>' : '');
+    return '<div style="font-weight:600;color:var(--text-m)">'+_rxKindLabel(st.rx_type, e)+'</div>'+(d ? '<div style="margin-top:2px;color:var(--text)">'+d+'</div>' : '');
   });
   return parts.length ? parts.join('<div style="height:4px"></div>') : '—';
 }
@@ -715,19 +758,8 @@ async function showRxPreview(val, idx) {
     e = ed; if (e) window._examCache[e.id] = e;
   }
   if (!e) { prev.style.display = 'none'; return; }
-  const row = (eye, sph, cyl, ax) => {
-    let s = '<b>'+eye+':</b> '+(_nz(sph)||'—');
-    const c = _nz(cyl); const a = _nz(ax);
-    if (c) s += ' / '+c; if (a) s += ' ax'+a;
-    return s;
-  };
-  let html = '';
-  if (type==='far')  html = row('OD',e.rx_far_od_sph,e.rx_far_od_cyl,e.rx_far_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_far_os_sph,e.rx_far_os_cyl,e.rx_far_os_ax)+(_nz(e.rx_far_od_pd)?' &nbsp;<b>PD:</b> '+e.rx_far_od_pd:'')+(_nz(e.rx_far_os_pd)?' &nbsp;<b>ADD:</b> '+e.rx_far_os_pd:'');
-  else if (type==='comp') html = row('OD',e.rx_comp_od_sph,e.rx_comp_od_cyl,e.rx_comp_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_comp_os_sph,e.rx_comp_os_cyl,e.rx_comp_os_ax)+(_nz(e.rx_comp_od_pd)?' &nbsp;<b>PD:</b> '+e.rx_comp_od_pd:'')+(_nz(e.rx_comp_od_add)?' &nbsp;<b>ADD:</b> '+e.rx_comp_od_add:'');
-  else if (type==='near') html = row('OD',e.rx_near_od_sph,e.rx_near_od_cyl,e.rx_near_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_near_os_sph,e.rx_near_os_cyl,e.rx_near_os_ax)+(_nz(e.rx_near_od_pd)?' &nbsp;<b>PD:</b> '+e.rx_near_od_pd:'')+(_nz(e.rx_near_od_add)?' &nbsp;<b>Degr:</b> '+e.rx_near_od_add:'');
-  else if (type==='cl')  html = row('OD',e.rx_cl_od_sph,e.rx_cl_od_cyl,e.rx_cl_od_ax)+'&nbsp;&nbsp;'+row('OS',e.rx_cl_os_sph,e.rx_cl_os_cyl,e.rx_cl_os_ax)+(_nz(e.rx_cl_od_bc)?' &nbsp;<b>BC:</b> '+e.rx_cl_od_bc:'')+(_nz(e.rx_cl_od_dia)?' &nbsp;<b>DIA:</b> '+e.rx_cl_od_dia:'')+(e.rx_cl_od_type?' &nbsp;'+e.rx_cl_od_type:'');
   // Крупная таблица OD/OS (как во вкладке «Коррекция (RX)» карточки пациента)
-  prev.innerHTML = (html && typeof _rxTableHtml === 'function') ? _rxTableHtml(e, type) : (html || '('+t('no_data')+')');
+  prev.innerHTML = _rxDioptStr(e, type) ? _rxTableHtml(e, type) : '('+t('no_data')+')';
   prev.style.display = 'block';
 }
 function recalcOrder() {
@@ -769,7 +801,7 @@ async function saveOrder(id) {
   const data = {
     patient_id, type:orderType,
     items,
-    prescription_label: firstRx ? RX_TYPE_LABEL[firstRx.rx_type] : null,
+    prescription_label: firstRx ? _rxLabelSr(window._examCache[firstRx.exam_id], firstRx.rx_type) : null,
     examination_id: firstRx ? firstRx.exam_id : null,
     order_number: v('o-ordernum') || null,
     order_date: od.date, order_date_prec: od.prec,

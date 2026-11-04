@@ -170,6 +170,59 @@ function removeRecBlock(key){
   if(ta.value.includes(b.text)){ ta.value=ta.value.replace('\n\n'+b.text,'').replace(b.text,'').trim(); _modalDirty=true; }
 }
 
+// ── Дополнительные рецепты на очки (examinations.rx_extra) ──
+function _rxExtraHtml(x){
+  const id=x.id, p='rxx-'+id, v=f=>_escH(x[f]==null?'':String(x[f]));
+  return `<div class="rx-section rx-extra" data-xid="${id}">
+    <div class="rx-section-title">Параметры для изготовления очков <select id="${p}-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(x.purpose||'constant')}</select>
+      <button type="button" class="rx-extra-del" title="Удалить этот рецепт" onclick="rxExtraRemove('${id}')">×</button></div>
+    <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="rxExtraCopyFar('${id}')">← Скопировать из первого рецепта</button></div>
+    <table class="rx-table">
+      <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
+      <tr><td>OD</td><td>${_rs(p+'-od-sph','sph',v('od_sph'))}</td><td>${_rs(p+'-od-cyl','cyl',v('od_cyl'))}</td><td>${_rs(p+'-od-ax','ax',v('od_ax'))}</td><td>${_rs(p+'-od-prism','prism',v('od_prism'))}</td></tr>
+      <tr><td>OS</td><td>${_rs(p+'-os-sph','sph',v('os_sph'))}</td><td>${_rs(p+'-os-cyl','cyl',v('os_cyl'))}</td><td>${_rs(p+'-os-ax','ax',v('os_ax'))}</td><td>${_rs(p+'-os-prism','prism',v('os_prism'))}</td></tr>
+    </table>
+    <div class="rx-shared-row">
+      <div class="form-group" style="max-width:80px"><label>PD</label>${_rs(p+'-pd','pd',v('pd'))}</div>
+      <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs(p+'-add','add',v('add'))}</div>
+    </div>
+    ${_comment(p+'-comment',v('comment'),'Комментарий к рецепту')}
+  </div>`;
+}
+function rxExtraAdd(){
+  if(_examIsLocked()) return;
+  const box=document.getElementById('rx-extra-box'); if(!box) return;
+  const id='x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  box.insertAdjacentHTML('beforeend', _rxExtraHtml({id, purpose:'constant'}));
+  _modalDirty=true;
+  const el=document.getElementById('rxx-'+id+'-od-sph'); if(el) el.focus();
+}
+function rxExtraRemove(id){
+  if(_examIsLocked()) return;
+  if(!confirm('Удалить этот рецепт? Если по нему уже оформлен заказ, в заказе останутся оправа и линзы, но без диоптрий.')) return;
+  const el=document.querySelector('.rx-extra[data-xid="'+id+'"]'); if(el) el.remove();
+  _modalDirty=true;
+}
+function rxExtraCopyFar(id){
+  const g=x=>{const el=document.getElementById(x);return el?el.value:'';};
+  const set=(x,val)=>{const el=document.getElementById(x); if(el){el.value=val;}};
+  const p='rxx-'+id;
+  ['od','os'].forEach(eye=>['sph','cyl','ax','prism'].forEach(f=>set(p+'-'+eye+'-'+f, g('rf-'+eye+'-'+f))));
+  set(p+'-pd', g('rf-pd')); set(p+'-add', g('rf-add'));
+  _modalDirty=true;
+  toast('Скопировано из первого рецепта — поправьте диоптрии','info');
+}
+function _rxExtraCollect(){
+  const g=x=>{const el=document.getElementById(x);return el?el.value.trim():'';};
+  return [...document.querySelectorAll('#rx-extra-box .rx-extra')].map(el=>{
+    const id=el.dataset.xid, p='rxx-'+id;
+    const r={id, purpose:g(p+'-purpose')||'constant'};
+    ['od','os'].forEach(eye=>['sph','cyl','ax','prism'].forEach(f=>{ r[eye+'_'+f]=g(p+'-'+eye+'-'+f); }));
+    r.pd=g(p+'-pd'); r.add=g(p+'-add'); r.comment=g(p+'-comment');
+    return r;
+  }).filter(r=>['od_sph','od_cyl','os_sph','os_cyl','pd','add','comment'].some(f=>r[f]));
+}
+
 const EXAM_TABS=[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['bino','Бинокулярное / аккомодация'],['rx','Рецепты'],['concl','Заключение']];
 function _drawExam(p,e,visitNum,apptId,apptType){
   const ge=f=>e?.[f]||'';
@@ -308,7 +361,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           <span><b>Промежуточная коррекция для адаптации</b><br><span style="font-weight:400">Бюджетные линзы · контроль через 6–8 недель · затем замена диоптрий в сторону полной коррекции</span></span>
         </label>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков для дали</div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rf-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_far_purpose')||'far')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinCopyExamToFar()">← Из результатов обследования</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -319,10 +372,10 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
           </div>
-          ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к рецепту для дали')}
+          ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к рецепту')}
         </div>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков для работы с компьютером</div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rc-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_comp_purpose')||'comp')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarPlusAdd('rc')">= Даль + ½ ADD</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -333,10 +386,10 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
           </div>
-          ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к рецепту для компьютера')}
+          ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к рецепту')}
         </div>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков для близи / чтения</div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rn-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_near_purpose')||'near')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarPlusAdd('rn')">= Даль + ADD</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -347,8 +400,10 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label>Degr</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
           </div>
-          ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к рецепту для близи')}
+          ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к рецепту')}
         </div>
+        <div id="rx-extra-box">${rxExtraList(e).map(_rxExtraHtml).join('')}</div>
+        <button type="button" class="btn btn-ghost rx-extra-add" onclick="rxExtraAdd()">+ Ещё рецепт на очки (например, второй для дали — послабее)</button>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для заказа контактных линз</div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarToCL()" title="Вертекс от ±4.00 D, округление в плюс, Cyl ≤ 0.75 → сферический эквивалент, торика под стандартную линейку">← Рассчитать из очков для дали</button></div>
@@ -500,7 +555,9 @@ async function saveExam(id,apptId,patientId,visitNum){
     rx_far_enabled:true,
     rx_far_od_sph:vs('rf-od-sph'),rx_far_od_cyl:vs('rf-od-cyl'),rx_far_od_ax:vs('rf-od-ax'),rx_far_od_pd:vs('rf-pd'),rx_far_od_prism:vs('rf-od-prism'),
     rx_far_os_sph:vs('rf-os-sph'),rx_far_os_cyl:vs('rf-os-cyl'),rx_far_os_ax:vs('rf-os-ax'),rx_far_os_pd:vs('rf-add'),rx_far_os_prism:vs('rf-os-prism'),
-    rx_far_comment:vs('rf-comment'),
+    rx_far_comment:vs('rf-comment'),rx_far_purpose:vs('rf-purpose')||null,
+    rx_comp_purpose:vs('rc-purpose')||null,rx_near_purpose:vs('rn-purpose')||null,
+    rx_extra:_rxExtraCollect(),
     rx_comp_enabled:true,
     rx_comp_od_sph:vs('rc-od-sph'),rx_comp_od_cyl:vs('rc-od-cyl'),rx_comp_od_ax:vs('rc-od-ax'),rx_comp_od_pd:vs('rc-pd'),rx_comp_od_add:vs('rc-add'),rx_comp_od_prism:vs('rc-od-prism'),
     rx_comp_os_sph:vs('rc-os-sph'),rx_comp_os_cyl:vs('rc-os-cyl'),rx_comp_os_ax:vs('rc-os-ax'),rx_comp_os_prism:vs('rc-os-prism'),

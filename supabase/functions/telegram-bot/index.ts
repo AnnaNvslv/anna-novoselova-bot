@@ -88,6 +88,15 @@ function promoLineForAnna(p: PromoInfo | null): string {
 
 async function handleStart(chat_id: number, username: string | undefined, payload: string) {
   if (!payload.startsWith('appt_')) {
+    // Уже привязан (в т.ч. после /stop) — /start просто включает уведомления
+    const { data: linked } = await db.from('patients').select('id, name, notify_off').eq('telegram_chat_id', chat_id).is('deleted_at', null)
+    if (linked?.length) {
+      const wasOff = linked.some(p => p.notify_off)
+      await db.from('patients').update({ notify_off: false }).eq('telegram_chat_id', chat_id)
+      await sendMessage(chat_id, '✅ Уведомления о ваших заказах на очки включены.\n\nЕсли не хотите их получать, отправьте /stop', { reply_markup: { remove_keyboard: true } })
+      if (wasOff) await notifyAnna(`🔔 Снова включил(а) уведомления о заказах: ${linked.map(p => escHtml(String(p.name))).join(', ')}${username ? ' · @' + escHtml(username) : ''}`)
+      return
+    }
     // Привязка по номеру телефона (QR-карточка в оптике): уведомления о заказах очков
     await sendMessage(chat_id,
       'Здравствуйте! Это бот оптометриста Анны Новосёловой в оптике Ginter.\n\n' +
@@ -211,7 +220,7 @@ async function handleContact(chat_id: number, username: string | undefined, cont
     await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}) }).eq('id', p.id)
   }
   await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
-  if (myChatId) await sendMessage(Number(myChatId), `🔗 Пациент привязал Telegram по номеру: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? ' · @' + escHtml(username) : ''}`)
+  if (myChatId) await sendMessage(Number(myChatId), `🔗 Клиент поделился номером ${escHtml(phone)} — Telegram привязан к карточке: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? `\n(ник в Telegram: @${escHtml(username)})` : ''}`)
 }
 // ── Запрос на ручную привязку (номер не найден / клиент написал имя): попадает в CRM → «Ждут привязки» ──
 async function saveLinkRequest(chat_id: number, username: string | undefined, tgName: string, phone: string | null, message: string | null, myChatId: string | null | undefined) {
@@ -235,17 +244,29 @@ async function saveLinkRequest(chat_id: number, username: string | undefined, tg
 }
 // Свободный текст от клиента, который ещё не привязан ни к одной карточке
 async function handleFreeText(chat_id: number, username: string | undefined, from: Record<string, unknown>, text: string) {
-  const { data: linked } = await db.from('patients').select('id').eq('telegram_chat_id', chat_id).is('deleted_at', null).limit(1)
-  if (linked?.length) return // уже привязан — бот не отвечает, переписка идёт с Анной лично
+  const { data: linked } = await db.from('patients').select('id, notify_off').eq('telegram_chat_id', chat_id).is('deleted_at', null)
+  if (linked?.length) {
+    // уже привязан: подсказываем, как включить уведомления / куда писать
+    await sendMessage(chat_id, linked.every(p => p.notify_off)
+      ? 'Уведомления о заказах сейчас выключены. Чтобы включить их снова, отправьте /start\n\nВопросы: @AnnaNvslv'
+      : 'Вы уже подключены к уведомлениям о заказах на очки ✅\n\nЕсли есть вопросы, напишите Анне: @AnnaNvslv', { reply_markup: { remove_keyboard: true } })
+    return
+  }
   const { data: r } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
-  if (r?.value && String(r.value) === String(chat_id)) return
   const tgName = [from?.first_name, from?.last_name].filter(Boolean).join(' ')
   await saveLinkRequest(chat_id, username, tgName, null, text, r?.value)
   await sendMessage(chat_id, 'Спасибо! Анна подключит вас к уведомлениям о заказе в ближайшее время. Вопросы: @AnnaNvslv', { reply_markup: { remove_keyboard: true } })
 }
+async function notifyAnna(text: string) {
+  const { data: r } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+  if (r?.value) await sendMessage(Number(r.value), text)
+}
 async function handleStop(chat_id: number) {
+  const { data: linked } = await db.from('patients').select('id, name, notify_off').eq('telegram_chat_id', chat_id).is('deleted_at', null)
   await db.from('patients').update({ notify_off: true }).eq('telegram_chat_id', chat_id)
-  await sendMessage(chat_id, 'Хорошо, уведомления о заказах больше присылать не будем. Чтобы снова включить — отправьте /start и поделитесь номером.')
+  await sendMessage(chat_id, 'Хорошо, уведомления о заказах больше присылать не будем. Чтобы снова включить их, отправьте /start', { reply_markup: { remove_keyboard: true } })
+  const names = (linked || []).filter(p => !p.notify_off).map(p => escHtml(String(p.name)))
+  if (names.length) await notifyAnna(`🔕 Отказался(-ась) от уведомлений о заказах: ${names.join(', ')}\nВ CRM у пациента отмечено «Не присылать уведомления». Сообщите о готовности заказа лично.`)
 }
 
 async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Record<string, unknown>, tgUsername: string | undefined, promo: PromoInfo | null = null) {

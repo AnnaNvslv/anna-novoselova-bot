@@ -147,7 +147,7 @@ function renderPatientsTable(patients) {
       '<div class="pt-item'+(p.id===_openPatientId?' active':'')+'" id="pt-item-'+p.id+'" onclick="openPatientCard(\''+p.id+'\')">'+
         '<div class="patient-avatar pt-av">'+_escH(initials(p.name))+'</div>'+
         '<div class="pt-item-main">'+
-          '<div class="pt-item-name">'+_escH(p.name)+(p.telegram_username ? ' '+tgTag(p.telegram_username,{link:false}) : '')+(p.telegram_chat_id ? ' <span class="tg-on" title="Telegram подключён">✈</span>' : '')+'</div>'+
+          '<div class="pt-item-name">'+_escH(p.name)+(p.telegram_username ? ' '+tgTag(p.telegram_username,{link:false}) : '')+(p.telegram_chat_id ? ' <span class="tg-on" title="Telegram подключён">✈</span>' : '')+(p.notify_off ? ' <span title="'+(_lang==='sr'?'Odjavio se od obaveštenja':'Отказался от уведомлений о заказах')+'">🔕</span>' : '')+'</div>'+
           '<div class="pt-item-meta">'+(sub || '<span class="text-l">'+t('pt_no_phone')+'</span>')+'</div>'+
           (_patientBadge(p.id) ? '<div class="pt-item-badges">'+_patientBadge(p.id)+'</div>' : '')+
         '</div>'+
@@ -653,7 +653,7 @@ function _infoTabHtml(p, appts) {
       '<div class="info-item"><label>ID</label><p>'+_escH(p.patient_code||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('phone')+'</label><p>'+(p.phone ? '<a class="pt-link" href="tel:'+_escH(p.phone.replace(/\s/g,''))+'">'+_escH(p.phone)+'</a>' : '—')+'</p></div>'+
       '<div class="info-item"><label>Email</label><p>'+(p.email ? '<a class="pt-link" href="mailto:'+_escH(p.email)+'">'+_escH(p.email)+'</a>' : '—')+'</p></div>'+
-      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="tg-on">✈ ID '+_escH(p.telegram_chat_id)+'</span>' : '')+'</p></div>'+
+      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="tg-on">✈ ID '+_escH(p.telegram_chat_id)+'</span>' : '')+(p.notify_off ? ' <span class="badge badge-warn">🔕 '+(_lang==='sr'?'odjavio se od obaveštenja':'отказался от уведомлений о заказах')+'</span>' : '')+'</p></div>'+
       '<div class="info-item"><label>'+t('dob')+'</label><p>'+(p.dob ? fmt(p.dob)+(age ? ' ('+age+' '+t('years')+')' : '') : '—')+'</p></div>'+
       '<div class="info-item"><label>'+t('source')+'</label><p>'+_escH(p.source||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('first_visit')+'</label><p>'+fmtFirstVisit(p)+'</p></div>'+

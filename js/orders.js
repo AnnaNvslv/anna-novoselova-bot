@@ -914,8 +914,13 @@ async function notifyOrderReady(id) {
 async function sendFollowUpSurvey(orderId) {
   const {data:o} = await db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('id',orderId).single();
   if (!o || !o.patients || !o.patients.telegram_chat_id) { toast(t('error'), 'error'); return; }
-  const firstName = o.patients.name.split(' ')[0];
-  const msg = 'Zdravo, '+firstName+'! 👋\n\nProšle su dve nedelje od kada ste preuzeli naocare. Zanimalo me kako se snalazite 🙂\n\n1️⃣ Kako ste sa novim naocarima?\n😊 Odlično\n🤔 Navikavam se\n😕 Imam pitanja\n\n2️⃣ Da li vam okvir odgovara?\n👍 Da\n👎 Ne\n\nNapišite direktno u odgovor na ovu poruku — Ana @AnnaNvslv će vam se javiti lično.\n\nHvala! 🙏';
+  const parts = String(o.patients.name||'').trim().split(/\s+/);
+  const firstName = parts[1] || parts[0] || '';   // в CRM «Фамилия Имя»
+  const cl = o.type === 'МКЛ';
+  const msg = 'Здравствуйте, '+firstName+'! 👋\n\nПрошло две недели с тех пор, как вы получили '+(cl ? 'контактные линзы' : 'очки')+'. Мне интересно, как у вас дела 🙂\n\n'+
+    '1️⃣ Как вам '+(cl ? 'новые линзы' : 'новые очки')+'?\n😊 Отлично\n🤔 Привыкаю\n😕 Есть вопросы\n\n'+
+    (cl ? '2️⃣ Комфортно ли в линзах в течение дня?\n👍 Да\n👎 Нет\n\n' : '2️⃣ Удобно ли сидит оправа?\n👍 Да\n👎 Нет\n\n')+
+    'Напишите мне, пожалуйста, пару слов: @AnnaNvslv — отвечу лично.\n\nСпасибо! 🙏\nАнна';
   const ok = await tgSend(o.patients.telegram_chat_id, msg);
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }

@@ -12,8 +12,16 @@
 
 /* ── 1. Правки TYPES_DATA (мутируем объекты/массив на месте, TYPES_DATA остаётся тем же const) ── */
 (function(){
-  const idx = TYPES_DATA.findIndex(t=>t.id==='cl');
-  if(idx!==-1) TYPES_DATA.splice(idx,1);
+  // 2026-11-05: подбор КЛ с обучением временно не проводится — карточка видна, но не выбирается
+  const cl = TYPES_DATA.find(t=>t.id==='cl');
+  if(cl){
+    cl.disabled = true;
+    cl.ru.name = 'Подбор контактных линз с обучением';
+    cl.sr.name = 'Izbor kontaktnih sočiva s obukom';
+    cl.offNote = {ru:'Временно не проводится. Если очень нужно — напишите <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a>',
+                  sr:'Privremeno se ne održava. Ako vam je baš potrebno — pišite <a href="https://t.me/AnnaNvslv" target="_blank">@AnnaNvslv</a>'};
+    TYPES_DATA.splice(TYPES_DATA.indexOf(cl),1); TYPES_DATA.push(cl); // в конец списка
+  }
 
   const primary = TYPES_DATA.find(t=>t.id==='primary');
   if(primary && primary.includes){
@@ -314,7 +322,7 @@ async function submitBooking(){
   blog('submit_attempt',{patient_name:name,telegram:tg});
   try{
     const{data:slotCheck}=await db.from('available_slots').select('is_booked').eq('id',selectedSlot.id).single();
-    if(slotCheck?.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
+    if(!slotCheck||slotCheck.is_booked){blog('error',{patient_name:name,telegram:tg,error_text:'slot_already_booked'});alert(T('errSlot'));btn.disabled=false;btn.textContent=T('submit');goPage('cal');return;}
     const payload={
       name,last_name:lastname,first_name:firstname,dob:dob||null,phone:v('f-phone')||null,telegram_username:tg||null,
       visit_reason:chips('ch-reason'),

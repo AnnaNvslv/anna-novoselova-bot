@@ -177,3 +177,9 @@ textarea{resize:none;min-height:80px}
 }
 
 .field-error{outline:2px solid #e33 !important;outline-offset:3px;border-radius:10px;transition:outline-color .2s}
+
+/* 2026-11-05: вид приёма временно не проводится */
+.type-card.type-off{opacity:.55;cursor:default;filter:grayscale(1);}
+.type-card.type-off:hover{transform:none;box-shadow:none;border-color:inherit;}
+.type-offnote{margin-top:8px;font-size:13px;font-weight:600;color:#92400e;}
+.type-offnote a{color:inherit;text-decoration:underline;}

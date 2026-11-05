@@ -1,9 +1,9 @@
-// Уведомления клиентам о заказах очков (CRM Optometrist) + утренняя сводка заказов Анне.
+// Уведомления клиентам о заказах очков и контактных линз (CRM Optometrist) + утренняя сводка заказов Анне.
 // Вызовы:
 //   POST {order_id, event:'insert'|'status'}  — из триггера БД orders_notify (pg_net)
 //   POST {mode:'cron'}                         — каждый час: напоминание «очки ждут» через 3 дня + сводка в 9:15
 //   POST {mode:'digest'}                        — сводка заказов Анне сейчас (ручной запуск)
-// Пишем только: заказы типа «Очки», созданные после settings.order_notify_since, пациенту с telegram_chat_id и без notify_off.
+// Пишем только: заказы типа «Очки» и «МКЛ», созданные после settings.order_notify_since, пациенту с telegram_chat_id и без notify_off.
 // Каждое сообщение отправляется один раз (notify_*_at в orders).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -42,6 +42,11 @@ function firstName(p: Record<string, unknown>): string {
   const parts = String(p.name || '').trim().split(/\s+/)
   return parts[1] || parts[0] || ''
 }
+function payLines(t: { prepay: number; balance: number }): string {
+  return t.balance > 0
+    ? `Предоплата: ${money(t.prepay)}\nК доплате: <b>${money(t.balance)}</b>`
+    : 'Заказ оплачен полностью.'
+}
 function totals(o: Record<string, any>) {
   const items: any[] = Array.isArray(o.items) && o.items.length ? o.items : [{
     frame_price: num(o.frame_price), frame_base: 0, lens_name: o.lens_name, lens_price: num(o.lens_price),
@@ -58,16 +63,30 @@ function totals(o: Record<string, any>) {
   return { items, discount, work, total, prepay, balance: Math.max(total - prepay, 0) }
 }
 
+const isCL = (o: any) => o.type === 'МКЛ'
 function msgSummary(o: any, p: any): string {
   const t = totals(o)
+  if (isCL(o)) {
+    const cl = t.items.map((it: any) => `👁 Контактные линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`).join('\n')
+    return `Здравствуйте, ${esc(firstName(p))}!
+
+Вы оформили заказ на контактные линзы в оптике Ginter.
+
+${cl}${t.work > 0 ? `\n🛠 Работа: ${money(t.work)}` : ''}${t.discount > 0 ? `\n🏷 Скидка: ${money(t.discount)}` : ''}
+
+<b>Итого: ${money(t.total)}</b>
+${payLines(t)}
+
+Когда линзы придут, этот бот обязательно пришлёт вам уведомление.
+
+Если появятся вопросы, пишите Анне: ${ANNA}`
+  }
   const multi = t.items.length > 1
   const lines = t.items.map((it: any, i: number) => {
     const head = multi ? `\n<b>Очки ${i + 1}</b>\n` : ''
     return `${head}👓 Оправа: ${money(num(it.frame_price))}\n🔍 Линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`
   }).join('\n')
-  const pay = t.balance > 0
-    ? `Предоплата: ${money(t.prepay)}\nК доплате: <b>${money(t.balance)}</b>`
-    : 'Заказ оплачен полностью.'
+  const pay = payLines(t)
   return `Здравствуйте, ${esc(firstName(p))}!
 
 Вы оформили заказ на очки в оптике Ginter.
@@ -86,7 +105,7 @@ function msgReady(o: any, p: any): string {
   const t = totals(o)
   return `Здравствуйте, ${esc(firstName(p))}!
 
-Ваши очки готовы 🎉 Забрать их можно в любое удобное время.
+${isCL(o) ? 'Ваш заказ на контактные линзы пришёл 🎉 Забрать линзы можно в любое удобное время.' : 'Ваши очки готовы 🎉 Забрать их можно в любое удобное время.'}
 
 🕘 Режим работы оптики Ginter:
 ${HOURS}
@@ -98,11 +117,21 @@ ${t.balance > 0 ? `К доплате: <b>${money(t.balance)}</b>, картой �
 Если при получении вам нужна Анна, пожалуйста, заранее уточните её рабочее время: ${ANNA}
 Если нет, приходите в любое время: заказ выдадут коллеги, Эрвин или Бояна.`
 }
-function msgReminder(_o: any, p: any): string {
-  return `Здравствуйте, ${esc(firstName(p))}! Напоминаем, что ваши очки готовы и ждут вас в оптике Ginter. Режим работы: пн–пт 9–20, сб 9–14.
+function msgReminder(o: any, p: any): string {
+  return `Здравствуйте, ${esc(firstName(p))}! Напоминаем, что ${isCL(o) ? 'ваши контактные линзы пришли и ждут' : 'ваши очки готовы и ждут'} вас в оптике Ginter. Режим работы: пн–пт 9–20, сб 9–14.
 📍 ${MAPS}`
 }
-function msgIssued(_o: any, p: any): string {
+function msgIssued(o: any, p: any): string {
+  if (isCL(o)) return `Здравствуйте, ${esc(firstName(p))}!
+
+Благодарим вас за обращение в оптику Ginter и к Анне. Носите линзы с удовольствием! 👁
+
+Соблюдайте срок замены линз и правила ухода за ними. Если появится дискомфорт, покраснение или вопросы по ношению, пишите Анне: ${ANNA}
+
+Будем очень благодарны за отзыв:
+⭐ Google: ${GOOGLE_REVIEW}
+💬 Медицина Сербии: ${MED_SERBIA}
+👩‍⚕️ Специалисты: ${SPECIALISTS} (отзывы там можно оставлять по субботам)`
   return `Здравствуйте, ${esc(firstName(p))}!
 
 Благодарим вас за обращение в оптику Ginter и к Анне. Носите очки на здоровье! 👓
@@ -127,7 +156,7 @@ async function notify(orderId: string, kind: string): Promise<string> {
   const k = KIND[kind]; if (!k) return 'bad kind'
   const { data: o } = await db.from('orders').select('*, patients(id, name, first_name, telegram_chat_id, notify_off, deleted_at)').eq('id', orderId).single()
   if (!o || o.deleted_at) return 'no order'
-  if (o.type !== 'Очки') return 'not glasses'
+  if (o.type !== 'Очки' && o.type !== 'МКЛ') return 'not glasses / CL'
   const since = await setting('order_notify_since')
   if (!since || new Date(o.created_at) < new Date(since)) return 'old order'
   if (o[k.col]) return 'already sent'
@@ -147,7 +176,7 @@ const daysSince = (d: string | null) => d ? Math.floor((Date.now() - new Date(d 
 async function reminders(): Promise<number> {
   const since = await setting('order_notify_since')
   const { data } = await db.from('orders').select('id, ready_date, notify_ready_at, created_at')
-    .eq('status', 'готов').eq('type', 'Очки').is('deleted_at', null).is('notify_reminder_at', null)
+    .eq('status', 'готов').in('type', ['Очки', 'МКЛ']).is('deleted_at', null).is('notify_reminder_at', null)
     .not('notify_ready_at', 'is', null).gte('created_at', since || '2100-01-01')
   let n = 0
   for (const o of data || []) {

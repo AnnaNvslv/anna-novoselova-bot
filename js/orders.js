@@ -621,7 +621,9 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
           '</div>'+
           '<div class="of-total">'+
             '<div class="of-total-row"><span>'+t('total')+'</span><span id="o-total-display">'+fmtMoney(0)+'</span></div>'+
-            '<div class="of-total-paid">✓ '+(_lang==='sr'?'Plaćeno u celosti':'Оплачено полностью')+'</div>'+
+            '<div class="of-pay-row"><label for="o-prepay">'+(_lang==='sr'?'Avans':'Предоплата')+'</label>'+numIn('o-prepay', o ? (+o.prepayment||0) : '', 'class="of-num" oninput="recalcOrder()" placeholder="0"')+'</div>'+
+            '<div class="of-pay-row of-pay-bal"><span>'+(_lang==='sr'?'Doplata':'Доплата')+'</span><span id="o-balance-display">'+fmtMoney(0)+'</span></div>'+
+            '<div class="of-total-paid" id="o-paid-full" hidden>✓ '+(_lang==='sr'?'Plaćeno u celosti':'Оплачено полностью')+'</div>'+
           '</div>'+
         '</div>'+
 
@@ -787,6 +789,10 @@ function recalcOrder() {
   });
   total += Math.max(+(document.getElementById('o-wprice') && document.getElementById('o-wprice').value)||0, 0);
   const el = document.getElementById('o-total-display'); if (el) el.textContent = fmtMoney(total);
+  const pre = Math.max(+(document.getElementById('o-prepay') && document.getElementById('o-prepay').value)||0, 0);
+  const bal = Math.max(total - pre, 0);
+  const be = document.getElementById('o-balance-display'); if (be) be.textContent = fmtMoney(bal);
+  const pf = document.getElementById('o-paid-full'); if (pf) pf.hidden = !(total > 0 && bal === 0);
 }
 function applyDiscount() {}
 function calcTotal() {}
@@ -822,9 +828,8 @@ async function saveOrder(id) {
     frame_code: joinU(items.map(it => it.frame_code)), frame_price: fFinal,
     lens_name: joinU(items.map(it => it.lens_name)), lens_price: lPerPiece, lens_qty: qty,
     work_price: v('o-wprice') ? Math.max(+v('o-wprice'),0) : null,
-    // Предоплаты в форме нет: заказ всегда считается оплаченным полностью
-    // та же формула, что orderTotal(): frame_price + lens_price*lens_qty + work_price
-    prepayment: fFinal + lPerPiece*qty + (v('o-wprice') ? Math.max(+v('o-wprice'),0) : 0),
+    // Предоплата вводится вручную (не больше суммы заказа); доплата = итог − предоплата
+    prepayment: Math.min(Math.max(+v('o-prepay')||0, 0), fFinal + lPerPiece*qty + (v('o-wprice') ? Math.max(+v('o-wprice'),0) : 0)),
     promo_code: promoFieldVal('o-promo'),
     promised_date: v('o-pdate') || null,
     notes: v('o-notes'),
@@ -837,11 +842,20 @@ async function saveOrder(id) {
       let ready_date = v('o-rdate') || null, issued_date = v('o-idate') || null;
       if (st === 'готов' && !ready_date) ready_date = today();
       if (st === 'выдан' && !issued_date) issued_date = today();
+      if (st === 'выдан') {
+        const bal = orderTotal(data) - (+data.prepayment||0);
+        if (bal > 0) { if (!await orderPayConfirm(bal)) return; data.prepayment = orderTotal(data); }
+      }
       const {error} = await db.from('orders').update({...data, status:st, ready_date, issued_date}).eq('id',id);
       if (error) throw error;
       toast(t('order_updated'));
     } else {
-      const {error} = await db.from('orders').insert({...data, status: v('o-status-new') || 'в работе', ...(v('o-status-new')==='выдан' ? {issued_date: today()} : {})});
+      const stNew = v('o-status-new') || 'в работе';
+      if (stNew === 'выдан') {
+        const bal = orderTotal(data) - (+data.prepayment||0);
+        if (bal > 0) { if (!await orderPayConfirm(bal)) return; data.prepayment = orderTotal(data); }
+      }
+      const {error} = await db.from('orders').insert({...data, status: stNew, ...(stNew==='выдан' ? {issued_date: today()} : {})});
       if (error) throw error;
       toast(t('order_created'));
     }
@@ -854,6 +868,7 @@ async function saveOrder(id) {
   }
 }
 async function updateOrderStatus(id, status) {
+  if (status === 'выдан') return issueOrder(id);
   const updates = {status};
   if (status==='готов') updates.ready_date = today();
   if (status==='выдан') updates.issued_date = today();
@@ -862,11 +877,26 @@ async function updateOrderStatus(id, status) {
   toast(t('status_updated')+': '+statusLabel(status));
   render();
 }
+// Окно «Доплата по заказу» при выдаче: «Оплачено» → доплата внесена (prepayment = итог). Поверх любого модального окна.
+function orderPayConfirm(balance) {
+  return new Promise(resolve => {
+    const sr = _lang === 'sr';
+    const w = document.createElement('div');
+    w.className = 'pay-confirm';
+    w.innerHTML = '<div class="pay-confirm-box"><div class="pay-confirm-t">'+(sr?'Doplata po porudžbini':'Доплата по заказу составляет')+'</div>'+
+      '<div class="pay-confirm-sum">'+fmtMoney(balance)+'</div>'+
+      '<div class="pay-confirm-btns"><button class="btn btn-ghost" data-r="0">'+t('cancel')+'</button><button class="btn btn-accent" data-r="1">✓ '+(sr?'Plaćeno':'Оплачено')+'</button></div></div>';
+    w.addEventListener('click', e => { const b = e.target.closest('[data-r]'); if (!b && e.target !== w) return; w.remove(); resolve(!!(b && b.dataset.r === '1')); });
+    document.body.appendChild(w);
+    w.querySelector('[data-r="1"]').focus();
+  });
+}
 async function issueOrder(id) {
   const {data:o} = await db.from('orders').select('*').eq('id',id).single();
   const bal = orderBalance(o);
-  if (bal > 0 && !confirm(t('issue_confirm').replace('%s', fmtMoney(bal)))) return;
-  const {error} = await db.from('orders').update({status:'выдан', issued_date:today()}).eq('id',id);
+  const upd = {status:'выдан', issued_date:today()};
+  if (bal > 0) { if (!await orderPayConfirm(bal)) { render(); return; } upd.prepayment = orderTotal(o); }
+  const {error} = await db.from('orders').update(upd).eq('id',id);
   if (error) { toast(t('error')+': '+error.message, 'error'); return; }
   toast(t('issue_btn')+' ✓'); render();
 }

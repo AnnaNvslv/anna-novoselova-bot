@@ -114,11 +114,11 @@ function applyLang(){
   h('rc-diop',T('diop')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('diopHint')+'</span>');
   h('rc-eye',T('eye')+' <span class="req">*</span>');h('rc-general',T('general')+' <span class="req">*</span>');h('rc-loads',T('loads')+' <span class="req">*</span>');
   s('rc-notes',T('notes'));s('rc-source',T('source'));h('rc-promo',T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>');
-  h('lbl-tg',T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>');
+  h('lbl-tg',(_lang==='sr'?'Telegram korisničko ime':'Ник в Telegram')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'ako znate':'если знаете')+')</span>');
   h('lbl-lastname',T('lblLastname')+' <span class="req">*</span>');
   h('lbl-firstname',T('lblFirstname')+' <span class="req">*</span>');
   h('lbl-dob',T('lblDob')+' <span class="req">*</span>');
-  h('lbl-phone',T('lblPhone')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'nije obavezno':'необязательно')+')</span>');
+  h('lbl-phone',_lang==='sr'?'Telefon za kontakt':'Телефон для связи');s('hint-phone',_lang==='sr'?'Bilo koji broj na koji možemo da vas kontaktiramo':'Любой номер, по которому с вами можно связаться');
   const sd=document.getElementById('dob-d');if(sd&&sd.options[0])sd.options[0].textContent=T('dobDay');
   const sy=document.getElementById('dob-y');if(sy&&sy.options[0])sy.options[0].textContent=T('dobYear');
   fillDobMonths();
@@ -371,7 +371,7 @@ async function submitBooking(){
   const age=calcAge(dob);
   if(!noAgeLimit&&age!==null&&age<10){alert(T('errAge'));return;}
   if(!chips('ch-reason').length){alert(T('errReason'));return;}
-  if(!tg){alert(T('errTg'));return;}
+  if(!tg&&!v('f-phone')){alert(_lang==='sr'?'Navedite telefon ili Telegram korisničko ime':'Укажите телефон или ник в Telegram');return;}
   if(!lastname){alert(T('errLastname'));return;}
   if(!firstname){alert(T('errFirstname'));return;}
   if(!dob){alert(T('errDob'));return;}

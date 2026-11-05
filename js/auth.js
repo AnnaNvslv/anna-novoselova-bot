@@ -51,6 +51,7 @@ function showApp() {
   });
   if(typeof _mobActive==='function') _mobActive();
   if(typeof orderDigestMaybe==='function') setTimeout(orderDigestMaybe, 1200);
+  if(typeof linkRequestsMaybe==='function') setTimeout(linkRequestsMaybe, 2500);
 
   // === DEEPLINK: открыть профиль пациента по хэшу #patient=ID ===
   const hash = window.location.hash;

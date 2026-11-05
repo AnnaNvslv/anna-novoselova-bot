@@ -18,7 +18,8 @@ async function openOrderDigest(auto) {
     .in('status', ['в работе','готов','переделка']).is('deleted_at', null).order('order_date');
   if (error) { console.error(error); return false; }
   const rows = data || [];
-  if (auto && !rows.length) return false;
+  const {count: lrCount} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
+  if (auto && !rows.length && !lrCount) return false;
   const sr = _lang === 'sr';
   const work = rows.filter(o => o.status !== 'готов'), ready = rows.filter(o => o.status === 'готов');
   const noBot = rows.filter(o => o.patients && (!o.patients.telegram_chat_id || o.patients.notify_off));
@@ -35,6 +36,7 @@ async function openOrderDigest(auto) {
   openModal(
     '<div class="modal modal-lg"><div class="modal-header"><span class="modal-title">📦 '+(sr?'Porudžbine — pregled':'Заказы — сводка')+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
     '<div class="modal-body" id="od-body">'+
+      (lrCount ? '<div style="padding:10px 12px;border:1px solid #f59e0b;background:#fff7ed;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:10px"><b>🔗 '+(sr?'Čekaju povezivanje sa botom':'Ждут привязки к боту')+': '+lrCount+'</b><button class="btn btn-accent btn-sm" onclick="openLinkRequests()">'+(sr?'Otvori':'Открыть')+'</button></div>' : '')+
       sec('🔧 '+(sr?'U izradi':'В работе')+': '+work.length, workHtml)+
       sec('✅ '+(sr?'Spremno, nije izdato':'Готово, не выдано')+': '+ready.length, readyHtml)+
       (noBot.length ? sec('⚠️ '+(sr?'Bez veze sa botom — javite se lično':'Без связи с ботом — написать лично')+': '+noBot.length, noBotHtml) : '')+

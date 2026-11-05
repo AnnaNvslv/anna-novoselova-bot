@@ -118,7 +118,7 @@ Object.assign(BK.ru,{
   kqAcceptNote:'Хорошо, я могу принять ребёнка. Важно: у детей часто напряжена аккомодация, и это может помешать точной проверке — если качественно провести её не получится, я направлю вас к офтальмологу без назначения очков. Если это устраивает — записывайтесь. Если нет — надёжнее сначала попасть к офтальмологу, а затем прийти ко мне для уточнения и оформления заказа.',
   errKidsIncomplete:'Пожалуйста, ответьте на все вопросы о зрении ребёнка выше.',
   errAge:'Запись детей до 12 лет недоступна. Напишите: @AnnaNvslv',
-  hintTg:'Укажите именно ник (username) в Telegram, например @ivanova — без него не сможем подтвердить запись',
+  hintTg:'Укажите телефон или ник — достаточно одного',
   correction:'Пользуется ли пациент коррекцией зрения?',
   lblEyeOther:'Другое (укажите)',
   rcEyeSurgery:'Были ли у пациента операции на глазах?',
@@ -152,7 +152,7 @@ Object.assign(BK.sr,{
   kqAcceptNote:'U redu, mogu primiti dete. Važno: kod dece je često pojačana akomodacija, što može otežati tačnu proveru — ako kvalitetna provera ne bude moguća, uputiću vas oftalmologu bez propisivanja naočara. Ako vam to odgovara — zakažite. Ako ne — sigurnije je prvo otići kod oftalmologa, a zatim doći kod mene radi provere i poručivanja naočara.',
   errKidsIncomplete:'Molimo odgovorite na sva pitanja o vidu deteta iznad.',
   errAge:'Zakazivanje za decu do 12 godina nije dostupno. Pišite: @AnnaNvslv',
-  hintTg:'Navedite baš korisničko ime (username) na Telegramu, npr. @ivanova — bez toga ne možemo potvrditi termin',
+  hintTg:'Navedite telefon ili korisničko ime — dovoljno je jedno',
   correction:'Da li pacijent koristi korekciju vida?',
   lblEyeOther:'Ostalo (navedite)',
   rcEyeSurgery:'Da li je pacijent imao operacije na očima?',
@@ -308,7 +308,7 @@ async function submitBooking(){
   if(!noAgeLimit&&age!==null&&age<12){showFieldError('#age-disc-10');return;}
   if(!noAgeLimit&&age!==null&&age>=12&&age<18&&_kidsState!=='accept'){showFieldError('#age-disc-17');return;}
   if(!chips('ch-reason').length){showFieldError('#ch-reason');return;}
-  if(!tg){showFieldError('#f-tg');return;}
+  if(!tg&&!v('f-phone')){showFieldError('#f-tg');showFieldError('#f-phone');return;}
   if(!lastname){showFieldError('#f-lastname');return;}
   if(!firstname){showFieldError('#f-firstname');return;}
   if(!dob){showFieldError('.dob-row');return;}
@@ -376,12 +376,12 @@ function applyLang(){
   h('rc-diop',T('diop')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('diopHint')+'</span>');
   h('rc-eye',T('eye')+' <span class="req">*</span>');h('rc-general',T('general')+' <span class="req">*</span>');h('rc-loads',T('loads')+' <span class="req">*</span>');
   s('rc-notes',T('notes'));s('rc-source',T('source'));h('rc-promo',T('promo')+' <span style="font-size:13px;font-weight:400;color:var(--tm)">'+T('promoHint')+'</span>');
-  h('lbl-tg',T('lblTg')+' <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'za potvrdu':'для подтверждения')+')</span>');
+  h('lbl-tg',(_lang==='sr'?'Telegram korisničko ime':'Ник в Telegram')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'ako znate':'если знаете')+')</span>');
   s('hint-tg',T('hintTg'));
   h('lbl-lastname',T('lblLastname')+' <span class="req">*</span>');
   h('lbl-firstname',T('lblFirstname')+' <span class="req">*</span>');
   h('lbl-dob',T('lblDob')+' <span class="req">*</span>');
-  h('lbl-phone',T('lblPhone')+' <span style="font-weight:400;color:var(--tm)">('+(_lang==='sr'?'nije obavezno':'необязательно')+')</span>');
+  h('lbl-phone',_lang==='sr'?'Telefon za kontakt':'Телефон для связи');s('hint-phone',_lang==='sr'?'Bilo koji broj na koji možemo da vas kontaktiramo':'Любой номер, по которому с вами можно связаться');
   const sd=document.getElementById('dob-d');if(sd&&sd.options[0])sd.options[0].textContent=T('dobDay');
   const sy=document.getElementById('dob-y');if(sy&&sy.options[0])sy.options[0].textContent=T('dobYear');
   fillDobMonths();

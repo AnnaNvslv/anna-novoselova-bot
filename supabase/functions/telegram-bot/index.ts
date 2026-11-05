@@ -93,6 +93,7 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
       'Здравствуйте! Это бот оптометриста Анны Новосёловой в оптике Ginter.\n\n' +
       'Здесь будут приходить уведомления о вашем заказе очков: когда заказ оформлен и когда очки готовы.\n\n' +
       'Чтобы мы нашли ваш заказ, нажмите кнопку ниже и поделитесь номером телефона — тем, что вы оставили в оптике 👇\n\n' +
+      'Не хотите делиться номером? Просто напишите сюда имя и фамилию — Анна подключит вас вручную.\n\n' +
       'Записаться на приём: ' + BOOKING_URL,
       { reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } })
     return
@@ -202,7 +203,8 @@ async function handleContact(chat_id: number, username: string | undefined, cont
   const myChatId = r?.value
   if (!matches.length) {
     await sendMessage(chat_id, 'Спасибо! Пока не нашли заказ с этим номером. Анна проверит и свяжется с вами. Вопросы: @AnnaNvslv', removeKb)
-    if (myChatId) await sendMessage(Number(myChatId), `⚠️ Неизвестный контакт в боте: ${escHtml(phone)}${username ? ' · @' + escHtml(username) : ''}\nНомер не найден в CRM — проверьте телефон в карточке пациента.`)
+    const tgName = [contact.first_name, contact.last_name].filter(Boolean).join(' ')
+    await saveLinkRequest(chat_id, username, tgName, phone, null, myChatId)
     return
   }
   for (const p of matches) {
@@ -210,6 +212,36 @@ async function handleContact(chat_id: number, username: string | undefined, cont
   }
   await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах очков.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
   if (myChatId) await sendMessage(Number(myChatId), `🔗 Пациент привязал Telegram по номеру: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? ' · @' + escHtml(username) : ''}`)
+}
+// ── Запрос на ручную привязку (номер не найден / клиент написал имя): попадает в CRM → «Ждут привязки» ──
+async function saveLinkRequest(chat_id: number, username: string | undefined, tgName: string, phone: string | null, message: string | null, myChatId: string | null | undefined) {
+  const { data: open } = await db.from('bot_link_requests').select('id, phone, message').eq('chat_id', chat_id).is('resolved_at', null).limit(1)
+  if (open?.length) {
+    const o = open[0]
+    await db.from('bot_link_requests').update({
+      username: username || null, tg_name: tgName || null,
+      phone: phone || o.phone, message: message ? [o.message, message].filter(Boolean).join(' / ').slice(0, 500) : o.message,
+    }).eq('id', o.id)
+    if (!phone || o.phone) return // уже предупреждали — не дублируем
+  } else {
+    await db.from('bot_link_requests').insert({ chat_id, username: username || null, tg_name: tgName || null, phone, message: message ? message.slice(0, 500) : null })
+  }
+  if (myChatId) await sendMessage(Number(myChatId),
+    `⚠️ Клиент ждёт привязки к боту\n` +
+    (message ? `Написал: ${escHtml(message.slice(0, 200))}\n` : '') +
+    (phone ? `Телефон: ${escHtml(phone)} — в CRM не найден\n` : '') +
+    `Telegram: ${escHtml(tgName || '—')}${username ? ' · @' + escHtml(username) : ''}\n\n` +
+    `Откройте CRM → «Ждут привязки» и нажмите «Привязать» у нужного пациента.\n🗂 ${CRM_URL}`)
+}
+// Свободный текст от клиента, который ещё не привязан ни к одной карточке
+async function handleFreeText(chat_id: number, username: string | undefined, from: Record<string, unknown>, text: string) {
+  const { data: linked } = await db.from('patients').select('id').eq('telegram_chat_id', chat_id).is('deleted_at', null).limit(1)
+  if (linked?.length) return // уже привязан — бот не отвечает, переписка идёт с Анной лично
+  const { data: r } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+  if (r?.value && String(r.value) === String(chat_id)) return
+  const tgName = [from?.first_name, from?.last_name].filter(Boolean).join(' ')
+  await saveLinkRequest(chat_id, username, tgName, null, text, r?.value)
+  await sendMessage(chat_id, 'Спасибо! Анна подключит вас к уведомлениям о заказе в ближайшее время. Вопросы: @AnnaNvslv', { reply_markup: { remove_keyboard: true } })
 }
 async function handleStop(chat_id: number) {
   await db.from('patients').update({ notify_off: true }).eq('telegram_chat_id', chat_id)
@@ -420,6 +452,8 @@ serve(async (req) => {
       } else if (text.startsWith('/start')) {
         const payload = text.split(' ')[1] || ''
         await handleStart(chat_id, username, payload)
+      } else if (text.trim() && !text.startsWith('/')) {
+        await handleFreeText(chat_id, username, msg.from || {}, text.trim())
       }
     } else if (body.callback_query) {
       await handleCallback(body.callback_query)

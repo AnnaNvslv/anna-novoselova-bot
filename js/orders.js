@@ -846,18 +846,21 @@ async function saveOrder(id) {
         const bal = orderTotal(data) - (+data.prepayment||0);
         if (bal > 0) { if (!await orderPayConfirm(bal)) return; data.prepayment = orderTotal(data); }
       }
+      const {data:_old} = await db.from('orders').select('status').eq('id',id).single();
       const {error} = await db.from('orders').update({...data, status:st, ready_date, issued_date}).eq('id',id);
       if (error) throw error;
       toast(t('order_updated'));
+      if (st === 'готов' && _old && _old.status !== 'готов' && typeof orderNoBotCheck === 'function') orderNoBotCheck(id, 'ready');
     } else {
       const stNew = v('o-status-new') || 'в работе';
       if (stNew === 'выдан') {
         const bal = orderTotal(data) - (+data.prepayment||0);
         if (bal > 0) { if (!await orderPayConfirm(bal)) return; data.prepayment = orderTotal(data); }
       }
-      const {error} = await db.from('orders').insert({...data, status: stNew, ...(stNew==='выдан' ? {issued_date: today()} : {})});
+      const {data:_ins, error} = await db.from('orders').insert({...data, status: stNew, ...(stNew==='выдан' ? {issued_date: today()} : {})}).select('id').single();
       if (error) throw error;
       toast(t('order_created'));
+      if (_ins && stNew !== 'выдан' && typeof orderNoBotCheck === 'function') orderNoBotCheck(_ins.id, stNew === 'готов' ? 'ready' : 'new');
     }
     if (od.date && od.prec === 'day') await recalcSalary(patient_id, od.date);
     if (curSection === 'patients' && _openPatientId === patient_id) _cardTab = 'orders';
@@ -876,6 +879,7 @@ async function updateOrderStatus(id, status) {
   if (error) { toast(t('error')+': '+error.message, 'error'); return; }
   toast(t('status_updated')+': '+statusLabel(status));
   render();
+  if (status === 'готов' && typeof orderNoBotCheck === 'function') orderNoBotCheck(id, 'ready');
 }
 // Окно «Доплата по заказу» при выдаче: «Оплачено» → доплата внесена (prepayment = итог). Поверх любого модального окна.
 function orderPayConfirm(balance) {

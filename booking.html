@@ -78,7 +78,8 @@ setTimeout(function(){
   <div class="card">
     <div class="card-title" id="rc-contacts">Контактные данные</div>
     <div class="patient-note" id="patient-note">Пожалуйста, укажите данные пациента — того, кто придёт на приём (не того, кто заполняет анкету). Например, если вы записываете ребёнка — впишите имя и дату рождения ребёнка.</div>
-    <div class="fg"><label id="lbl-tg">Telegram <span class="req">*</span> <span style="font-weight:400;color:var(--tm)">(для подтверждения)</span></label><input id="f-tg" type="text" placeholder="@username"><div class="hint" id="hint-tg">Укажите именно ник (username) в Telegram, например @ivanova — без него не сможем подтвердить запись</div></div>
+    <div class="fg"><label id="lbl-tg">Ник в Telegram <span style="font-weight:400;color:var(--tm)">(если знаете)</span></label><input id="f-tg" type="text" placeholder="@username"><div class="hint" id="hint-tg">Укажите телефон или ник — достаточно одного</div></div>
+    <div class="fg"><label id="lbl-phone">Телефон для связи</label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"><div class="hint" id="hint-phone">Любой номер, по которому с вами можно связаться</div></div>
     <div class="fg"><label id="lbl-lastname">Фамилия пациента (латиницей) <span class="req">*</span></label><input id="f-lastname" type="text" placeholder="Ivanova" autocomplete="family-name"><div class="hint" id="hint-lastname">Пример: Ivanova</div></div>
     <div class="fg"><label id="lbl-firstname">Имя пациента (латиницей) <span class="req">*</span></label><input id="f-firstname" type="text" placeholder="Maria" autocomplete="given-name"><div class="hint" id="hint-firstname">Пример: Maria</div></div>
     <div class="fg">
@@ -140,7 +141,6 @@ setTimeout(function(){
 
       <div class="kq-msg kq-accept" id="kq-accept-note" style="display:none"></div>
     </div>
-    <div class="fg"><label id="lbl-phone">Телефон <span style="font-weight:400;color:var(--tm)">(необязательно)</span></label><input id="f-phone" type="tel" placeholder="+381 60 123 4567" autocomplete="tel"></div>
   </div>
 
   <div class="card"><div class="card-title" id="rc-reason-title">Причина обращения <span class="req">*</span></div><div class="chips" id="ch-reason"></div></div>
@@ -229,8 +229,8 @@ setTimeout(function(){
   <button class="btn-again" id="btn-again" onclick="resetBooking()">⊕ Ещё одна запись</button>
 </div>
 
-<script src="js/booking.js?v=13" defer></script>
-<script src="js/booking-kids.js?v=4" defer></script>
+<script src="js/booking.js?v=14" defer></script>
+<script src="js/booking-kids.js?v=5" defer></script>
 <script src="js/booking-extra.js?v=1" defer></script>
 </body>
 </html>

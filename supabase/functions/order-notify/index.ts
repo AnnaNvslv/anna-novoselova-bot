@@ -64,13 +64,16 @@ function totals(o: Record<string, any>) {
 }
 
 const isCL = (o: any) => o.type === 'МКЛ'
+// Один Telegram на несколько карточек (мама + дети): приветствие без имени, в тексте — для кого заказ
+const hello = (p: any) => p._shared ? 'Здравствуйте!' : `Здравствуйте, ${esc(firstName(p))}!`
+const forWhom = (p: any) => p._shared ? ` для ${esc(firstName(p))}` : ''
 function msgSummary(o: any, p: any): string {
   const t = totals(o)
   if (isCL(o)) {
     const cl = t.items.map((it: any) => `👁 Контактные линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`).join('\n')
-    return `Здравствуйте, ${esc(firstName(p))}!
+    return `${hello(p)}
 
-Вы оформили заказ на контактные линзы в оптике Ginter.
+${p._shared ? `Оформлен заказ на контактные линзы${forWhom(p)}` : 'Вы оформили заказ на контактные линзы'} в оптике Ginter.
 
 ${cl}${t.work > 0 ? `\n🛠 Работа: ${money(t.work)}` : ''}${t.discount > 0 ? `\n🏷 Скидка: ${money(t.discount)}` : ''}
 
@@ -87,9 +90,9 @@ ${payLines(t)}
     return `${head}👓 Оправа: ${money(num(it.frame_price))}\n🔍 Линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`
   }).join('\n')
   const pay = payLines(t)
-  return `Здравствуйте, ${esc(firstName(p))}!
+  return `${hello(p)}
 
-Вы оформили заказ на очки в оптике Ginter.
+${p._shared ? `Оформлен заказ на очки${forWhom(p)}` : 'Вы оформили заказ на очки'} в оптике Ginter.
 
 ${lines}
 🛠 Работа: ${money(t.work)}${t.discount > 0 ? `\n🏷 Скидка: ${money(t.discount)}` : ''}
@@ -103,9 +106,11 @@ ${pay}
 }
 function msgReady(o: any, p: any): string {
   const t = totals(o)
-  return `Здравствуйте, ${esc(firstName(p))}!
+  return `${hello(p)}
 
-${isCL(o) ? 'Ваш заказ на контактные линзы пришёл 🎉 Забрать линзы можно в любое удобное время.' : 'Ваши очки готовы 🎉 Забрать их можно в любое удобное время.'}
+${p._shared
+    ? (isCL(o) ? `Заказ на контактные линзы${forWhom(p)} пришёл 🎉 Забрать линзы можно в любое удобное время.` : `Очки${forWhom(p)} готовы 🎉 Забрать их можно в любое удобное время.`)
+    : (isCL(o) ? 'Ваш заказ на контактные линзы пришёл 🎉 Забрать линзы можно в любое удобное время.' : 'Ваши очки готовы 🎉 Забрать их можно в любое удобное время.')}
 
 🕘 Режим работы оптики Ginter:
 ${HOURS}
@@ -118,11 +123,11 @@ ${t.balance > 0 ? `К доплате: <b>${money(t.balance)}</b>, картой �
 Если нет, приходите в любое время: заказ выдадут коллеги, Эрвин или Бояна.`
 }
 function msgReminder(o: any, p: any): string {
-  return `Здравствуйте, ${esc(firstName(p))}! Напоминаем, что ${isCL(o) ? 'ваши контактные линзы пришли и ждут' : 'ваши очки готовы и ждут'} вас в оптике Ginter. Режим работы: пн–пт 9–20, сб 9–14.
+  return `${hello(p)} Напоминаем, что ${p._shared ? (isCL(o) ? `контактные линзы${forWhom(p)} пришли и ждут` : `очки${forWhom(p)} готовы и ждут`) : (isCL(o) ? 'ваши контактные линзы пришли и ждут' : 'ваши очки готовы и ждут')} вас в оптике Ginter. Режим работы: пн–пт 9–20, сб 9–14.
 📍 ${MAPS}`
 }
 function msgIssued(o: any, p: any): string {
-  if (isCL(o)) return `Здравствуйте, ${esc(firstName(p))}!
+  if (isCL(o)) return `${hello(p)}
 
 Благодарим вас за обращение в оптику Ginter и к Анне. Носите линзы с удовольствием! 👁
 
@@ -132,7 +137,7 @@ function msgIssued(o: any, p: any): string {
 ⭐ Google: ${GOOGLE_REVIEW}
 💬 Медицина Сербии: ${MED_SERBIA}
 👩‍⚕️ Специалисты: ${SPECIALISTS} (отзывы там можно оставлять по субботам)`
-  return `Здравствуйте, ${esc(firstName(p))}!
+  return `${hello(p)}
 
 Благодарим вас за обращение в оптику Ginter и к Анне. Носите очки на здоровье! 👓
 
@@ -162,6 +167,8 @@ async function notify(orderId: string, kind: string): Promise<string> {
   if (o[k.col]) return 'already sent'
   const p = o.patients
   if (!p || p.deleted_at || !p.telegram_chat_id || p.notify_off) return 'no chat / opted out'
+  const { count: sameChat } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('telegram_chat_id', p.telegram_chat_id).is('deleted_at', null)
+  p._shared = (sameChat || 0) > 1
   // защита от гонки: занимаем отметку до отправки
   const { data: claimed } = await db.from('orders').update({ [k.col]: new Date().toISOString() }).eq('id', orderId).is(k.col, null).select('id')
   if (!claimed?.length) return 'already sent'

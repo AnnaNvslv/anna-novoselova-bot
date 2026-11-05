@@ -72,7 +72,7 @@ async function renderPromo() {
     const badge = !r.registered ? '<span style="font-size:11px;color:#d97706"> не в справочнике</span>' : '';
     return '<tr'+(r.registered && !_pLive(r, today) ? _P_DIM : '')+'>'+
       '<td style="font-weight:700;white-space:nowrap">'+_pEsc(r.code)+badge+'</td>'+
-      '<td>'+_pEsc(PROMO_OFFERS[r.offer]||'—')+(+r.discount?' −'+(+r.discount)+'%':'')+'</td>'+
+      '<td>'+_pEsc(r.offer ? promoOfferLabel(Object.assign({}, r, codes.find(c => c.code === r.code) || {})) : '—')+'</td>'+
       '<td>'+_pEsc(r.channel_label||r.channel||'—')+'</td>'+
       '<td style="white-space:nowrap">'+(r.registered ? _pTerm(r)+'<br><span style="font-size:12px">'+_pState(r, today)+'</span>' : '—')+'</td>'+
       '<td style="text-align:right">'+r.bookings+'</td>'+
@@ -91,7 +91,7 @@ async function renderPromo() {
     const state = _pState(r, today);
     return '<tr'+(_pLive(r, today) ? '' : _P_DIM)+'>'+
       '<td style="font-weight:700">'+_pEsc(r.code)+'</td>'+
-      '<td>'+_pEsc(PROMO_OFFERS[r.offer])+(+r.discount?' −'+(+r.discount)+'%':'')+'</td>'+
+      '<td>'+_pEsc(promoOfferLabel(r))+'</td>'+
       '<td>'+_pEsc(r.channel_label||r.channel)+'</td>'+
       '<td style="white-space:nowrap">'+_pTerm(r)+'</td>'+
       '<td>'+state+'</td>'+

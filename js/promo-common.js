@@ -12,12 +12,24 @@ function promoChip(code, big) {
     ';font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:' + (big ? '3px 10px' : '1px 7px') +
     ';border-radius:10px;white-space:nowrap;vertical-align:middle">🎁 ' + c + '</span>';
 }
+// Условия кода: учитывает отдельную скидку на преглед (exam_discount; 100 = бесплатно)
+function promoOfferLabel(pc) {
+  if (!pc) return '';
+  const d = +pc.discount || 0;
+  const ed = (pc.exam_discount === null || pc.exam_discount === undefined || pc.exam_discount === '') ? d : +pc.exam_discount;
+  const ex = ed >= 100 ? 'преглед бесплатно' : (ed ? '−' + ed + '% на преглед' : '');
+  const ln = d ? '−' + d + '% на линзы' : '';
+  if (pc.offer === 'P') return ex || 'на преглед';
+  if (pc.offer === 'L') return ln || 'на линзы';
+  if (pc.offer === 'PL') return [ex, ln].filter(Boolean).join(' + ') || 'на преглед и линзы';
+  return PROMO_OFFER_TEXT[pc.offer] || '';
+}
 function promoBadge(a) { return promoChip(apptPromoCode(a)); }
 let _promoInfoCache = {};
 async function promoInfo(code) {
   if (!code) return null;
   if (_promoInfoCache[code] && Date.now() - _promoInfoCache[code].at < 60000) return _promoInfoCache[code].pc;
-  const { data } = await db.from('promo_codes').select('code,offer,discount,valid_from,valid_to,active,note').eq('code', code).limit(1);
+  const { data } = await db.from('promo_codes').select('code,offer,discount,exam_discount,valid_from,valid_to,active,note').eq('code', code).limit(1);
   const pc = (data && data[0]) || null;
   _promoInfoCache[code] = { pc, at: Date.now() };
   return pc;
@@ -26,7 +38,7 @@ async function promoInfo(code) {
 function promoTerms(pc, onDate) {
   if (!pc) return '⚠️ нет в справочнике промокодов';
   const d = onDate || today();
-  let s = (+pc.discount ? '−' + (+pc.discount) + '% ' : '') + (PROMO_OFFER_TEXT[pc.offer] || '');
+  let s = promoOfferLabel(pc);
   if (pc.offer === 'PL') s += ' (линзы — только при заказе в день прегледа)';
   if (!pc.active) s += ' · ⚠️ код выключен';
   else if (pc.valid_to && d > pc.valid_to) s += ' · ⚠️ срок истёк ' + fmt(pc.valid_to);

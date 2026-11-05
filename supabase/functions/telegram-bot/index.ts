@@ -55,7 +55,7 @@ async function getPromo(appt: Record<string, unknown>): Promise<PromoInfo | null
   const code = (intake.promo_code as string) || ''
   if (!code) return null
   const applied = (intake.promo_applied as { discount: number; base_price: number }) || null
-  const { data } = await db.from('promo_codes').select('offer,discount,valid_from,valid_to,active').eq('code', code).limit(1)
+  const { data } = await db.from('promo_codes').select('offer,discount,exam_discount,valid_from,valid_to,active').eq('code', code).limit(1)
   const pc = (data?.[0] as Record<string, unknown>) || null
   const created = String(appt.created_at || new Date().toISOString()).slice(0, 10)
   const valid = !!pc && !!pc.active &&
@@ -64,12 +64,22 @@ async function getPromo(appt: Record<string, unknown>): Promise<PromoInfo | null
   return { code, applied, pc, valid }
 }
 
+function offerLabel(pc: Record<string, unknown>): string {
+  const d = Number(pc.discount) || 0
+  const ed = pc.exam_discount == null ? d : Number(pc.exam_discount)
+  const ex = ed >= 100 ? 'преглед бесплатно' : (ed ? `−${ed}% на преглед` : '')
+  const ln = d ? `−${d}% на линзы` : ''
+  if (pc.offer === 'P') return ex || (PROMO_OFFERS.P || '')
+  if (pc.offer === 'L') return ln || (PROMO_OFFERS.L || '')
+  if (pc.offer === 'PL') return [ex, ln].filter(Boolean).join(' + ') + ' (линзы — при заказе в день приёма)'
+  return PROMO_OFFERS[pc.offer as string] || ''
+}
+
 function promoLineForAnna(p: PromoInfo | null): string {
   if (!p) return ''
   const c = `<b>${escHtml(p.code)}</b>`
   if (!p.pc) return `\n🏷 Промокод: ${c}\n⚠️ нет в справочнике — проверьте`
-  const disc = Number(p.pc.discount) ? ` −${Number(p.pc.discount)}%` : ''
-  let line = `\n🏷 Промокод: ${c}${disc} ${PROMO_OFFERS[p.pc.offer as string] || ''}`
+  let line = `\n🏷 Промокод: ${c} ${offerLabel(p.pc)}`
   if (p.applied) line += `\n💰 Цена приёма: ${p.applied.base_price} → ${Math.round(p.applied.base_price * (100 - p.applied.discount) / 100)} дин.`
   if (!p.pc.active) line += '\n⚠️ код выключен'
   else if (!p.valid) line += '\n⚠️ код не действует на дату записи'

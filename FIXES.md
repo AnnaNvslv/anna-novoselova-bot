@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-11-05 — промокод ALTA: подписи в CRM и ботах
+- Код ALTA (PL, 03.11–10.11.2026): `discount=20` (линзы), `exam_discount=100` (преглед бесплатно) — в БД уже был (колонка `promo_codes.exam_discount`, триггер `trg_apply_promo_appt` берёт `coalesce(exam_discount, discount)`)
+- **CRM**: `promoOfferLabel(pc)` в `promo-common.js` — «преглед бесплатно + −20% на линзы»; используется в `promoTerms` (карта прегледа / заказ) и в справочнике и статистике `promo.js`. Версии: promo-common 2, router 12 (→ promo.js v3)
+- **Edge Functions**: `telegram-bot` v19 и `notify-new-booking` v5 — строка промокода в уведомлении Анне учитывает `exam_discount`. Задеплоено через Supabase MCP, проверено (200 / 400 на пустой запрос)
+- Форма создания кода в `promo.js` поле `exam_discount` не имеет — пока только через SQL
+
 ## 🔴 Блок 1 — Терминология и нейминг
 
 ### #1 — Переработать нейминг во всей платформе

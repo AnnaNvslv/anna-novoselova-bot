@@ -24,12 +24,17 @@ async function promoLine(num: string, date: string): Promise<string> {
     const code = a?.[0]?.intake?.promo_code
     if (!code) return ''
     const { data: p } = await db.from('promo_codes')
-      .select('offer,discount,valid_from,valid_to,active').eq('code', code).limit(1)
+      .select('offer,discount,exam_discount,valid_from,valid_to,active').eq('code', code).limit(1)
     const pc = p?.[0]
     if (!pc) return `\n\n🏷 Промокод: <b>${esc(code)}</b>\n⚠️ нет в справочнике — проверьте`
     const today = new Date().toISOString().slice(0, 10)
-    const disc = Number(pc.discount) ? ` −${Number(pc.discount)}%` : ''
-    let line = `\n\n🏷 Промокод: <b>${esc(code)}</b>${disc} ${OFFERS[pc.offer] || ''}`
+    const d = Number(pc.discount) || 0
+    const ed = pc.exam_discount == null ? d : Number(pc.exam_discount)
+    const ex = ed >= 100 ? 'преглед бесплатно' : (ed ? `−${ed}% на преглед` : '')
+    const ln = d ? `−${d}% на линзы` : ''
+    const label = pc.offer === 'P' ? (ex || OFFERS.P) : pc.offer === 'L' ? (ln || OFFERS.L)
+      : pc.offer === 'PL' ? [ex, ln].filter(Boolean).join(' + ') + ' (линзы — при заказе в день приёма)' : (OFFERS[pc.offer] || '')
+    let line = `\n\n🏷 Промокод: <b>${esc(code)}</b> ${label}`
     if (!pc.active) line += '\n⚠️ код выключен'
     else if (pc.valid_to && today > pc.valid_to) line += `\n⚠️ срок истёк ${pc.valid_to.split('-').reverse().join('.')}`
     else if (pc.valid_from && today < pc.valid_from) line += '\n⚠️ код ещё не начал действовать'

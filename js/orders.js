@@ -395,7 +395,6 @@ function _renderOrdersTable(list) {
         '</td>'+
         '<td>'+(o.counts_for_salary ? '<span class="salary-badge">💰</span>' : '')+'</td>'+
         '<td onclick="event.stopPropagation()"><div class="appt-actions" style="margin-top:0">'+
-          (o.status==='готов' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady(\''+o.id+'\')">📨</button>' : '')+
           (o.status==='готов' ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\')">'+ t('issue_btn')+'</button>' : '')+
           (o.status==='выдан' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey(\''+o.id+'\')">🔁</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="openEditOrder(\''+o.id+'\')">✏️</button><button class="btn btn-danger btn-sm" onclick="delOrder(\''+o.id+'\')">🗑</button>' : '')+
@@ -427,7 +426,6 @@ async function openOrderCard(id) {
           '<div class="text-sm text-m mt-4">'+displayDate+' · <span class="badge '+(STATUS_BADGE[o.status]||'badge-gray')+'">'+statusLabel(o.status)+'</span>'+(o.is_redo ? ' · <span class="badge badge-warn">&#8635; Переделка</span>' : '')+(o.counts_for_salary ? ' · <span class="salary-badge">💰 10%</span>' : '')+'</div>'+
         '</div>'+
         '<div class="profile-actions">'+
-          (o.status==='готов' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady(\''+o.id+'\')">📨</button>' : '')+
           (o.status==='готов' ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\');closeModal()">'+ t('issue_btn')+'</button>' : '')+
           (o.status==='выдан' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey(\''+o.id+'\')">🔁</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditOrder(\''+o.id+'\')">✏️ '+t('pt_edit')+'</button>' : '')+
@@ -638,7 +636,11 @@ function _drawOrderForm(o, prePatient, patients, exams, preRx) {
               '<div class="of-field"><label>'+t('status')+'</label><select id="o-status">'+ORDER_STATUSES_ALL.map(s => '<option '+(o.status===s?'selected':'')+' value="'+s+'">'+statusLabel(s)+'</option>').join('')+'</select></div>'+
               '<div class="of-field"><label>'+t('ready_date_label')+'</label><input type="date" id="o-rdate" value="'+(o.ready_date||'')+'"></div>'+
               '<div class="of-field"><label>'+t('issued_label')+'</label><input type="date" id="o-idate" value="'+(o.issued_date||'')+'"></div>'+
-            '</div>' : '')+
+            '</div>' :
+            '<div class="of-field"><label>'+t('status')+'</label><select id="o-status-new">'+
+              '<option value="в работе">'+statusLabel('в работе')+'</option>'+
+              '<option value="выдан">'+(_lang==='sr'?'izdata odmah (samo zahvalnica klijentu)':'выдан сразу (клиенту — только благодарность)')+'</option>'+
+            '</select></div>')+
           '<div class="of-field"><label>'+t('notes')+'</label><textarea id="o-notes" rows="2">'+_escH(o&&o.notes||'')+'</textarea></div>'+
         '</div>'+
       '</div>'+
@@ -839,7 +841,7 @@ async function saveOrder(id) {
       if (error) throw error;
       toast(t('order_updated'));
     } else {
-      const {error} = await db.from('orders').insert({...data, status:'оформлен'});
+      const {error} = await db.from('orders').insert({...data, status: v('o-status-new') || 'в работе', ...(v('o-status-new')==='выдан' ? {issued_date: today()} : {})});
       if (error) throw error;
       toast(t('order_created'));
     }

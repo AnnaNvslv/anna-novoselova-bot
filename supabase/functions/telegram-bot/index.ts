@@ -88,7 +88,13 @@ function promoLineForAnna(p: PromoInfo | null): string {
 
 async function handleStart(chat_id: number, username: string | undefined, payload: string) {
   if (!payload.startsWith('appt_')) {
-    await sendMessage(chat_id, 'Привет! Я бот оптики Ginter. Запишитесь через форму на сайте.')
+    // Привязка по номеру телефона (QR-карточка в оптике): уведомления о заказах очков
+    await sendMessage(chat_id,
+      'Здравствуйте! Это бот оптометриста Анны Новосёловой в оптике Ginter.\n\n' +
+      'Здесь будут приходить уведомления о вашем заказе очков: когда заказ оформлен и когда очки готовы.\n\n' +
+      'Чтобы мы нашли ваш заказ, нажмите кнопку ниже и поделитесь номером телефона — тем, что вы оставили в оптике 👇\n\n' +
+      'Записаться на приём: ' + BOOKING_URL,
+      { reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } })
     return
   }
 
@@ -175,6 +181,39 @@ ${Number(appt.consultation_price) > 0
 
   // Уведомить Анну — теперь со ссылками
   await notifyAnnaNewBooking(appt, patient, username, promo)
+}
+
+// ── Привязка по телефону: пациент делится своим контактом ──
+const lastDigits = (s: string | null | undefined) => String(s || '').replace(/\D/g, '').slice(-8)
+async function handleContact(chat_id: number, username: string | undefined, contact: Record<string, unknown>, fromId: number) {
+  const removeKb = { reply_markup: { remove_keyboard: true } }
+  if (contact.user_id && Number(contact.user_id) !== fromId) {
+    await sendMessage(chat_id, 'Пожалуйста, поделитесь своим номером кнопкой «📱 Поделиться номером».', removeKb)
+    return
+  }
+  const phone = String(contact.phone_number || '')
+  const key = lastDigits(phone)
+  let matches: Record<string, unknown>[] = []
+  if (key.length === 8) {
+    const { data } = await db.from('patients').select('id, name, phone, telegram_chat_id').is('deleted_at', null).not('phone', 'is', null)
+    matches = (data || []).filter(p => lastDigits(p.phone as string) === key)
+  }
+  const { data: r } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+  const myChatId = r?.value
+  if (!matches.length) {
+    await sendMessage(chat_id, 'Спасибо! Пока не нашли заказ с этим номером. Анна проверит и свяжется с вами. Вопросы: @AnnaNvslv', removeKb)
+    if (myChatId) await sendMessage(Number(myChatId), `⚠️ Неизвестный контакт в боте: ${escHtml(phone)}${username ? ' · @' + escHtml(username) : ''}\nНомер не найден в CRM — проверьте телефон в карточке пациента.`)
+    return
+  }
+  for (const p of matches) {
+    await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}) }).eq('id', p.id)
+  }
+  await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах очков.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
+  if (myChatId) await sendMessage(Number(myChatId), `🔗 Пациент привязал Telegram по номеру: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? ' · @' + escHtml(username) : ''}`)
+}
+async function handleStop(chat_id: number) {
+  await db.from('patients').update({ notify_off: true }).eq('telegram_chat_id', chat_id)
+  await sendMessage(chat_id, 'Хорошо, уведомления о заказах больше присылать не будем. Чтобы снова включить — отправьте /start и поделитесь номером.')
 }
 
 async function notifyAnnaNewBooking(appt: Record<string, unknown>, patient: Record<string, unknown>, tgUsername: string | undefined, promo: PromoInfo | null = null) {
@@ -374,7 +413,11 @@ serve(async (req) => {
       const chat_id = msg.chat.id
       const username = msg.from?.username
       const text: string = msg.text || ''
-      if (text.startsWith('/start')) {
+      if (msg.contact) {
+        await handleContact(chat_id, username, msg.contact, msg.from?.id)
+      } else if (text.startsWith('/stop')) {
+        await handleStop(chat_id)
+      } else if (text.startsWith('/start')) {
         const payload = text.split(' ')[1] || ''
         await handleStart(chat_id, username, payload)
       }

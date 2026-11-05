@@ -50,6 +50,7 @@ function showApp() {
     b.style.color=b.dataset.lang===_lang?'white':'rgba(255,255,255,.5)';
   });
   if(typeof _mobActive==='function') _mobActive();
+  if(typeof orderDigestMaybe==='function') setTimeout(orderDigestMaybe, 1200);
 
   // === DEEPLINK: открыть профиль пациента по хэшу #patient=ID ===
   const hash = window.location.hash;

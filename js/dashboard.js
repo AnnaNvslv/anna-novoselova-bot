@@ -7,7 +7,7 @@ async function renderDashboard() {
     db.from('appointments').select('*, patients(name,telegram_chat_id,telegram_username)').eq('date',todayStr).neq('status','отменён').is('deleted_at',null).order('time'),
     db.from('orders').select('*, patients(name,telegram_chat_id,telegram_username)').eq('status','готов').is('deleted_at',null),
     db.from('appointments').select('*, patients(name,telegram_username)').gt('date',todayStr).eq('status','запланирован').is('deleted_at',null).order('date').order('time').limit(6),
-    db.from('orders').select('id').eq('status','оформлен').gte('created_at',todayStr),
+    db.from('orders').select('id').gte('created_at',todayStr).is('deleted_at',null),
     db.from('available_slots').select('*').eq('date',todayStr).order('start_time'),
   ]);
   const nowMonth=todayStr.substr(0,7);
@@ -80,7 +80,6 @@ async function renderDashboard() {
             ${orderBalance(o)>0?`<div class="text-sm" style="color:var(--warn)">${t('balance')||'Ostatak'}: ${fmtMoney(orderBalance(o))}</div>`:''}
           </div>
           <div class="history-actions">
-            ${o.patients?.telegram_chat_id?`<button class="btn btn-ghost btn-sm" onclick="notifyOrderReady('${o.id}')">📨</button>`:''}
             <button class="btn btn-accent btn-sm" onclick="issueOrder('${o.id}')">${t('issue')||'Preuzmi'}</button>
           </div>
         </div>`).join('')}

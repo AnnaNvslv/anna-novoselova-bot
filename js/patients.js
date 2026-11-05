@@ -105,7 +105,6 @@ function _buildPatientMeta(appts, orders, exams) {
     const s = o.status;
     if (s === 'готов') x.orderReady = true;
     else if (s === 'в работе' && !x.orderReady) x.orderWorking = true;
-    else if (s === 'оформлен' && !x.orderReady && !x.orderWorking) x.orderNew = true;
   });
   exams.forEach(e => {
     const x = m(e.patient_id);
@@ -123,7 +122,6 @@ function _patientBadge(pid) {
   if (m.controlDue)   return '<span class="pt-badge pt-red">'+t('exam_control')+'</span>';
   if (m.planned)      return '<span class="pt-badge pt-blue">'+fmt(m.planned)+'</span>';
   if (m.orderWorking) return '<span class="pt-badge pt-yellow">'+statusLabel('в работе')+'</span>';
-  if (m.orderNew)     return '<span class="pt-badge pt-gray">'+statusLabel('оформлен')+'</span>';
   return '';
 }
 
@@ -390,7 +388,7 @@ function _switchCardTab(tab) {
   if (_openPatientId) _renderPatientCard(_openPatientId);
 }
 
-const _ORDER_ACTIVE = ['оформлен','в работе','готов','переделка'];
+const _ORDER_ACTIVE = ['в работе','готов','переделка'];
 const _ORDER_VOID = ['отменен','возврат'];
 
 async function _renderPatientCard(pid) {
@@ -615,7 +613,6 @@ function _orderTab(orders, pid, exams) {
     const menu = ddMenu([
       {label:'👁 '+t('pt_view'), fn:"openOrderCard('"+o.id+"')"},
       {label:'✏️ '+t('pt_edit'), fn:"openEditOrder('"+o.id+"')", hide:!isAdmin()},
-      {label:'📨 '+t('notify'), fn:"notifyOrderReady('"+o.id+"')", hide:o.status!=='готов'||isErvin()},
       {label:'🔁 '+t('pt_followup'), fn:"sendFollowUpSurvey('"+o.id+"')", hide:o.status!=='выдан'||isErvin()},
       {label:'🗑 '+t('delete'), fn:"delOrder('"+o.id+"')", danger:true, hide:!isAdmin()},
     ]);
@@ -631,7 +628,6 @@ function _orderTab(orders, pid, exams) {
           '<div class="ord-sub">'+fmtOrderDate(o)+(o.promised_date ? ' · '+t('promised_date')+': '+fmt(o.promised_date) : '')+(o.ready_date && !o.issued_date ? ' · '+t('ready_date_label')+': '+fmt(o.ready_date) : '')+(o.issued_date ? ' · '+t('issued_label')+': '+fmt(o.issued_date) : '')+'</div>'+
         '</div>'+
         '<div class="ord-actions">'+
-          (o.status==='оформлен' && !isErvin() ? '<button class="btn btn-ghost btn-sm" onclick="updateOrderStatus(\''+o.id+'\',\'в работе\')">'+t('pt_to_work')+'</button>' : '')+
           (o.status==='в работе' && !isErvin() ? '<button class="btn btn-ghost btn-sm" onclick="updateOrderStatus(\''+o.id+'\',\'готов\')">'+t('mark_ready_btn')+'</button>' : '')+
           (o.status==='готов' && !isErvin() ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\')">'+t('issue_btn')+'</button>' : '')+
           menu+
@@ -696,6 +692,7 @@ function _patientForm(p) {
           '</div>'+
           '<div class="form-group"><label>Telegram @username</label><input id="p-tguser" value="'+(p&&p.telegram_username||'')+'"></div>'+
           '<div class="form-group"><label>Telegram Chat ID</label><input type="number" id="p-tgid" value="'+(p&&p.telegram_chat_id||'')+'" placeholder="123456789"></div>'+
+          '<div class="form-group full"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="p-notify-off" style="width:auto"'+(p&&p.notify_off?' checked':'')+'> '+(_lang==='sr'?'Ne slati obaveštenja o porudžbinama u Telegram':'Не присылать уведомления о заказах в Telegram')+'</label></div>'+
           '<div class="form-group full"><label>'+t('source')+'</label>'+
             '<select id="p-source"><option value="">—</option>'+SOURCES.map(s => '<option '+(p&&p.source===s?'selected':'')+'>'+s+'</option>').join('')+'</select>'+
           '</div>'+
@@ -723,6 +720,7 @@ async function savePatient(id) {
   const telegram_chat_id = tgIdRaw ? +tgIdRaw : null;
   const data = {name, last_name:lastName||null, first_name:firstName||null, phone:v('p-phone'), email:v('p-email'), dob:v('p-dob')||null,
     telegram_username:v('p-tguser'), telegram_chat_id, source:v('p-source'), notes:v('p-notes'),
+    notify_off: !!(document.getElementById('p-notify-off') && document.getElementById('p-notify-off').checked),
     first_visit_date:fv.date, first_visit_date_prec:fv.prec};
   try {
     let np;

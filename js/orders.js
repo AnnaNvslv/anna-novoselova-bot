@@ -33,9 +33,12 @@ var RX_PURPOSES = [
   ['constant', 'для постоянного ношения','za stalno nošenje', 'Пост. ношение', 'Stalno nošenje'],
   ['comp',     'для компьютера',         'za računar',        'Компьютер',     'Računar'],
   ['near',     'для близи',              'za blizinu',        'Близь',         'Blizina'],
+  ['office',   'офисные линзы',          'kancelarijska stakla','Офисные',      'Kancelarijska'],
   ['prog',     'прогрессивные линзы',    'progresivna stakla','Прогрессивные', 'Progresivna'],
   ['bifo',     'бифокальные линзы',      'bifokalna stakla',  'Бифокальные',   'Bifokalna'],
 ];
+// Подпись поля прибавки: у офисных линз — дегрессия (Degr), у остальных — ADD
+function rxAddLabel(p) { return p === 'office' ? 'Degr' : 'ADD'; }
 function rxPurposeLabel(p, short, lang) {
   const r = RX_PURPOSES.find(x => x[0] === p); if (!r) return p || '';
   const sr = (lang || _lang) === 'sr';
@@ -57,12 +60,12 @@ function rxGet(e, k) {
       od:{sph:e[P+'_od_sph'],cyl:e[P+'_od_cyl'],ax:e[P+'_od_ax'],prism:e[P+'_od_prism']},
       os:{sph:e[P+'_os_sph'],cyl:e[P+'_os_cyl'],ax:e[P+'_os_ax'],prism:e[P+'_os_prism']},
       pd:e[P+'_od_pd'], add: k==='far' ? e.rx_far_os_pd : e[P+'_od_add'],   // для дали ADD хранится в rx_far_os_pd
-      addL: k==='near' ? 'Degr' : 'ADD', comment:e[P+'_comment']};
+      addL: rxAddLabel(e[P+'_purpose'] || k), comment:e[P+'_comment']};
   }
   const x = rxExtraList(e).find(r => r.id === k); if (!x) return null;
   return {k, extra:true, purpose:x.purpose||'far',
     od:{sph:x.od_sph,cyl:x.od_cyl,ax:x.od_ax,prism:x.od_prism}, os:{sph:x.os_sph,cyl:x.os_cyl,ax:x.os_ax,prism:x.os_prism},
-    pd:x.pd, add:x.add, addL:(x.purpose==='near'?'Degr':'ADD'), comment:x.comment};
+    pd:x.pd, add:x.add, addL:rxAddLabel(x.purpose||'far'), comment:x.comment};
 }
 // Все ключи рецептов карты (по порядку: даль, комп., близь, доп. рецепты, МКЛ)
 function rxAllKeys(e) { return ['far','comp','near'].concat(rxExtraList(e).map(x => x.id), ['cl']); }
@@ -665,6 +668,7 @@ function toggleOrderExtra(btn) {
 
 function onOrderTypeChange(type) {
   renderOrderSets();
+  _qrxSyncType();
 }
 
 function toggleQuickPatient() {
@@ -675,6 +679,15 @@ function toggleQuickPatient() {
 function toggleQuickRx() {
   const f = document.getElementById('quick-rx-form');
   f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  _qrxSyncType();
+}
+// Заказ МКЛ → быстрый рецепт сразу «контактные линзы» (BC/DIA, без PD); очки → без пункта КЛ
+function _qrxSyncType() {
+  const sel = document.getElementById('qrx-type'); if (!sel) return;
+  const cl = _ofIsCL();
+  Array.from(sel.options).forEach(op => { op.hidden = cl ? op.value !== 'cl' : op.value === 'cl'; });
+  if (cl) sel.value = 'cl'; else if (sel.value === 'cl') sel.value = 'far';
+  updateQuickRxFields();
 }
 function updateQuickRxFields() {
   const type = document.getElementById('qrx-type') && document.getElementById('qrx-type').value;
@@ -683,7 +696,6 @@ function updateQuickRxFields() {
   const addLabel = document.getElementById('qrx-add-label');
   const pdLabel = document.getElementById('qrx-pd-label');
   if (type==='cl') { pdLabel.textContent='BC'; addLabel.textContent='DIA'; if(clWrap) clWrap.style.display='block'; }
-  else if (type==='near') { pdLabel.textContent='PD'; addLabel.textContent='Degr'; if(clWrap) clWrap.style.display='none'; }
   else { pdLabel.textContent='PD'; addLabel.textContent='ADD'; if(clWrap) clWrap.style.display='none'; }
   if (addWrap) addWrap.style.display = 'block';
 }

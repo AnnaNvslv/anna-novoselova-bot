@@ -174,7 +174,7 @@ function removeRecBlock(key){
 function _rxExtraHtml(x){
   const id=x.id, p='rxx-'+id, v=f=>_escH(x[f]==null?'':String(x[f]));
   return `<div class="rx-section rx-extra" data-xid="${id}">
-    <div class="rx-section-title">Параметры для изготовления очков <select id="${p}-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(x.purpose||'constant')}</select>
+    <div class="rx-section-title">Параметры для изготовления очков <select id="${p}-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(x.purpose||'constant')}</select>
       <button type="button" class="rx-extra-del" title="Удалить этот рецепт" onclick="rxExtraRemove('${id}')">×</button></div>
     <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="rxExtraCopyFar('${id}')">← Скопировать из первого рецепта</button></div>
     <table class="rx-table">
@@ -184,10 +184,14 @@ function _rxExtraHtml(x){
     </table>
     <div class="rx-shared-row">
       <div class="form-group" style="max-width:80px"><label>PD</label>${_rs(p+'-pd','pd',v('pd'))}</div>
-      <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs(p+'-add','add',v('add'))}</div>
+      <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(x.purpose||'constant')}</label>${_rs(p+'-add','add',v('add'))}</div>
     </div>
     ${_comment(p+'-comment',v('comment'),'Комментарий к рецепту')}
   </div>`;
+}
+function _rxAddLbl(sel){
+  const l = sel.closest('.rx-section') && sel.closest('.rx-section').querySelector('label[data-addlbl]');
+  if (l) l.textContent = rxAddLabel(sel.value);
 }
 function rxExtraAdd(){
   if(_examIsLocked()) return;
@@ -361,7 +365,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           <span><b>Промежуточная коррекция для адаптации</b><br><span style="font-weight:400">Бюджетные линзы · контроль через 6–8 недель · затем замена диоптрий в сторону полной коррекции</span></span>
         </label>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков <select id="rf-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_far_purpose')||'far')}</select></div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rf-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(ge('rx_far_purpose')||'far')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinCopyExamToFar()">← Из результатов обследования</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -370,12 +374,12 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
-            <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
+            <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_far_purpose')||'far')}</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
           </div>
           ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к рецепту')}
         </div>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков <select id="rc-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_comp_purpose')||'comp')}</select></div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rc-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(ge('rx_comp_purpose')||'comp')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarPlusAdd('rc')">= Даль + ½ ADD</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -384,12 +388,12 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
-            <div class="form-group" style="max-width:80px"><label>ADD</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
+            <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_comp_purpose')||'comp')}</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
           </div>
           ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к рецепту')}
         </div>
         <div class="rx-section">
-          <div class="rx-section-title">Параметры для изготовления очков <select id="rn-purpose" class="rx-purpose" onchange="_modalDirty=true">${rxPurposeOptions(ge('rx_near_purpose')||'near')}</select></div>
+          <div class="rx-section-title">Параметры для изготовления очков <select id="rn-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(ge('rx_near_purpose')||'near')}</select></div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarPlusAdd('rn')">= Даль + ADD</button></div>
           <table class="rx-table">
             <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
@@ -398,7 +402,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           </table>
           <div class="rx-shared-row">
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
-            <div class="form-group" style="max-width:80px"><label>Degr</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
+            <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_near_purpose')||'near')}</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
           </div>
           ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к рецепту')}
         </div>

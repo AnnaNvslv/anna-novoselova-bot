@@ -90,7 +90,7 @@ async function _lrLink(reqId, patientId) {
   const {error} = await db.from('patients').update(upd).eq('id', patientId);
   if (error) { toast(t('error')+': '+error.message, 'error'); return; }
   await db.from('bot_link_requests').update({resolved_at: new Date().toISOString(), patient_id: patientId}).eq('id', reqId);
-  await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах.\n\nЕсли не хотите получать уведомления, отправьте /stop');
+  await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop');
   // Открытые заказы: отправить то, что клиент пропустил (сводку для «в работе», «готово» для «готов»)
   const {data:orders} = await db.from('orders').select('id,status').eq('patient_id', patientId).in('status', ['в работе','готов']).in('type', ['Очки','МКЛ']).is('deleted_at', null);
   for (const o of orders || []) {

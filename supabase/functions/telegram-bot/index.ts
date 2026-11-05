@@ -91,7 +91,7 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
     // Привязка по номеру телефона (QR-карточка в оптике): уведомления о заказах очков
     await sendMessage(chat_id,
       'Здравствуйте! Это бот оптометриста Анны Новосёловой в оптике Ginter.\n\n' +
-      'Здесь будут приходить уведомления о вашем заказе очков: когда заказ оформлен и когда очки готовы.\n\n' +
+      'Здесь будут приходить уведомления о вашем заказе на очки: когда заказ оформлен и когда очки готовы.\n\n' +
       'Чтобы мы нашли ваш заказ, нажмите кнопку ниже и поделитесь номером телефона — тем, что вы оставили в оптике 👇\n\n' +
       'Не хотите делиться номером? Просто напишите сюда имя и фамилию — Анна подключит вас вручную.\n\n' +
       'Записаться на приём: ' + BOOKING_URL,
@@ -210,7 +210,7 @@ async function handleContact(chat_id: number, username: string | undefined, cont
   for (const p of matches) {
     await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}) }).eq('id', p.id)
   }
-  await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах очков.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
+  await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
   if (myChatId) await sendMessage(Number(myChatId), `🔗 Пациент привязал Telegram по номеру: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? ' · @' + escHtml(username) : ''}`)
 }
 // ── Запрос на ручную привязку (номер не найден / клиент написал имя): попадает в CRM → «Ждут привязки» ──

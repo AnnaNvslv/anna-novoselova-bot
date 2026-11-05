@@ -33,6 +33,8 @@ function showApp() {
   // mobile-nav управляется только CSS media query — не трогаем style.display
   const saved=localStorage.getItem('crm_section');
   if(saved&&saved!=='trash'){curSection=saved;}
+  // «Главная» убрана — стартовая вкладка «Распоред»
+  if(!saved||curSection==='dashboard') curSection='slots';
   document.getElementById('sb-role-label').textContent = _displayName || t('role_'+role) || role;
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('nav-'+curSection)?.classList.add('active');

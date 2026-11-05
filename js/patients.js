@@ -147,7 +147,7 @@ function renderPatientsTable(patients) {
       '<div class="pt-item'+(p.id===_openPatientId?' active':'')+'" id="pt-item-'+p.id+'" onclick="openPatientCard(\''+p.id+'\')">'+
         '<div class="patient-avatar pt-av">'+_escH(initials(p.name))+'</div>'+
         '<div class="pt-item-main">'+
-          '<div class="pt-item-name">'+_escH(p.name)+(p.telegram_username ? ' '+tgTag(p.telegram_username,{link:false}) : '')+(p.telegram_chat_id ? ' <span class="tg-on" title="Telegram подключён">✈</span>' : '')+(p.notify_off ? ' <span title="'+(_lang==='sr'?'Odjavio se od obaveštenja':'Отказался от уведомлений о заказах')+'">🔕</span>' : '')+'</div>'+
+          '<div class="pt-item-name">'+_escH(p.name)+(p.telegram_username ? ' '+tgTag(p.telegram_username,{link:false}) : '')+(p.notify_off ? ' <span title="'+(_lang==='sr'?'Odjavio se od obaveštenja':'Отказался от уведомлений о заказах')+'">🔕</span>' : '')+'</div>'+
           '<div class="pt-item-meta">'+(sub || '<span class="text-l">'+t('pt_no_phone')+'</span>')+'</div>'+
           (_patientBadge(p.id) ? '<div class="pt-item-badges">'+_patientBadge(p.id)+'</div>' : '')+
         '</div>'+
@@ -436,9 +436,12 @@ async function _renderPatientCard(pid) {
     ['rx', t('pt_tab_rx'), E.length],
     ['orders', t('orders'), O.length],
     ['appts', t('appointments'), A.length],
+    ['activity', (_lang==='sr'?'Aktivnost':'Активность'), null],
     ['info', t('pt_tab_info'), null],
   ];
-  if (!['rx','orders','appts','info'].includes(_cardTab)) _cardTab = 'rx';
+  if (!['rx','orders','appts','activity','info'].includes(_cardTab)) _cardTab = 'rx';
+  const promoMap = await ptPromoMap(A, O);
+  if (_openPatientId !== pid) return;
 
   box.dataset.pid = pid;
   box.innerHTML =
@@ -454,8 +457,6 @@ async function _renderPatientCard(pid) {
           '<div class="pt-card-sub">'+
             [age ? age+' '+t('years') : '',
              p.phone ? '<a href="tel:'+_escH(p.phone.replace(/\s/g,''))+'" class="pt-link">'+_escH(p.phone)+'</a>' : '',
-             p.telegram_username ? tgTag(p.telegram_username) : '',
-             p.telegram_chat_id ? '<span class="tg-on">✈ TG</span>' : ''
             ].filter(Boolean).join(' <span class="pt-dot">·</span> ')+
           '</div>'+
         '</div>'+
@@ -467,15 +468,7 @@ async function _renderPatientCard(pid) {
         headMenu+
       '</div>'+
     '</div>'+
-    '<div class="pt-stats">'+
-      '<div class="pt-stat"><label>'+t('pt_last_visit')+'</label><b>'+(lastVisit ? fmt(lastVisit) : '—')+'</b>'+
-        (planned ? '<small class="pt-stat-blue">'+t('pt_next')+': '+fmt(planned.date)+' '+(planned.time||'').substr(0,5)+'</small>' :
-         nextCtrl ? '<small class="'+(nextCtrl<=td?'pt-stat-red':'')+'">'+t('exam_control')+': '+fmt(nextCtrl)+'</small>' : '')+
-      '</div>'+
-      '<div class="pt-stat"><label>'+t('pt_visits')+'</label><b>'+visitDates.size+'</b><small>'+t('pt_orders_count')+': '+O.filter(o=>!_ORDER_VOID.includes(o.status)).length+'</small></div>'+
-      '<div class="pt-stat"><label>'+t('pt_paid')+'</label><b>'+fmtMoney(consult+paidOrders)+'</b>'+(consult ? '<small>'+t('pt_incl_consult')+': '+fmtMoney(consult)+'</small>' : '')+'</div>'+
-      '<div class="pt-stat'+(debt>0?' pt-stat-debt':'')+'"><label>'+t('balance')+'</label><b>'+fmtMoney(debt)+'</b>'+(debt>0 ? '<small>'+t('pt_to_pay')+'</small>' : '<small>'+t('pt_no_debt')+'</small>')+'</div>'+
-    '</div>'+
+    ptSummaryHtml(p, A, O, E, promoMap, {lastVisit, visits:visitDates.size, paid:consult+paidOrders, debt, nextCtrl, planned})+
     (p.notes ? '<div class="pt-notes">📝 '+_escH(p.notes)+'</div>' : '')+
     '<div class="tab-bar pt-tabs">'+
       tabs.map(([k,l,n]) => '<div class="tab'+(_cardTab===k?' active':'')+'" onclick="_switchCardTab(\''+k+'\')">'+l+(n!==null ? ' <span class="tab-count">'+n+'</span>' : '')+'</div>').join('')+
@@ -484,6 +477,7 @@ async function _renderPatientCard(pid) {
       (_cardTab==='rx' ? _examTabHtml(E, pid) : '')+
       (_cardTab==='orders' ? _orderTab(O, pid, E) : '')+
       (_cardTab==='appts' ? _apptTab(A, pid, E) : '')+
+      (_cardTab==='activity' ? ptActivityHtml(p, A, O, E) : '')+
       (_cardTab==='info' ? _infoTabHtml(p, A) : '')+
     '</div>';
   if (keepScroll) box.scrollTop = keepScroll;
@@ -653,7 +647,7 @@ function _infoTabHtml(p, appts) {
       '<div class="info-item"><label>ID</label><p>'+_escH(p.patient_code||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('phone')+'</label><p>'+(p.phone ? '<a class="pt-link" href="tel:'+_escH(p.phone.replace(/\s/g,''))+'">'+_escH(p.phone)+'</a>' : '—')+'</p></div>'+
       '<div class="info-item"><label>Email</label><p>'+(p.email ? '<a class="pt-link" href="mailto:'+_escH(p.email)+'">'+_escH(p.email)+'</a>' : '—')+'</p></div>'+
-      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="tg-on">✈ ID '+_escH(p.telegram_chat_id)+'</span>' : '')+(p.notify_off ? ' <span class="badge badge-warn">🔕 '+(_lang==='sr'?'odjavio se od obaveštenja':'отказался от уведомлений о заказах')+'</span>' : '')+'</p></div>'+
+      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="badge badge-green" title="ID '+_escH(p.telegram_chat_id)+'">'+(_lang==='sr'?'bot povezan':'бот подключён')+'</span>' : '')+(p.notify_off ? ' <span class="badge badge-warn">🔕 '+(_lang==='sr'?'odjavio se od obaveštenja':'отказался от уведомлений о заказах')+'</span>' : '')+'</p></div>'+
       '<div class="info-item"><label>'+t('dob')+'</label><p>'+(p.dob ? fmt(p.dob)+(age ? ' ('+age+' '+t('years')+')' : '') : '—')+'</p></div>'+
       '<div class="info-item"><label>'+t('source')+'</label><p>'+_escH(p.source||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('first_visit')+'</label><p>'+fmtFirstVisit(p)+'</p></div>'+

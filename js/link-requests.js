@@ -97,13 +97,21 @@ async function _lrLink(reqId, patientId) {
     try { await db.functions.invoke('order-notify', {body: {order_id: o.id, event: 'insert'}}); } catch (e) { console.error(e); }
   }
   toast(sr ? 'Povezano ✓' : 'Привязано ✓');
-  openLinkRequests();
+  _lrAfter();
 }
 
 async function _lrDismiss(reqId) {
   if (!confirm(_lrSr() ? 'Odbaciti zahtev?' : 'Отклонить запрос? Клиент не будет привязан.')) return;
   await db.from('bot_link_requests').update({resolved_at: new Date().toISOString()}).eq('id', reqId);
-  openLinkRequests();
+  _lrAfter();
+}
+
+// После привязки/отклонения: если запросов не осталось — просто закрыть окно, без пустого «Нет запросов»
+async function _lrAfter() {
+  const {count} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
+  sessionStorage.setItem('crm_lr_shown', String(count || 0));
+  if (count) { openLinkRequests(); return; }
+  closeModal();
 }
 
 // ── Клиент без бота: подсказка после оформления заказа и при «Готов» ──

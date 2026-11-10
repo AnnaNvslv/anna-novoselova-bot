@@ -35,12 +35,12 @@ const _fnEsc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':
 // Горизонтальные полосы (одна величина, один цвет; подпись и число — текстовым цветом)
 function _fnBars(items, opts){
   opts=opts||{};
-  const max=Math.max(1,...items.map(i=>i.v));
+  const max=Math.max(1,...items.map(i=>+i.v||0));
   if(!items.length) return `<div style="color:var(--text-m);font-size:13px;padding:8px 0">${t('no_data')}</div>`;
   return `<div class="fn-bars">${items.map(i=>`
     <div class="fn-bar-row" title="${_fnEsc(i.tip||(i.label+': '+i.v))}">
       <div class="fn-bar-label">${_fnEsc(i.label)}</div>
-      <div class="fn-bar-track"><div class="fn-bar" style="width:${Math.max(i.v?2:0,i.v*100/max)}%"></div></div>
+      <div class="fn-bar-track"><div class="fn-bar" style="width:${i.w!=null?i.w:Math.max(i.v?2:0,i.v*100/max)}%"></div></div>
       <div class="fn-bar-val">${i.v}${i.sub?`<span class="fn-bar-sub">${_fnEsc(i.sub)}</span>`:''}</div>
     </div>`).join('')}</div>`;
 }
@@ -181,7 +181,8 @@ async function renderFunnel(){
     const base=(e==='chose_type'||e==='chose_slot')?tracked:sess;
     const baseOpen=base.length;
     const n=base.filter(s=>s.lvl>=i).length;
-    return {label:stepNames[e], v:n, sub:_fnPct(n,baseOpen), tip:`${stepNames[e]}: ${n} (${_fnPct(n,baseOpen)} ${_fnL('от открывших','od otvorenih')})`};
+    if(base!==sess&&baseOpen<10) return {label:stepNames[e], v:'…', w:0, sub:_fnL('копится','prikuplja se'), tip:_fnL('Данные собираются с 10.11.2026','Podaci od 10.11.2026')};
+    return {label:stepNames[e], v:n, w:baseOpen?Math.max(n?2:0,n*100/baseOpen):0, sub:_fnPct(n,baseOpen), tip:`${stepNames[e]}: ${n} (${_fnPct(n,baseOpen)} ${_fnL('от открывших','od otvorenih')})`};
   });
   const partial=tracked.length<sess.length;
 

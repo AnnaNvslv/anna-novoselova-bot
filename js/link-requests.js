@@ -42,7 +42,7 @@ async function openLinkRequests() {
   openModal('<div class="modal modal-lg"><div class="modal-header"><span class="modal-title">🔗 '+(sr?'Čekaju povezivanje sa botom':'Ждут привязки к боту')+': '+rows.length+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
     '<div class="modal-body"><div class="text-sm text-m" style="margin-bottom:6px">'+(sr
       ? 'Ovi klijenti su pisali botu, ali ih bot nije našao u CRM. Pronađite pacijenta i kliknite „Poveži" — klijent će dobijati obaveštenja o porudžbinama.'
-      : 'Эти клиенты написали боту, но бот не нашёл их в CRM. Найдите пациента и нажмите «Привязать» — клиент начнёт получать уведомления о заказах.')+'</div>'+body+'</div>'+
+      : 'Эти клиенты написали боту, но бот не нашёл их в CRM. Найдите пациента и нажмите «Привязать» — клиент начнёт получать уведомления о заказах. Если пациента ещё нет — «➕ Создать пациента».')+'</div>'+body+'</div>'+
     '<div class="modal-footer"><button class="btn btn-accent" onclick="closeModal()">OK</button></div></div>');
   rows.forEach(r => { const inp = document.querySelector('#lr-res-'+r.id); if (inp) _lrSearch(r.id, inp.previousElementSibling.value); });
 }
@@ -53,7 +53,7 @@ function _lrSearch(reqId, q) {
   _lrTimers[reqId] = setTimeout(async () => {
     const box = document.getElementById('lr-res-'+reqId); if (!box) return;
     q = String(q || '').trim();
-    if (q.length < 2) { box.innerHTML = ''; return; }
+    if (q.length < 2) { box.innerHTML = '<div style="text-align:right;padding:5px 0"><button class="btn btn-accent btn-sm" onclick="_lrCreate(\''+reqId+'\')">➕ '+(_lrSr()?'Kreiraj pacijenta':'Создать пациента')+'</button></div>'; return; }
     const digits = _lrDigits(q);
     let res = [];
     if (digits.length >= 6) {
@@ -73,11 +73,15 @@ function _lrSearch(reqId, q) {
       }
     }
     const sr = _lrSr();
-    box.innerHTML = res.length ? res.map(p =>
+    const newBtn = '<button class="btn btn-accent btn-sm" onclick="_lrCreate(\''+reqId+'\')">➕ '+(sr?'Kreiraj pacijenta':'Создать пациента')+'</button>';
+    box.innerHTML = (res.length ? res.map(p =>
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0">'+
         '<div><b>'+_lrEsc(p.name)+'</b>'+(p.phone?' <span class="text-sm text-m">'+_lrEsc(p.phone)+'</span>':'')+(p.telegram_chat_id?' <span class="badge badge-gray">'+(sr?'već povezan':'уже привязан')+'</span>':'')+'</div>'+
         '<button class="btn btn-accent btn-sm" onclick="_lrLink(\''+reqId+'\',\''+p.id+'\')">'+(sr?'Poveži':'Привязать')+'</button></div>').join('')
-      : '<div class="text-sm text-m">'+(sr?'Nije pronađeno':'Не найдено')+'</div>';
+      : '') +
+      (res.length
+        ? '<div style="margin-top:6px;text-align:right"><button class="btn btn-ghost btn-sm" onclick="_lrCreate(\''+reqId+'\')">'+(sr?'Nije ovde — kreiraj novog':'Нет в списке — создать нового')+'</button></div>'
+        : '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0"><span class="text-sm text-m">'+(sr?'Nije pronađeno u CRM':'В CRM не найден')+'</span>'+newBtn+'</div>');
   }, 300);
 }
 
@@ -98,6 +102,37 @@ async function _lrLink(reqId, patientId) {
   }
   toast(sr ? 'Povezano ✓' : 'Привязано ✓');
   _lrAfter();
+}
+
+// ➕ Новый пациент прямо из запроса: имя из Telegram, телефон, @ник, chat_id → сразу привязан.
+// Telegram отдаёт «Имя Фамилия» → в CRM фамилия + имя (как в форме пациента). Исправить можно в карточке.
+async function _lrCreate(reqId) {
+  const sr = _lrSr();
+  const {data:r} = await db.from('bot_link_requests').select('*').eq('id', reqId).single();
+  if (!r) return;
+  const raw = String(r.tg_name || r.message || r.username || '').trim().replace(/\s+/g, ' ');
+  const parts = raw ? raw.split(' ') : [];
+  const first = parts[0] || (sr ? 'Klijent' : 'Клиент');
+  const last = parts.slice(1).join(' ');
+  const row = {
+    name: [last, first].filter(Boolean).join(' '),
+    last_name: last || null, first_name: first,
+    phone: r.phone ? (String(r.phone).trim().startsWith('+') ? String(r.phone).trim() : '+' + _lrDigits(r.phone)) : null,
+    telegram_chat_id: r.chat_id,
+    telegram_username: r.username ? '@' + r.username : null,
+    notify_off: false
+  };
+  if (!confirm((sr ? 'Kreirati novog pacijenta i povezati ga sa botom?\n' : 'Создать нового пациента и привязать к боту?\n') + row.name + (row.phone ? '\n' + row.phone : ''))) return;
+  const {data:np, error} = await db.from('patients').insert(row).select('id').single();
+  if (error) { toast(t('error')+': '+error.message, 'error'); return; }
+  await db.from('bot_link_requests').update({resolved_at: new Date().toISOString(), patient_id: np.id}).eq('id', reqId);
+  try { await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop'); } catch (e) { console.error(e); }
+  const {count} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
+  sessionStorage.setItem('crm_lr_shown', String(count || 0));
+  toast(sr ? 'Pacijent kreiran i povezan ✓' : 'Пациент создан и привязан ✓');
+  closeModal();
+  _openPatientId = np.id; _ptShowDetail = true;
+  if (curSection === 'patients') render(); else openPatientCard(np.id);
 }
 
 async function _lrDismiss(reqId) {

@@ -159,10 +159,15 @@ async function orderNoBotCheck(orderId, kind) {
         '<div style="text-align:right"><button class="btn btn-accent" data-close>OK</button></div>');
       return;
     }
-    const text = _lrReadyText(o, p);
+    _lrManual(o, p, _lrReadyText(o, p), sr?'nije povezan sa botom — bot mu neće pisati.':'не подключён к боту — бот ему не напишет.');
+  } catch (e) { console.error('orderNoBotCheck', e); }
+}
+// Окно «написать клиенту самому»: текст + Viber / WhatsApp / Скопировать
+function _lrManual(o, p, text, why) {
+    const sr = _lrSr();
     const ph = _lrIntlPhone(p.phone);
     const w = _lrOverlay('<div style="font-weight:700;font-size:16px;margin-bottom:8px">📣 '+(sr?'Obavestite klijenta lično':'Уведомите клиента сами')+'</div>'+
-      '<div class="text-sm" style="margin-bottom:10px"><b>'+_lrEsc(p.name)+'</b> '+(sr?'nije povezan sa botom — bot mu neće pisati.':'не подключён к боту — бот ему не напишет.')+(p.phone?'':' '+(sr?'Telefon nije unet.':'Телефон в карточке не указан.'))+'</div>'+
+      '<div class="text-sm" style="margin-bottom:10px"><b>'+_lrEsc(p.name)+'</b> '+why+(p.phone?'':' '+(sr?'Telefon nije unet.':'Телефон в карточке не указан.'))+'</div>'+
       '<textarea class="lr-text" style="width:100%;min-height:150px;font-size:13px">'+_lrEsc(text)+'</textarea>'+
       '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+
         (ph ? '<button class="btn btn-accent btn-sm" data-act="viber">Viber</button><button class="btn btn-accent btn-sm" data-act="wa">WhatsApp</button>' : '')+
@@ -177,5 +182,52 @@ async function orderNoBotCheck(orderId, kind) {
       else if (b.dataset.act === 'wa') window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(txt), '_blank');
       else toast(sr ? 'Kopirano' : 'Скопировано');
     });
-  } catch (e) { console.error('orderNoBotCheck', e); }
+}
+
+// ── 🔔 Напомнить клиенту забрать заказ (кнопка у заказа «готов»; работает и для старых заказов) ──
+function _lrRemindText(o, p) {
+  const parts = String(p.name || '').trim().split(/\s+/);
+  const first = p.first_name || parts[1] || parts[0] || '';
+  const bal = orderBalance(o);
+  return 'Здравствуйте, ' + first + '! Напоминаем, что ' +
+    (o.type === 'МКЛ' ? 'ваши контактные линзы пришли и ждут' : 'ваши очки готовы и ждут') +
+    ' вас в оптике Ginter, Trg Republike 25. Режим работы: пн–пт 9–20, сб 9–14.' +
+    (bal > 0 ? '\nК доплате: ' + fmtMoney(bal) + ', картой или наличными.' : '') +
+    '\nhttps://maps.app.goo.gl/LJerB2rskqhnhES48';
+}
+// Кнопка 🔔 ставится рядом с каждой кнопкой «Выдать» (список заказов, карточка заказа, карточка пациента) —
+// «Выдать» показывается только у заказов «готов», поэтому orders.js / patients.js не трогаем.
+(function () {
+  const add = () => document.querySelectorAll('button[onclick^="issueOrder("]').forEach(b => {
+    if (b.nextElementSibling && b.nextElementSibling.dataset.remind) return;
+    const m = b.getAttribute('onclick').match(/issueOrder\('([^']+)'\)/); if (!m) return;
+    const r = document.createElement('button');
+    r.className = 'btn btn-ghost btn-sm'; r.dataset.remind = '1'; r.textContent = '🔔';
+    r.title = _lrSr() ? 'Podseti klijenta da preuzme' : 'Напомнить забрать заказ';
+    r.addEventListener('click', e => { e.stopPropagation(); orderRemind(m[1]); });
+    b.after(r);
+  });
+  let t = 0;
+  new MutationObserver(() => { clearTimeout(t); t = setTimeout(add, 50); }).observe(document.body, {childList: true, subtree: true});
+})();
+async function orderRemind(orderId) {
+  const sr = _lrSr();
+  try {
+    const {data:o} = await db.from('orders').select('*, patients(id,name,first_name,phone,telegram_chat_id,notify_off)').eq('id', orderId).single();
+    const p = o && o.patients;
+    if (!o || !p) return;
+    if (o.status !== 'готов') return toast(sr ? 'Porudžbina nije spremna' : 'Заказ не в статусе «готов»');
+    if (o.type !== 'Очки' && o.type !== 'МКЛ') return toast(sr ? 'Samo za naočare i KS' : 'Только для очков и МКЛ');
+    if (p.notify_off) return _lrManual(o, p, _lrRemindText(o, p), sr?'se odjavio od obaveštenja bota.':'отказался от уведомлений бота.');
+    if (!p.telegram_chat_id) return _lrManual(o, p, _lrRemindText(o, p), sr?'nije povezan sa botom — bot mu neće pisati.':'не подключён к боту — бот ему не напишет.');
+    const last = o.notify_reminder_at ? fmt(String(o.notify_reminder_at).slice(0,10)) : '';
+    const q = (sr ? 'Poslati podsetnik u Telegram klijentu ' : 'Отправить клиенту в Telegram напоминание забрать заказ?\n') + p.name +
+      (last ? (sr ? '\nPoslednji podsetnik: ' : '\nПоследнее напоминание: ') + last : '');
+    if (!confirm(q)) return;
+    const {data, error} = await db.functions.invoke('order-notify', {body:{mode:'remind', order_id:orderId}});
+    const r = data && data.result;
+    if (r === 'sent') toast(sr ? '✅ Podsetnik poslat' : '✅ Напоминание отправлено');
+    else if (r === 'no chat' || r === 'opted out') _lrManual(o, p, _lrRemindText(o, p), sr?'nije povezan sa botom.':'не подключён к боту.');
+    else toast((sr ? 'Nije poslato: ' : 'Не отправлено: ') + (r || (error && error.message) || '?'));
+  } catch (e) { console.error('orderRemind', e); toast(sr ? 'Greška' : 'Ошибка'); }
 }

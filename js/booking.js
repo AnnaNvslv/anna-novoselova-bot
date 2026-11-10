@@ -170,21 +170,53 @@ let _botMissing=false,pendingAppts=[];
 const BLOG_SESSION=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
 const BLOG_VISITOR=(function(){
   try{
+    const qv=new URLSearchParams(location.search).get('vid');
+    if(qv&&/^[\w-]{8,64}$/.test(qv)){localStorage.setItem('blog_visitor_id',qv);return qv;}
     let id=localStorage.getItem('blog_visitor_id');
     if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem('blog_visitor_id',id);}
     return id;
   }catch(e){return null;}
 })();
-let _blogDone=false,_blogReachedForm=false;
+let _blogDone=false,_blogReachedForm=false,_blogChoseType=false,_blogChoseSlot=false;
+// ── Атрибуция: откуда пришёл пациент (для аналитики в CRM) ──
+const BLOG_SKIP=(function(){try{return navigator.webdriver||/[?&]test=1/.test(location.search)||/bot|crawl|spider|preview|headless/i.test(navigator.userAgent);}catch(e){return false;}})();
+function blogClassify(ref,utm,src){
+  if(utm)return utm.toLowerCase();
+  if(src)return 'optometrist.rs';
+  if(!ref)return 'direct';
+  let h='';try{h=new URL(ref).hostname.replace(/^www\./,'');}catch(e){return 'other';}
+  if(/(^|\.)google\./.test(h))return 'google';
+  if(/instagram\.com$/.test(h))return 'instagram';
+  if(/facebook\.com$|fb\.me$/.test(h))return 'facebook';
+  if(/(^|\.)t\.me$|telegram/.test(h))return 'telegram';
+  if(/bing\.com$|yandex\.|duckduckgo/.test(h))return 'other_search';
+  if(/optikaginter\.rs$/.test(h))return 'optikaginter.rs';
+  if(/(^|\.)optometrist\.rs$|annanvslv\.github\.io$/.test(h))return 'optometrist.rs';
+  return h;
+}
+const BLOG_ATTR=(function(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const ref=document.referrer&&!/zapis\.optometrist\.rs/.test(document.referrer)?document.referrer:'';
+    const src=q.get('src');
+    return {source:blogClassify(ref,q.get('utm_source'),src),referrer:ref?ref.slice(0,400):null,
+      utm_source:q.get('utm_source'),utm_medium:q.get('utm_medium'),utm_campaign:q.get('utm_campaign'),
+      from_page:src?src.slice(0,120):null,lang:(navigator.language||'').slice(0,5),
+      device:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'mobile':(/iPad|Tablet/i.test(navigator.userAgent)?'tablet':'desktop')};
+  }catch(e){return {};}
+})();
 function blogName(){return((v('f-lastname')||'')+' '+(v('f-firstname')||'')).trim()||null;}
 function blog(event,extra){
   try{
+    if(BLOG_SKIP)return;
     const base={session_id:BLOG_SESSION,visitor_id:BLOG_VISITOR,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null};
+    if(event==='started')Object.assign(base,BLOG_ATTR);
     db.from('booking_log').insert(Object.assign(base,extra||{})).then(()=>{},()=>{});
   }catch(e){}
 }
 function blogBeacon(event){
   try{
+    if(BLOG_SKIP)return;
     fetch(SB_URL+'/rest/v1/booking_log',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},body:JSON.stringify({session_id:BLOG_SESSION,visitor_id:BLOG_VISITOR,event:event,type_id:selectedType?selectedType.id:null,slot_date:selectedSlot?selectedSlot.date:null,slot_time:selectedSlot?selectedSlot.time:null,patient_name:blogName(),telegram:v('f-tg')||null})});
   }catch(e){}
 }
@@ -274,6 +306,7 @@ function selectType(id){
   const hs=document.getElementById('health-section');
   if(hs)hs.style.display=selectedType.health?'':'none';
   updateTypeSumLang();renderReasons();renderCalendar();goPage('cal');
+  if(!_blogChoseType){_blogChoseType=true;blog('chose_type');}
 }
 function calMove(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();document.getElementById('times-section').style.display='none';selectedDateStr=null;selectedSlot=null;document.getElementById('btn-to-form').disabled=true;}
 
@@ -325,7 +358,7 @@ function selectDate(dateStr){
   document.getElementById('times-section').style.display='block';
   setTimeout(()=>document.getElementById('times-section').scrollIntoView({behavior:'smooth',block:'nearest'}),100);
 }
-function selectTime(btn,id,date,time){document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selectedSlot={id,date,time};updateSlotSumLang();document.getElementById('btn-to-form').disabled=false;document.getElementById('btn-to-form').textContent=T('nextForm');}
+function selectTime(btn,id,date,time){document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');selectedSlot={id,date,time};updateSlotSumLang();if(!_blogChoseSlot){_blogChoseSlot=true;blog('chose_slot');}document.getElementById('btn-to-form').disabled=false;document.getElementById('btn-to-form').textContent=T('nextForm');}
 function tog(el){el.classList.toggle('on');}
 function chips(id){return[...document.querySelectorAll('#'+id+' .on')].map(e=>e.dataset.ru||e.textContent);}
 function v(id){return(document.getElementById(id)?.value||'').trim();}

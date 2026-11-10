@@ -137,7 +137,7 @@ async function renderBookingLog(){
   const apptIds=[...new Set(Object.values(everOk).flat().map(r=>r.appointment_id).filter(Boolean))];
   const apptMap={};
   for(let i=0;i<apptIds.length;i+=150){
-    const{data}=await db.from('appointments').select('id,patient_id,date,start_time,status,patients(name,telegram_username)').in('id',apptIds.slice(i,i+150));
+    const{data}=await db.from('appointments').select('id,patient_id,date,start_time,status,patients(name,telegram_username,phone)').in('id',apptIds.slice(i,i+150));
     (data||[]).forEach(a=>apptMap[a.id]=a);
   }
 
@@ -157,7 +157,7 @@ async function renderBookingLog(){
     p.okList=oks;
     const okInPeriod=p.sessions.filter(s=>s.success);
     const lastOk=oks.length?oks[oks.length-1]:null;
-    if(lastOk){ p.name=p.name||lastOk.patient_name; p.tg=p.tg||lastOk.telegram; const a=apptMap[lastOk.appointment_id]; if(a){p.patient_id=a.patient_id; p.pname=a.patients?.name; p.appt=a;} }
+    if(lastOk){ p.name=p.name||lastOk.patient_name; p.tg=p.tg||lastOk.telegram; const a=apptMap[lastOk.appointment_id]; if(a){p.patient_id=a.patient_id; p.pname=a.patients?.name; p.appt=a; p.tg=p.tg||a.patients?.telegram_username; p.phone=a.patients?.phone;} }
     const patients=new Set(oks.map(o=>apptMap[o.appointment_id]?.patient_id||o.patient_name).filter(Boolean));
     p.multiPatients=patients.size;
     p.staff=blogIsStaff(p.vid);
@@ -208,6 +208,7 @@ function _blogPersonCell(p){
   else if(nm) h+=`<span>${_bEsc(nm)}</span>`;
   else h+=`<span style="color:var(--text-m)">${_bL('Аноним','Anonimno')}</span>`;
   if(p.tg) h+=` <a href="https://t.me/${_bEsc(String(p.tg).replace(/^@/,''))}" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:var(--accent)">@${_bEsc(String(p.tg).replace(/^@/,''))}</a>`;
+  if(p.phone) h+=` <a href="tel:${_bEsc(p.phone)}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--text-m);white-space:nowrap">${_bEsc(p.phone)}</a>`;
   if(p.staff) h+=` <span class="badge badge-gray" style="font-size:11px;padding:1px 7px">${_bEsc((_blogStaff.find(s=>s.id===p.vid)||{}).label||_bL('служебный','službeni'))}</span>`;
   else if(p.multiPatients>=3) h+=`<div style="font-size:11.5px;color:var(--warn);margin-top:2px">${_bL('Записал(а) '+p.multiPatients+' разных пациентов — похоже на служебный браузер','Zakazao/la '+p.multiPatients+' pacijenata — verovatno službeni pregledač')}</div>`;
   return h;
@@ -318,7 +319,7 @@ function _blogRenderPage(){
     </table>
   </div>
   <div style="font-size:12px;color:var(--text-m);margin-top:10px;line-height:1.5">${_bL(
-    'Один человек = один браузер. Нажмите на строку — увидите все визиты: когда, сколько длились, какие шаги прошёл и откуда пришёл. Имя и Telegram видны, только если человек ввёл их в анкету. Источник и шаги «вид приёма» / «дата» пишутся с 10.11.2026.',
+    'Один человек = один браузер. Нажмите на строку — увидите все визиты: когда, сколько длились, какие шаги прошёл и откуда пришёл. У записавшихся — имя, телефон и Telegram из карточки пациента; у бросивших — только если успели ввести имя в анкету. Источник и шаги «вид приёма» / «дата» пишутся с 10.11.2026.',
     'Jedna osoba = jedan pregledač. Kliknite na red za sve posete. Ime i Telegram se vide samo ako ih je osoba unela. Izvor i koraci se beleže od 10.11.2026.')}</div>
 </div>`;
   _blogRenderTable();

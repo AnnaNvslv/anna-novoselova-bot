@@ -15,7 +15,7 @@ const FN_SOURCES = {
 };
 function _fnSrcLabel(s){
   if(!s) return _fnL('нет данных (до 10.11)','nema podataka (pre 10.11)');
-  if(s==='direct') return _fnL('Прямой заход / Telegram-приложение','Direktno / Telegram aplikacija');
+  if(s==='direct') return _fnL('Прямой заход','Direktno');
   if(s==='optometrist.rs') return _fnL('Сайт optometrist.rs','Sajt optometrist.rs');
   if(s==='other_search') return _fnL('Другой поиск','Druga pretraga');
   if(s==='other') return _fnL('Другое','Ostalo');
@@ -230,7 +230,7 @@ async function renderFunnel(){
 
   const dv={}; tracked.forEach(s=>{ const k=s.device||'—'; const m=dv[k]||(dv[k]={open:0,ok:0}); m.open++; if(s.success_at)m.ok++; });
   const devName={mobile:_fnL('Телефон','Telefon'),desktop:_fnL('Компьютер','Računar'),tablet:_fnL('Планшет','Tablet')};
-  const devItems=Object.entries(dv).sort((a,b)=>b[1].open-a[1].open).map(([k,m])=>({label:devName[k]||k,v:m.open,sub:_fnL('записей ','zak. ')+m.ok+' · '+_fnPct(m.ok,m.open),tip:`${devName[k]||k}: ${m.open} ${_fnL('открытий','otvaranja')}, ${m.ok} ${_fnL('записей','zakazivanja')}`}));
+  const devItems=Object.entries(dv).sort((a,b)=>b[1].open-a[1].open).map(([k,m])=>({label:devName[k]||k,v:m.open,sub:'→ '+m.ok,tip:`${devName[k]||k}: ${m.open} ${_fnL('открытий','otvaranja')}, ${m.ok} ${_fnL('записей','zakazivanja')}`}));
 
   const lead={0:0,1:0,2:0,3:0}; const leadL=[_fnL('На сегодня','Za danas'),_fnL('1–2 дня','1–2 dana'),_fnL('3–7 дней','3–7 dana'),_fnL('Больше недели','Više od nedelju')];
   okS.forEach(s=>{ if(!s.slot_date) return; const a=new Date(s.success_at); a.setHours(0,0,0,0); const b=new Date(s.slot_date+'T00:00:00'); const d=Math.round((b-a)/864e5); lead[d<=0?0:d<=2?1:d<=7?2:3]++; });

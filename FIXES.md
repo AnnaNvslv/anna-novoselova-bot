@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-11-10 — отправка в Telegram из CRM через сервер, токен убран из браузера
+- **Новая Edge Function `crm-send`** (verify_jwt=true): принимает `{chat_id, text}`, проверяет, что вызывающий есть в `user_roles`, шлёт через `BOT_TOKEN` из секретов. Без входа / чужой → 401/403.
+- telegram.js v12: `tgSend()` → `db.functions.invoke('crm-send')`; `getBotToken()` удалён. Все вызовы (напоминание о записи, «Привязать», 2 сообщения по заказу, «Тест») работают без изменений.
+- settings.js v11: убрано поле «Токен бота» и окно «Найти Chat ID» (getUpdates не работает при активном вебхуке). Остались имя бота, мой chat_id, «Тест».
+- После проверки «Тест» — `bot_token` удаляется из таблицы `settings`.
+
 ## 2026-11-10 — безопасность: доступ к данным только сотрудникам, защита вебхука бота
 - **Найдено при аудите:** в Supabase Auth открыта регистрация, а RLS-политики были `to authenticated using (true)` → любой, кто зарегистрировался бы с публичным anon-ключом, видел всех пациентов, осмотры, заказы, бюджет и `settings` (bot_token). Посторонних учёток в `auth.users` нет (только 2 своих).
 - **Миграция `security_staff_only_rls`:** функция `public.is_staff()` (security definer, `search_path=''`) = пользователь есть в `user_roles`. На всех таблицах (`appointments, available_slots, booking_log, bot_link_requests, budget_*, examinations, orders, patients, settings`) политика `"<таблица> staff all"` вместо `authenticated all`/`authenticated only`. Политики anon для онлайн-записи не тронуты. Проверено: чужая учётка видит 0 строк, Анна/Гинтер — всё.

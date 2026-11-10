@@ -1,9 +1,8 @@
 // ═══ TELEGRAM ═══
-async function getBotToken() { const{data}=await db.from('settings').select('value').eq('key','bot_token').single(); return data?.value||''; }
+// Отправка идёт через Edge Function crm-send: токен бота хранится только на сервере.
 async function tgSend(chatId,text) {
-  const token=await getBotToken();
-  if(!token||!chatId)return false;
-  try { const r=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:chatId,text,parse_mode:'HTML'})}); return r.ok; } catch{return false;}
+  if(!chatId)return false;
+  try { const{data,error}=await db.functions.invoke('crm-send',{body:{chat_id:chatId,text}}); return !error&&data?.ok===true; } catch{return false;}
 }
 
 // ═══ SALARY ═══

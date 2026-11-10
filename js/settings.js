@@ -58,19 +58,15 @@ async function renderSettings() {
         <div class="tg-info">
           <b>Как настроить:</b>
           <ol class="step-list" style="margin-top:8px">
-            <li>Напишите <code>@BotFather</code> → <code>/newbot</code> → получите токен</li>
-            <li>Вставьте токен ниже и сохраните</li>
-            <li>Пациент пишет боту <code>/start</code></li>
-            <li>Нажмите «Найти Chat ID» → скопируйте ID в карточку пациента</li>
+            <li>Токен бота хранится на сервере (Supabase → Edge Functions → Secrets → <code>BOT_TOKEN</code>), в CRM его нет</li>
+            <li>Пациент привязывается сам: онлайн-запись, QR-карточка или «Ждут привязки»</li>
           </ol>
         </div>
-        <div class="form-group mt-12"><label>${t('tg_token')}</label><input id="s-token" value="${s.bot_token||''}" placeholder="123456789:AAH..."></div>
-        <div class="form-group mt-8"><label>Имя бота (@username) — для страницы записи</label><input id="s-botname" value="${s.bot_username||''}" placeholder="@NazvanieVashegoBot"></div>
+        <div class="form-group mt-12"><label>Имя бота (@username) — для страницы записи</label><input id="s-botname" value="${s.bot_username||''}" placeholder="@NazvanieVashegoBot"></div>
         <div class="form-group mt-8"><label>${t('tg_mychat')}</label><input id="s-mychat" value="${s.my_chat_id||''}"></div>
         <div class="flex gap-8 mt-12">
           <button class="btn btn-primary" onclick="saveTg()">${t('save')}</button>
           <button class="btn btn-ghost" onclick="testTg()">Тест</button>
-          <button class="btn btn-ghost" onclick="openChatIdHelper()">${t('tg_find_id')}</button>
         </div>
       </div>
     </div>`;
@@ -89,28 +85,5 @@ async function saveCalSettings(){
   toast(t('schedule_saved'));
 }
 async function savePins(){await Promise.all([db.from('settings').upsert({key:'admin_pin',value:v('s-apin')}),db.from('settings').upsert({key:'staff_pin',value:v('s-spin')}),db.from('settings').upsert({key:'ervin_pin',value:v('s-epin')})]);toast(t('pin_updated'));}
-async function saveTg(){await Promise.all([db.from('settings').upsert({key:'bot_token',value:v('s-token')}),db.from('settings').upsert({key:'bot_username',value:v('s-botname')}),db.from('settings').upsert({key:'my_chat_id',value:v('s-mychat')})]);toast(t('tg_saved'));}
+async function saveTg(){await Promise.all([db.from('settings').upsert({key:'bot_username',value:v('s-botname')}),db.from('settings').upsert({key:'my_chat_id',value:v('s-mychat')})]);toast(t('tg_saved'));}
 async function testTg(){const{data:ch}=await db.from('settings').select('value').eq('key','my_chat_id').single();const ok=await tgSend(ch?.value,'✅ Тест CRM Гинтер Оптика');toast(ok?t('tg_sent'):t('tg_error'),ok?'success':'error');}
-async function openChatIdHelper(){
-  openModal(`<div class="modal"><div class="modal-header"><span class="modal-title">Найти Telegram Chat ID</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="tg-info">Пациент должен написать вашему боту <code>/start</code>, затем нажмите кнопку ниже.</div>
-      <button class="btn btn-accent mt-12" onclick="loadTgUpdates()">🔍 Загрузить контакты</button>
-      <div id="tg-updates" class="mt-12"></div>
-    </div></div>`);
-}
-async function loadTgUpdates(){
-  document.getElementById('tg-updates').innerHTML='Загрузка...';
-  const token=await getBotToken();if(!token){document.getElementById('tg-updates').innerHTML='<span style="color:var(--red)">Нет токена</span>';return;}
-  const r=await fetch(`https://api.telegram.org/bot${token}/getUpdates`);const data=await r.json();
-  if(!data.ok||!data.result?.length){document.getElementById('tg-updates').innerHTML='Нет сообщений — попросите пациента написать /start';return;}
-  const seen=new Set();
-  const rows=data.result.reverse().filter(m=>{const id=m.message?.from?.id;if(seen.has(id))return false;seen.add(id);return true;}).map(m=>{
-    const f=m.message?.from||{};
-    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
-      <div><b>${[f.first_name,f.last_name].filter(Boolean).join(' ')||'—'}</b>${f.username?` @${f.username}`:''}<br><code style="font-size:12px">${f.id}</code></div>
-      <button class="btn btn-accent btn-sm" onclick="navigator.clipboard.writeText('${f.id}');toast('Скопировано!')">Копировать</button>
-    </div>`;
-  }).join('');
-  document.getElementById('tg-updates').innerHTML=rows||'Нет данных';
-}

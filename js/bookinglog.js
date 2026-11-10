@@ -15,6 +15,8 @@ const BLOG_TYPE = {primary:{ru:'Первичный',sr:'Prvi pregled'},cl:{ru:'�
   help:{ru:'Помощь в оптике',sr:'Pomoć'},repeat:{ru:'Повторный',sr:'Ponovni'},express:{ru:'Экспресс',sr:'Ekspres'}};
 function _bL(ru,sr){return _lang==='sr'?sr:ru;}
 function _bEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const BLOG_STEP_SHORT={started:{ru:'открыл',sr:'otvorio'},chose_type:{ru:'вид приёма',sr:'vrsta'},chose_slot:{ru:'дата',sr:'termin'},reached_form:{ru:'анкета',sr:'upitnik'},submit_attempt:{ru:'«Записаться»',sr:'„Zakaži“'},success:{ru:'✅ записан',sr:'✅ zakazan'}};
+function _bShort(e){return (BLOG_STEP_SHORT[e]||{})[_lang==='sr'?'sr':'ru']||e;}
 function _bStep(e){return (BLOG_STEP_LABEL[e]||{})[_lang==='sr'?'sr':'ru']||e;}
 function _bType(id){return id?((BLOG_TYPE[id]||{})[_lang==='sr'?'sr':'ru']||id):'—';}
 function _bDT(iso){if(!iso)return'—';const d=new Date(iso);return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
@@ -213,7 +215,7 @@ function _blogPersonCell(p){
 
 function _blogDetail(p){
   const sess=[...p.sessions].reverse().map(s=>{
-    const steps=BLOG_STEPS.filter((e,i)=>s.events.some(x=>x.event===e)).map(_bStep);
+    const steps=BLOG_STEPS.filter((e,i)=>s.events.some(x=>x.event===e)).map(_bShort);
     const src=[_bSrc(s.source), s.from_page?(_bL('со страницы ','sa stranice ')+s.from_page):'', s.utm_campaign?('«'+s.utm_campaign+'»'):''].filter(Boolean).join(', ');
     return `<tr>
       <td style="white-space:nowrap">${_bDT(s.start)}</td>
@@ -278,7 +280,7 @@ function _blogRenderPage(){
 .blog-bar label{font-size:13px;color:var(--text-m);display:flex;align-items:center;gap:6px;cursor:pointer}
 .blog-row:hover{background:var(--surface2)}
 .blog-row td,.blog-inner td{padding:9px 12px;border-bottom:1px solid var(--surface2);vertical-align:top}
-.blog-inner td{padding:5px 8px;border-bottom:1px solid var(--border)}
+.blog-inner td{padding:5px 8px;border-bottom:1px solid var(--border);font-size:13px}
 @media(max-width:800px){.blog-tbl th:nth-child(6),.blog-tbl td:nth-child(6),.blog-tbl th:nth-child(5),.blog-row td:nth-child(5){display:none}}
 </style>
 <div class="topbar"><h1>${title}</h1><div class="topbar-actions"><div class="search-wrap"><input type="text" id="blogsearch" placeholder="${t('search')}" value="${_bEsc(_blogQuery)}" oninput="filterBookingLogUI(this.value)"></div></div></div>

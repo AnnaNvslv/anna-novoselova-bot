@@ -179,7 +179,7 @@ const BLOG_VISITOR=(function(){
 })();
 let _blogDone=false,_blogReachedForm=false,_blogChoseType=false,_blogChoseSlot=false;
 // ── Атрибуция: откуда пришёл пациент (для аналитики в CRM) ──
-const BLOG_SKIP=(function(){try{return navigator.webdriver||/[?&]test=1/.test(location.search)||/bot|crawl|spider|preview|headless/i.test(navigator.userAgent);}catch(e){return false;}})();
+const BLOG_SKIP=(function(){try{return localStorage.getItem('blog_skip')==='1'||navigator.webdriver||/[?&]test=1/.test(location.search)||/bot|crawl|spider|preview|headless/i.test(navigator.userAgent);}catch(e){return false;}})();
 function blogClassify(ref,utm,src){
   if(utm)return utm.toLowerCase();
   if(src)return 'optometrist.rs';

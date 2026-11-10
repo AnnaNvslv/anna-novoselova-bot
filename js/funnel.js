@@ -125,7 +125,9 @@ async function renderFunnel(){
     document.getElementById('content').innerHTML=`<div class="topbar"><h1>${title}</h1></div><div class="content"><div class="card" style="padding:20px;color:var(--red)">${_fnEsc(bl.error.message||'error')}</div></div>`;
     return;
   }
-  const rows=bl.data||[], site=se.data||[];
+  if(typeof blogLoadStaff==='function') await blogLoadStaff();
+  const staff=new Set((typeof _blogStaff!=='undefined'?_blogStaff:[]).map(x=>x.id));
+  const rows=(bl.data||[]).filter(r=>!staff.has(r.visitor_id)), site=se.data||[];
 
   // ── Сессии онлайн-записи ──
   const S={};

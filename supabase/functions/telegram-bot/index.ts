@@ -457,8 +457,35 @@ async function notifyAnnaCallback(appt: Record<string, unknown> | null, statusLi
   await sendMessage(Number(myChatId), msg)
 }
 
+// ── Защита вебхука: принимаем только запросы от Telegram ──
+// Секрет выводится из BOT_TOKEN (sha256), отдельный секрет хранить не нужно.
+// Telegram присылает его в заголовке X-Telegram-Bot-Api-Secret-Token.
+let _whSecret = ''
+async function webhookSecret(): Promise<string> {
+  if (_whSecret) return _whSecret
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(BOT_TOKEN + ':webhook'))
+  _whSecret = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('')
+  return _whSecret
+}
+// GET ?setup=1 — перерегистрирует вебхук с секретом (тот же URL и allowed_updates). Безопасно повторять.
+async function setupWebhook(): Promise<Response> {
+  const info = await fetch(`${TG}/getWebhookInfo`).then(r => r.json())
+  const url = info?.result?.url
+  if (!url) return new Response('no webhook url', { status: 500 })
+  const body: Record<string, unknown> = { url, secret_token: await webhookSecret() }
+  if (info.result.allowed_updates) body.allowed_updates = info.result.allowed_updates
+  const r = await fetch(`${TG}/setWebhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
+  return new Response(JSON.stringify({ ok: r.ok, description: r.description }), { headers: { 'Content-Type': 'application/json' } })
+}
+
 serve(async (req) => {
-  if (req.method !== 'POST') return new Response('ok')
+  if (req.method !== 'POST') {
+    if (new URL(req.url).searchParams.get('setup') === '1') return await setupWebhook()
+    return new Response('ok')
+  }
+  if (req.headers.get('x-telegram-bot-api-secret-token') !== await webhookSecret()) {
+    return new Response('forbidden', { status: 403 })
+  }
   try {
     const body = await req.json()
     if (body.message) {

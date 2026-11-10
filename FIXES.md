@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-11-10 — безопасность: доступ к данным только сотрудникам, защита вебхука бота
+- **Найдено при аудите:** в Supabase Auth открыта регистрация, а RLS-политики были `to authenticated using (true)` → любой, кто зарегистрировался бы с публичным anon-ключом, видел всех пациентов, осмотры, заказы, бюджет и `settings` (bot_token). Посторонних учёток в `auth.users` нет (только 2 своих).
+- **Миграция `security_staff_only_rls`:** функция `public.is_staff()` (security definer, `search_path=''`) = пользователь есть в `user_roles`. На всех таблицах (`appointments, available_slots, booking_log, bot_link_requests, budget_*, examinations, orders, patients, settings`) политика `"<таблица> staff all"` вместо `authenticated all`/`authenticated only`. Политики anon для онлайн-записи не тронуты. Проверено: чужая учётка видит 0 строк, Анна/Гинтер — всё.
+- Сняты права EXECUTE у trg_*-функций (API), `sync_slot_for`/`promo_stats`/`source_stats` — у anon. `search_path` у `norm_patient_name`, `norm_tg`, `_jtext_arr`.
+- Удалены старые `admin_pin`/`staff_pin` из `settings` (вход давно через Supabase Auth). `bot_token` оставлен — его использует `js/telegram.js` (tgSend) из браузера; теперь читается только сотрудниками.
+- **Бот v24:** вебхук принимает только запросы с заголовком `X-Telegram-Bot-Api-Secret-Token` (секрет = sha256(BOT_TOKEN+":webhook"), отдельный секрет не нужен). Поддельный POST → 403. Перерегистрация вебхука: открыть `…/functions/v1/telegram-bot?setup=1` (безопасно повторять). Задеплоено через MCP.
+- **Анне:** выключить регистрацию — Supabase → Authentication → Sign In / Providers → «Allow new users to sign up» = off.
+
 ## 2026-11-06 — окно «Ждут привязки» закрывается, когда запросов не осталось
 - link-requests.js v3: после «Привязать»/«Отклонить» новая `_lrAfter()` — если необработанных запросов 0, окно закрывается (раньше переоткрывалось пустым «Нет запросов: 0»); иначе обновляется список. Счётчик `crm_lr_shown` синхронизируется, чтобы окно не всплывало повторно.
 

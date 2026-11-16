@@ -390,6 +390,12 @@ async function handleCallback(callback_query: Record<string, unknown>) {
   const act = parts[0]
   const id = parts.slice(1).join('_')
 
+  // Черновики историй / «О себе» — кнопки работают только у Анны, логика в функции stories
+  if (act === 'st') {
+    if (await isAnna(chat_id)) await callStories({ action: 'cb', data })
+    return
+  }
+
   if (act === 'ctlyes' || act === 'ctlno') {
     const origText = ((callback_query.message as Record<string,unknown>).text as string) || ''
     await handleControlDecision(act, id, chat_id, message_id, origText)
@@ -435,6 +441,25 @@ async function handleCallback(callback_query: Record<string, unknown>) {
     )
     await notifyAnnaCallback(appt, '❌ Пациент отменил запись')
   }
+}
+
+// ── Истории для Telegram для бизнеса (функция stories) ──
+async function isAnna(chat_id: number) {
+  const { data: r } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+  return !!r?.value && String(r.value) === String(chat_id)
+}
+async function callStories(body: Record<string, unknown>) {
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/stories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+    body: JSON.stringify(body),
+  })
+  return await r.text()
+}
+// Анна ответила на «Изменить» / «По шифру» — передаём текст в stories
+async function storyAwaiting() {
+  const { data: r } = await db.from('settings').select('value').eq('key', 'story_await').maybeSingle()
+  return !!r?.value
 }
 
 async function notifyAnnaCallback(appt: Record<string, unknown> | null, statusLine: string) {
@@ -507,6 +532,10 @@ serve(async (req) => {
       const chat_id = msg.chat.id
       const username = msg.from?.username
       const text: string = msg.text || ''
+      if (text && !text.startsWith('/start') && await storyAwaiting() && await isAnna(chat_id)) {
+        await callStories({ action: 'reply', text })
+        return new Response('ok')
+      }
       if (msg.contact) {
         await handleContact(chat_id, username, msg.contact, msg.from?.id)
       } else if (text.startsWith('/stop')) {

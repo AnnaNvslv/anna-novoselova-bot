@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-11-16 — истории и «О себе» в Telegram для бизнеса (черновики на одобрение)
+- Бот подключён к Telegram для бизнеса Анны (Secretary Mode, права: Edit Bio + Manage Stories). Бот v25: апдейт `business_connection` → `settings.business_connection_id` и `business_rights`; `?setup=1` добавляет `business_connection` в allowed_updates. Кнопки `st_*` и ответы Анны при `settings.story_await` передаются в функцию `stories`.
+- **Новая Edge Function `stories`** (verify_jwt=true, пускает только service_role): cron 9:05 по Белграду пн–сб присылает Анне черновики: пн — «О себе» + расписание недели; вт, чт (`settings.story_slot_days`) — свободные окна на сегодня по видам приёма (primary / express / short); ср — оправа недели из каталога Ginter (публичное чтение `frames`, материал/цвет переводятся на русский); чт недели без субботы — «в субботу меня не будет». Картинки 1080×1920: satori + resvg (`stories/render.js`), шрифты Manrope/Inter и Twemoji с jsDelivr, аватар — фото профиля Анны.
+- Под черновиком: Опубликовать / Изменить (первая строка — заголовок) / Пропустить; у окон — переключатели времени; у оправы — ◀ ▶ и «По шифру». Публикация: `postStory` с кликабельной областью на кнопке (запись → zapis.optometrist.rs, оправа → optikaginter.rs/ru/okviri/#id); если Telegram не примет ссылку — публикуется без неё. «О себе» → `setBusinessAccountBio`.
+- График смен: `settings.work_schedule` (anchor 2026-11-16 = пн–пт 13–20 + сб 9–14, следующая неделя пн–пт 9–16 без субботы, по кругу). Основа «О себе» — `settings.bio_base`.
+- Миграция `006_story_drafts.sql`: таблица `story_drafts` (RLS без политик), ключи settings, cron `stories-daily` (`5 7,8 * * 1-6`, ключ берётся из задачи order-notify).
+- Ручной тест: POST `/functions/v1/stories` `{"action":"daily","force":["schedule"]}` с service-ключом.
+- TODO: блок «Когда я в оптике» на optometrist.rs (нужен макет).
+
 ## 2026-11-10 — «➕ Создать пациента» в окне «Ждут привязки к боту»
 - link-requests.js v5: у каждого запроса кнопка «➕ Создать пациента» (если поиск ничего не нашёл; при найденных — «Нет в списке — создать нового»). Создаёт карточку из данных Telegram: имя из профиля (tg_name → «Имя Фамилия» разбивается на first_name/last_name, name = «Фамилия Имя»; запасной вариант — текст сообщения / @ник), телефон, @ник, chat_id — сразу привязан, `notify_off=false`. Запрос закрывается, клиенту «✅ Готово!», открывается карточка нового пациента (имя можно исправить через «Редактировать»).
 - crm-v3.html: `link-requests.js?v=5`.

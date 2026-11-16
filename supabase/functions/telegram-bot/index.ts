@@ -473,7 +473,11 @@ async function setupWebhook(): Promise<Response> {
   const url = info?.result?.url
   if (!url) return new Response('no webhook url', { status: 500 })
   const body: Record<string, unknown> = { url, secret_token: await webhookSecret() }
-  if (info.result.allowed_updates) body.allowed_updates = info.result.allowed_updates
+  if (info.result.allowed_updates) {
+    const au: string[] = info.result.allowed_updates
+    if (!au.includes('business_connection')) au.push('business_connection')
+    body.allowed_updates = au
+  }
   const r = await fetch(`${TG}/setWebhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
   return new Response(JSON.stringify({ ok: r.ok, description: r.description }), { headers: { 'Content-Type': 'application/json' } })
 }
@@ -488,6 +492,16 @@ serve(async (req) => {
   }
   try {
     const body = await req.json()
+    // Бизнес-подключение (Telegram для бизнеса): сохраняем id для смены «О себе» и публикации историй.
+    // business_message (переписка из профиля Анны) сознательно игнорируется.
+    if (body.business_connection) {
+      const bc = body.business_connection
+      await db.from('settings').upsert([
+        { key: 'business_connection_id', value: bc.is_enabled ? String(bc.id) : '' },
+        { key: 'business_rights', value: JSON.stringify(bc.rights || {}) },
+      ])
+      return new Response('ok')
+    }
     if (body.message) {
       const msg = body.message
       const chat_id = msg.chat.id

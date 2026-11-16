@@ -104,7 +104,7 @@ export function buildStory(kind, d) {
 // Эмодзи → код Twemoji (без FE0F)
 export const emojiCode = (s) => [...s].map(c => c.codePointAt(0).toString(16)).filter(c => c !== 'fe0f').join('-')
 
-export async function renderPng(tree, { satori, Resvg, fonts, emojiSvg }) {
+export async function renderPng(tree, { satori, Resvg, fonts, emojiSvg, encode }) {
   const svg = await satori(tree, {
     width: W, height: H, fonts,
     loadAdditionalAsset: async (code, segment) => {
@@ -115,6 +115,7 @@ export async function renderPng(tree, { satori, Resvg, fonts, emojiSvg }) {
       return []
     },
   })
-  const png = new Resvg(svg, { fitTo: { mode: 'original' } }).render().asPng()
-  return png
+  const img = new Resvg(svg, { fitTo: { mode: 'original' } }).render()
+  // encode — например JPEG: истории Telegram принимают фото не в любом формате
+  return encode ? encode(img) : img.asPng()
 }

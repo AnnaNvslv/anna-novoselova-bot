@@ -7,6 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import satori from 'npm:satori@0.63.2'
 import { initWasm, Resvg } from 'npm:@resvg/resvg-wasm@2.6.2'
+import jpeg from 'npm:jpeg-js@0.4.4'
 import { buildStory, renderPng, ctaArea } from './render.js'
 
 const BOT_TOKEN = Deno.env.get('BOT_TOKEN')!
@@ -89,7 +90,7 @@ async function tg(method: string, body: Record<string, unknown>) {
 async function tgForm(method: string, fields: Record<string, unknown>, files: Record<string, Uint8Array>) {
   const fd = new FormData()
   for (const [k, v] of Object.entries(fields)) if (v !== undefined) fd.append(k, typeof v === 'string' ? v : JSON.stringify(v))
-  for (const [k, v] of Object.entries(files)) fd.append(k, new Blob([v as BlobPart], { type: 'image/png' }), k + '.png')
+  for (const [k, v] of Object.entries(files)) fd.append(k, new Blob([v as BlobPart], { type: 'image/jpeg' }), k + '.jpg')
   const r = await fetch(`${TG}/${method}`, { method: 'POST', body: fd })
   return await r.json()
 }
@@ -149,7 +150,8 @@ async function render(kind: string, d: Record<string, any>) {
   const view: Record<string, any> = { ...d, avatar: await avatar() }
   if (kind === 'slots') view.groups = (d.groups || []).map((g: any) => ({ label: g.label, times: g.times.filter((t: any) => t.on).map((t: any) => t.t) }))
   if (kind === 'frame') view.photo = d.frame?.photo ? await dataUrl(d.frame.photo) : null
-  return await renderPng(buildStory(kind, view), { satori, Resvg, fonts: FONTS, emojiSvg })
+  const encode = (img: any) => jpeg.encode({ data: img.pixels, width: img.width, height: img.height }, 90).data as Uint8Array
+  return await renderPng(buildStory(kind, view), { satori, Resvg, fonts: FONTS, emojiSvg, encode })
 }
 
 // ── каталог оправ ──
@@ -301,6 +303,12 @@ async function publish(dr: any) {
 }
 
 // ── обработчики ──
+async function selfCall(body: Record<string, unknown>) {
+  const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/stories`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_KEY}` }, body: JSON.stringify(body),
+  })
+  return r.ok ? 'sent' : `error ${r.status}`
+}
 async function daily(body: any) {
   const now = localNow()
   const date = body.date || now.date
@@ -315,7 +323,8 @@ async function daily(body: any) {
     const data = await buildDraft(kind, date)
     if (!data) { out.push(`${kind}: nothing`); continue }
     const { data: dr } = await db.from('story_drafts').insert({ kind, for_date: date, data }).select().single()
-    if (dr) { await sendDraft(dr); out.push(`${kind}: sent`) }
+    // каждую картинку рендерим в отдельном вызове — у функции лимит процессорного времени на запрос
+    if (dr) out.push(`${kind}: ${await selfCall({ action: 'send', id: dr.id })}`)
   }
   return out.join(', ')
 }
@@ -421,6 +430,10 @@ serve(async (req) => {
     let out = ''
     if (body.action === 'daily') out = await daily(body)
     else if (body.action === 'cb') await onCallback(String(body.data || ''))
+    else if (body.action === 'send') {
+      const { data: dr } = await db.from('story_drafts').select('*').eq('id', body.id).maybeSingle()
+      if (dr && dr.status === 'pending') await sendDraft(dr)
+    }
     else if (body.action === 'reply') out = await onReply(String(body.text || ''))
     return new Response(out || 'ok')
   } catch (e) {

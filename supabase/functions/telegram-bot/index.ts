@@ -136,7 +136,21 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
     }).eq('id', appt.patient_id)
   }
 
-  await db.from('appointments').update({ patient_chat_id: chat_id }).eq('id', apptId)
+  // Защита от повторного подтверждения: атомарно «занимаем» запись, только если patient_chat_id ещё пуст.
+  // Повторное нажатие ссылки (двойной тап, вторая вкладка, пересланная ссылка) не шлёт Анне дубль.
+  const { data: claimed } = await db.from('appointments')
+    .update({ patient_chat_id: chat_id })
+    .eq('id', apptId)
+    .is('patient_chat_id', null)
+    .select('id')
+  const firstConfirm = !!claimed?.length
+
+  // Повтор из того же чата (или параллельный двойной тап, когда запись заняли между чтением и обновлением)
+  if (!firstConfirm && (appt.patient_chat_id == null || String(appt.patient_chat_id) === String(chat_id))) {
+    await sendMessage(chat_id,
+      `✅ Ваша запись уже подтверждена: ${formatDate(appt.date)} в ${(appt.time || '').substr(0, 5)}.\n\nЕсли планы изменятся — напишите Анне: @AnnaNvslv`)
+    return
+  }
 
   const patient = appt.patients
   const firstName = (patient.name || '').split(' ')[1] || patient.name || ''
@@ -189,8 +203,8 @@ ${Number(appt.consultation_price) > 0
 
   await sendMessage(chat_id, text)
 
-  // Уведомить Анну — теперь со ссылками
-  await notifyAnnaNewBooking(appt, patient, username, promo)
+  // Уведомить Анну — только при первом подтверждении записи
+  if (firstConfirm) await notifyAnnaNewBooking(appt, patient, username, promo)
 }
 
 // ── Привязка по телефону: пациент делится своим контактом ──

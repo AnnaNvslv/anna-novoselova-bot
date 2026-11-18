@@ -356,3 +356,79 @@
     return (dt.getMonth() === m - 1 && dt.getDate() === d) ? v : '';
   };
 })();
+
+/* ═══ 2026-11-18 (4): исправления по итогам тестирования ═══
+   - смена вида приёма сбрасывает выбранное время (иначе экспресс мог занять слот полного приёма)
+   - дата рождения в будущем не принимается
+   - смена языка не сбрасывает отмеченную причину обращения
+   - перевод подсказки «данные пациента» на сербский
+   - отказ сервера «меньше 10 минут до начала» → понятное сообщение и возврат к календарю */
+(function(){
+  const _st = selectType;
+  window.selectType = function(id){
+    if (!selectedType || selectedType.id !== id) {
+      selectedSlot = null; selectedDateStr = null;
+      const ts = document.getElementById('times-section'); if (ts) ts.style.display = 'none';
+      const fs = document.getElementById('form-slot-sum'); if (fs) fs.innerHTML = '';
+      const b = document.getElementById('btn-to-form'); if (b) b.disabled = true;
+    }
+    return _st.apply(this, arguments);
+  };
+
+  const _gd = getDobValue;
+  window.getDobValue = function(){
+    const v = _gd.apply(this, arguments); if (!v) return v;
+    const t = new Date(); const today = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+    return v > today ? '' : v;
+  };
+
+  const _rr = renderReasons;
+  window.renderReasons = function(){
+    const keep = chips('ch-reason');
+    _rr.apply(this, arguments);
+    document.querySelectorAll('#ch-reason .chip').forEach(c => { if (keep.includes(c.dataset.ru)) c.classList.add('on'); });
+  };
+
+  Object.assign(BK.ru, { patientNote: 'Пожалуйста, укажите данные пациента — того, кто придёт на приём (не того, кто заполняет анкету). Например, если вы записываете ребёнка — впишите имя и дату рождения ребёнка.' });
+  Object.assign(BK.sr, { patientNote: 'Molimo unesite podatke pacijenta — osobe koja dolazi na pregled (ne onoga ko popunjava anketu). Na primer, ako zakazujete za dete — upišite ime i datum rođenja deteta.' });
+  const _al = applyLang;
+  window.applyLang = function(){
+    _al.apply(this, arguments);
+    const n = document.getElementById('patient-note'); if (n) n.textContent = T('patientNote');
+  };
+
+  let late = false;
+  const _ins = bkInsertAppointment;
+  window.bkInsertAppointment = async function(){
+    try { return await _ins.apply(this, arguments); }
+    catch (e) {
+      const m = (e && (e.message || e.details)) || '';
+      if (/slot_too_late/.test(m)) late = 'late';
+      else if (/one_active_per_time|duplicate key/.test(m)) late = 'taken';
+      throw e;
+    }
+  };
+  const _sub = submitBooking;
+  window.submitBooking = async function(){
+    late = false;
+    const keepRu = BK.ru.errBook, keepSr = BK.sr.errBook;
+    BK.ru.errBook = '\u0000'; BK.sr.errBook = '\u0000';
+    const _alert = window.alert;
+    window.alert = function(msg){
+      if (msg === '\u0000') msg = late === 'late' ? T('errLate') : late === 'taken' ? T('errSlot') : (_lang === 'sr' ? keepSr : keepRu);
+      return _alert.call(window, msg);
+    };
+    try { return await _sub.apply(this, arguments); }
+    finally {
+      BK.ru.errBook = keepRu; BK.sr.errBook = keepSr; window.alert = _alert;
+      if (late) {
+        if (selectedSlot) allSlots = allSlots.filter(x => x.id !== selectedSlot.id);
+        selectedSlot = null; selectedDateStr = null;
+        const ts = document.getElementById('times-section'); if (ts) ts.style.display = 'none';
+        renderCalendar(); goPage('cal');
+      }
+    }
+  };
+})();
+// контакт: одна подпись об ошибке (под ником), а не две
+(function(){ const _sfe = showFieldError; window.showFieldError = function(sel){ if (sel === '#f-phone') { const el = document.getElementById('f-phone'); if (el) el.classList.add('field-error'); return; } return _sfe.apply(this, arguments); }; })();

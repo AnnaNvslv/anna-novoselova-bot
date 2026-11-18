@@ -122,8 +122,7 @@ function _comment(id,val,label){
 const REC_BLOCKS = {
   control: {label:'Наблюдение', text:`## Наблюдение
 • Контроль остроты зрения через 12 месяцев (или через 6 / 3 мес. — по назначению).
-• Плановый осмотр офтальмолога — 1 раз в год.
-• Рекомендован осмотр офтальмолога.`},
+• Плановый осмотр офтальмолога — 1 раз в год.`},
   hygiene: {label:'Гигиена зрения', text:`## Гигиена зрения при работе с экраном
 • Правило 20-20-20: каждые 20 минут — 20 секунд смотреть вдаль (от 6 метров).
 • Моргать чаще и полностью: за экраном мы моргаем намного реже, глаза пересыхают.
@@ -139,16 +138,19 @@ const REC_BLOCKS = {
 • Сильная постоянная сухость, после операций на глазах → HYLO-GEL (лучше без линз или на ночь)
 • Сухость вместе с аллергией, зудом → HYLO-DUAL
 С контактными линзами (кроме HYLO-COMOD) — капать не раньше чем через 30 минут после надевания.
-🇷🇸 В аптеке: «Dobar dan, trebaju mi kapi za oči HYLO-COMOD.» Если нет: «Imate li neke veštačke suze bez konzervansa, sa hijaluronskom kiselinom?»
-⚠️ Покраснение, боль, выделения или резкое ухудшение зрения — это не к каплям: срочно к офтальмологу.`},
+🇷🇸 В аптеке: «Dobar dan, trebaju mi kapi za oči HYLO-COMOD.» Если нет: «Imate li neke veštačke suze bez konzervansa, sa hijaluronskom kiselinom?»`},
+  urgent: {label:'Когда к врачу', text:`## Когда срочно к врачу
+⚠️ При резком ухудшении зрения, покраснении, боли или воспалении глаз — обратитесь к врачу-офтальмологу.`},
   adapt: {label:'Адаптация к очкам', text:`## Адаптация к новым очкам
 В первые дни нормально: лёгкое головокружение, «наклон» пола, искажение формы предметов, усталость глаз.
-Надевайте очки утром сразу после пробуждения. Если дискомфортно — привыкайте по шагам, каждый день начиная с того шага, на котором остановились:
-1) 15 мин в очках → 5 мин отдыха
-2) 20 мин в очках → 5 мин отдыха
-3) 25 мин в очках → 5 мин отдыха
-4) 35 мин в очках → 5 мин отдыха
-5) Очки весь день
+Надевайте очки утром, сразу после пробуждения.
+Если носить весь день сразу тяжело — привыкайте по схеме ниже. Вся схема проходится за один день, шаги идут друг за другом (это не «по шагу в день»):
+1) Наденьте очки на 15 минут, потом снимите и отдохните 5 минут
+2) Снова наденьте на 20 минут, отдохните 5 минут
+3) Наденьте на 25 минут, отдохните 5 минут
+4) Наденьте на 35 минут, отдохните 5 минут
+5) Дальше носите очки, не снимая, до вечера
+• Вся схема занимает около двух часов. Если на каком-то шаге стало тяжело — снимите очки, а на следующее утро начните схему с этого шага.
 • Старые очки не надевайте — это затягивает привыкание.
 • Обычно адаптация занимает до 2 недель. Если дискомфорт сохраняется дольше — напишите @AnnaNvslv, назначим бесплатный контрольный визит.`},
   interim: {label:'Промежуточная коррекция', text:`## Промежуточная коррекция
@@ -156,7 +158,7 @@ const REC_BLOCKS = {
 • Рекомендуем бюджетные линзы — через 6–8 недель диоптрии будут изменены.
 • Контрольный визит через 6–8 недель (бесплатно, 30 минут): проверим адаптацию и подберём следующий шаг. Telegram-бот напомнит и пришлёт ссылку на запись.`},
 };
-const DEFAULT_RECS = ['control','hygiene','drops','adapt'].map(k=>REC_BLOCKS[k].text).join('\n\n');
+const DEFAULT_RECS = ['control','hygiene','drops','urgent','adapt'].map(k=>REC_BLOCKS[k].text).join('\n\n');
 // Вставить блок в заключение (если его там ещё нет)
 function addRecBlock(key){
   const ta=document.getElementById('e-recs'); if(!ta) return;
@@ -309,31 +311,44 @@ function prevCopyExam(){
   toast('Подставлено с визита '+fmtExamDate(x)+' — проверьте','info');
 }
 
-// ── Режим ношения очков: кнопки вставляют/убирают строку в начале заключения ──
-const WEAR_OPTS = ['на постоянной основе','для дали','отдельно для работы за компьютером','для близи'];
-const WEAR_HDR = '## Режим ношения очков';
-const _wearLine = i => '• Рекомендовано ношение очков '+WEAR_OPTS[i]+'.';
-function wearToggle(i){
+// ── Кнопки-переключатели строк заключения: вставляют/убирают строку под своим заголовком ──
+// wear — в начало заключения, oph — в конец.
+const LINE_GROUPS = {
+  wear: {hdr:'## Режим ношения очков', top:true, label:'Рекомендовано ношение очков:',
+    chips:['на постоянной основе','для дали','отдельно для работы за компьютером','для близи'],
+    line: c => '• Рекомендовано ношение очков '+c+'.'},
+  oph: {hdr:'## Осмотр офтальмолога', top:false, label:'Офтальмолог:',
+    chips:['осмотр офтальмолога','осмотр в условиях циклоплегии'],
+    lines:['• Рекомендован осмотр офтальмолога.','• Рекомендован осмотр офтальмолога для проведения обследования в условиях циклоплегии.']},
+};
+const _grpLine = (g,i) => { const G=LINE_GROUPS[g]; return G.lines ? G.lines[i] : G.line(G.chips[i]); };
+function _lineChipsHtml(){
+  return Object.keys(LINE_GROUPS).map(g=>`<div class="wear-box"><span>${LINE_GROUPS[g].label}</span>${LINE_GROUPS[g].chips.map((c,i)=>`<button type="button" class="wear-chip" data-grp="${g}" data-i="${i}" tabindex="-1" onclick="lineToggle('${g}',${i})">${c}</button>`).join('')}</div>`).join('');
+}
+function lineToggle(g, i){
   const ta=document.getElementById('e-recs'); if(!ta || ta.disabled) return;
+  const G=LINE_GROUPS[g], all=G.chips.map((_,j)=>_grpLine(g,j));
   const lines=ta.value.replace(/\r/g,'').split('\n');
-  const line=_wearLine(i), at=lines.indexOf(line);
+  const line=_grpLine(g,i), at=lines.indexOf(line);
   if(at>=0){
     lines.splice(at,1);
-    if(!WEAR_OPTS.some((_,j)=>lines.includes(_wearLine(j)))){
-      const h=lines.indexOf(WEAR_HDR);
-      if(h>=0){ lines.splice(h,1); if(lines[h]==='') lines.splice(h,1); }
+    if(!all.some(l=>lines.includes(l))){
+      const h=lines.indexOf(G.hdr);
+      if(h>=0){ lines.splice(h,1); if(G.top){ if(lines[h]==='') lines.splice(h,1); } else if(h>0 && lines[h-1]==='') lines.splice(h-1,1); }
     }
   } else {
-    const h=lines.indexOf(WEAR_HDR);
-    if(h<0) lines.unshift(WEAR_HDR, line, '');
-    else { let j=h+1; while(j<lines.length && lines[j].startsWith('• Рекомендовано ношение очков')) j++; lines.splice(j,0,line); }
+    const h=lines.indexOf(G.hdr);
+    if(h<0){
+      if(G.top) lines.unshift(G.hdr, line, '');
+      else { while(lines.length && lines[lines.length-1].trim()==='') lines.pop(); if(lines.length) lines.push(''); lines.push(G.hdr, line); }
+    } else { let j=h+1; while(j<lines.length && all.includes(lines[j])) j++; lines.splice(j,0,line); }
   }
   ta.value=lines.join('\n'); _modalDirty=true; _wearSync();
 }
 function _wearSync(){
   const ta=document.getElementById('e-recs'); if(!ta) return;
   const lines=ta.value.split('\n');
-  document.querySelectorAll('#modal-container .wear-chip').forEach(b=>b.classList.toggle('on', lines.includes(_wearLine(+b.dataset.wear))));
+  document.querySelectorAll('#modal-container .wear-chip').forEach(b=>b.classList.toggle('on', lines.includes(_grpLine(b.dataset.grp,+b.dataset.i))));
 }
 
 const EXAM_TABS=[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['bino','Бинокулярное / аккомодация'],['rx','Коррекция'],['concl','Заключение']];
@@ -551,7 +566,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       <div id="exam-tab-concl" class="tab-content${_examTab==='concl'?' active':''}">
         <div class="form-group"><label>Рекомендации</label>
           <div class="ex-tools" style="margin:0 0 6px">${Object.keys(REC_BLOCKS).map(k=>`<button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="addRecBlock('${k}')">+ ${REC_BLOCKS[k].label}</button>`).join('')}</div>
-          <div class="wear-box"><span>Рекомендовано ношение очков:</span>${WEAR_OPTS.map((w,i)=>`<button type="button" class="wear-chip" data-wear="${i}" tabindex="-1" onclick="wearToggle(${i})">${w}</button>`).join('')}</div>
+          ${_lineChipsHtml()}
           <textarea id="e-recs" style="min-height:360px;font-size:14.5px;line-height:1.55" oninput="_modalDirty=true;_wearSync()">${ge('recommendations')||DEFAULT_RECS}</textarea>
           <div style="font-size:12px;color:var(--text-m);margin-top:4px">«## » — заголовок, «• » — пункт, «1) » — шаг схемы, «🇷🇸 » — подсказка по-сербски, «⚠️ » — предупреждение. На печати оформляется автоматически.</div>
         </div>

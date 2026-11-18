@@ -196,7 +196,8 @@ function _clinPrintHtml(e, onlyKeys){
       kv.push({ l: row.lsr || row.l, ru: row.lsr ? row.l : '', v: esc(c[row.k]), area: row.type==='area' });
     });
     if (!parts.length && !kv.length) return;
-    const kvHtml = kv.length ? `<table class="pc-info pc-clin">${kv.map(i=>`<tr><td>${esc(i.l)}${i.ru?`<div class="pc-ru" style="font-size:7.5pt">${esc(i.ru)}</div>`:''}</td><td${i.area?' style="white-space:pre-line"':''}>${i.v}</td></tr>`).join('')}</table>` : '';
+    // Простые поля — компактно текстом, строка на поле (раньше была таблица — занимала много места)
+    const kvHtml = kv.length ? `<div class="pc-lines">${kv.map(i=>`<div><b>${esc(i.l)}${i.ru?` <span class="pc-ru">· ${esc(i.ru)}</span>`:''}:</b> <span${i.area?' style="white-space:pre-line"':''}>${i.v}</span></div>`).join('')}</div>` : '';
     out.push(`<div class="pc-sec">${(typeof _pcLabel==='function')?_pcLabel(sec.sr, sec.title):`<div class="pc-sec-label">${sec.sr}</div>`}${parts.join('')}${kvHtml}</div>`);
   });
   return out.join('');

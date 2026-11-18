@@ -99,24 +99,30 @@ async function _buildPrintCard(examId) {
       .filter(x=>!(/[:：]\s*$/.test(x) && (x.match(/:/g)||[]).length===1)).join('\n')
     : '';
 
-  const corrections = (e?.current_corrections?.length) ? `<div class="pc-sec">
+  // Используемая коррекция — компактно текстом: «OD: −2.00 / −0.50 × 180 · PD 62 · ADD 1.00»
+  const _eyeLine = (sph,cyl,ax,extra) => {
+    const r = [sph||'', cyl ? (sph?' / ':'')+cyl+(ax?' × '+ax:'') : ''].join('');
+    const parts = [r].concat(extra.filter(x=>x[1]).map(x=>x[0]+' '+x[1])).filter(Boolean);
+    return parts.length ? parts.join(' · ') : '';
+  };
+  const ownVa = e?.clinical?.va_own_ou;
+  const corrections = (e?.current_corrections?.length || ownVa) ? `<div class="pc-sec">
       ${_pcLabel('Korekcija u upotrebi','Используемая коррекция')}
-      ${e.current_corrections.map(c=>{
+      ${(e.current_corrections||[]).map(c=>{
         const isCL = c.type==='МКЛ';
-        const cHasPrism = !isCL && (c.od_prism||c.os_prism);
-        const cols=['Sph','Cyl','Ax'].concat(cHasPrism?['Prizma']:[]).concat(isCL?['BC','DIA']:['PD']).concat(c.add?['ADD']:[]);
-        const od=[c.od_sph,c.od_cyl,c.od_ax].concat(cHasPrism?[c.od_prism]:[]).concat(isCL?[c.bc,c.dia]:[c.pd]).concat(c.add?[c.add]:[]);
-        const os=[c.os_sph,c.os_cyl,c.os_ax].concat(cHasPrism?[c.os_prism]:[]).concat(isCL?[c.bc,c.dia]:['']).concat(c.add?['']:[]);
-        return `<div class="pc-sub">
-          <div class="pc-sub-title">${_pe(c.type||'')}${c.duration?' · '+_pe(c.duration):''}</div>
-          ${_pcEyeTable(cols,od,os)}
-          ${_pcKV([{label:'Vrsta stakala',val:c.lens_type},{label:'Vrsta KS',val:c.cl_type}])}
-          ${_pcComment(c.note)}
+        const od=_eyeLine(c.od_sph,c.od_cyl,c.od_ax, isCL?[['BC',c.bc],['DIA',c.dia]]:[['Prizma',c.od_prism],['PD',c.pd],['ADD',c.add]]);
+        const os=_eyeLine(c.os_sph,c.os_cyl,c.os_ax, isCL?[]:[['Prizma',c.os_prism]]);
+        const meta=[c.lens_type?'Vrsta stakala: '+c.lens_type:'', c.cl_type?'Vrsta KS: '+c.cl_type:''].filter(Boolean).join(' · ');
+        return `<div class="pc-lines">
+          <div class="pc-lines-t">${_pe(c.type||'')}${c.duration?' · '+_pe(c.duration):''}</div>
+          ${od?`<div><b>OD:</b> ${_pe(od)}</div>`:''}${os?`<div><b>OS:</b> ${_pe(os)}</div>`:''}
+          ${meta?`<div>${_pe(meta)}</div>`:''}${c.note?`<div class="pc-lines-n">${_pt(c.note)}</div>`:''}
         </div>`;}).join('')}
+      ${ownVa?`<div class="pc-lines"><div><b>Visus OU u svojim naočarima:</b> ${_pe(ownVa)}</div></div>`:''}
     </div>` : '';
 
   const hasExamPrism = rx('exam_od_prism')||rx('exam_os_prism');
-  const hasExam = hd(['exam_od_without','exam_os_without','exam_od_cosph','exam_os_cosph','exam_od_cyl','exam_os_cyl','exam_od_ax','exam_os_ax','exam_od_with','exam_os_with','exam_od_prism','exam_os_prism','exam_ou','exam_comment']) || !!(e?.clinical?.va_ou_wo||e?.clinical?.va_own_ou);
+  const hasExam = hd(['exam_od_without','exam_os_without','exam_od_cosph','exam_os_cosph','exam_od_cyl','exam_os_cyl','exam_od_ax','exam_os_ax','exam_od_with','exam_os_with','exam_od_prism','exam_os_prism','exam_ou','exam_comment']) || !!e?.clinical?.va_ou_wo;
   const clin = keys => (typeof _clinPrintHtml==='function') ? _clinPrintHtml(e, keys) : '';
   const express = !!e?.express_pregled;
 
@@ -141,11 +147,12 @@ async function _buildPrintCard(examId) {
     ${clin(['kera'])}
     ${hasExam?`<div class="pc-sec">
       ${_pcLabel('Rezultati pregleda','Результаты обследования')}
+      ${e?.clinical?.va_ou_wo?`<div class="pc-lines" style="margin-bottom:4pt"><div><b>Visus OU bez korekcije:</b> ${_pe(e.clinical.va_ou_wo)}</div></div>`:''}
       ${_pcEyeTable(
         ['Visus bez kor.','Sph','Cyl','Ax','Visus sa kor.'].concat(hasExamPrism?['Prizma']:[]),
         [rx('exam_od_without'),rx('exam_od_cosph'),rx('exam_od_cyl'),rx('exam_od_ax'),rx('exam_od_with')].concat(hasExamPrism?[rx('exam_od_prism')]:[]),
         [rx('exam_os_without'),rx('exam_os_cosph'),rx('exam_os_cyl'),rx('exam_os_ax'),rx('exam_os_with')].concat(hasExamPrism?[rx('exam_os_prism')]:[]))}
-      ${_pcKV([{label:'Visus OU u svojim naočarima',val:e?.clinical?.va_own_ou},{label:'Visus OU bez korekcije',val:e?.clinical?.va_ou_wo},{label:'Visus OU sa korekcijom',val:rx('exam_ou')}])}
+      ${_pcKV([{label:'Visus OU sa korekcijom',val:rx('exam_ou')}])}
       ${_pcComment(rx('exam_comment'))}
     </div>`:''}
     ${clin(['subj','bino','accom','extra'])}
@@ -319,6 +326,9 @@ function _openPrintWindow(title, html) {
     .pc-info td:nth-child(odd){width:17%;color:#6b7280}
     .pc-info td:nth-child(even){width:33%}
 
+    .pc-lines{font-size:9.5pt;line-height:1.5;margin:3pt 0 5pt}
+    .pc-lines-t{font-weight:700;color:#374151}
+    .pc-lines-n{color:#4b5563;white-space:pre-line}
     .pc-kv{display:flex;flex-wrap:wrap;gap:4pt 18pt;margin-top:5pt;font-size:9pt}
     .pc-comment{margin-top:5pt;font-size:9pt;color:#4b5563;white-space:pre-line}
     .pc-recs{border-left:2pt solid #1B4F72;padding:4pt 0 4pt 9pt;font-size:9.5pt;white-space:pre-line;line-height:1.55}

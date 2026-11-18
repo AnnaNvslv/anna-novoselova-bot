@@ -234,3 +234,125 @@
     return _submit.apply(this, arguments);
   };
 })();
+
+/* ═══ 2026-11-18 (2): мягкие предупреждения для детей и подростков вместо запретов;
+   кнопки «Далее» и «Записаться» не блокируются — при клике скролл и подсветка незаполненного ═══ */
+(function(){
+  const TG = '<a href="https://t.me/AnnaNvslv" target="_blank" rel="noopener">@AnnaNvslv</a>';
+  Object.assign(BK.ru, {
+    ad10t: 'ℹ️ Важно для детей до 12 лет',
+    ad10html: 'Первичную проверку зрения и подбор первых очков детям до 12 лет рекомендуется проводить у детского офтальмолога. Записаться ко мне можно — например, на консультацию, помощь с выбором оправы и линз по рецепту или проверку готовых очков. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    acc10Label: 'Почему маленьким детям рекомендован офтальмолог? Читать →',
+    acc10Body: '<p>У маленьких детей очень активна аккомодация — глаз сам «подстраивает» фокус, из-за чего обычная проверка без специальных капель часто даёт неточный результат.</p><p>Детский офтальмолог проводит проверку с каплями, временно «выключающими» аккомодацию (циклоплегия) — это самый надёжный способ понять, нужны ли ребёнку очки и какие именно. У оптометриста таких капель нет, поэтому для первой проверки зрения ребёнку рекомендован детский офтальмолог.</p>',
+    ad17t: 'Несколько вопросов о зрении ребёнка',
+    ad17: 'Ответы помогут подготовиться к приёму. Записаться можно при любых ответах.',
+    acc17Label: 'Можно ли проверить зрение ребёнку в оптике? Читать →',
+    acc17Body: '<p>С 12 лет я принимаю детей. Для первой диагностики и первого назначения очков рекомендован детский офтальмолог.</p><p>Если очки ни разу не назначались, ребёнок ими не пользуется, давно не был у врача или зрение резко ухудшилось — рекомендован осмотр офтальмолога.</p><p>Если есть вопросы или сомнения — напишите Анне: ' + TG + '</p>',
+    kqDeclineFirst: 'Для первой проверки зрения ребёнку рекомендован осмотр детского офтальмолога. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    kqDeclineNoglasses: 'Если очки ещё не назначались, рекомендован осмотр детского офтальмолога. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    kqDeclineNotusing: 'Если ребёнок сейчас не носит назначенные очки, рекомендован осмотр детского офтальмолога. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    kqDeclineNoexam: 'Рекомендован осмотр детского офтальмолога. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    kqAcceptNote: 'Спасибо! У детей часто напряжена аккомодация, поэтому дополнительно рекомендован осмотр детского офтальмолога. Если есть вопросы или сомнения — напишите Анне: ' + TG,
+    errSlotPick: 'Выберите дату и время'
+  });
+  Object.assign(BK.sr, {
+    ad10t: 'ℹ️ Važno za decu mlađu od 12 godina',
+    ad10html: 'Prvu proveru vida i izbor prvih naočara za decu mlađu od 12 godina preporučuje se uraditi kod dečijeg oftalmologa. Kod mene možete zakazati, na primer, konsultaciju, pomoć pri izboru okvira i sočiva po receptu ili proveru gotovih naočara. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    acc10Label: 'Zašto se za malu decu preporučuje oftalmolog? Pročitaj →',
+    acc10Body: '<p>Kod male dece akomodacija je vrlo aktivna — oko samo „podešava“ fokus, zbog čega obična provera bez posebnih kapi često daje netačan rezultat.</p><p>Dečiji oftalmolog radi proveru sa kapima koje privremeno „isključuju“ akomodaciju (cikloplegija) — to je najpouzdaniji način da se utvrdi da li su detetu potrebne naočare i kakve. Optometrista nema takve kapi, zato se za prvu proveru vida deteta preporučuje dečiji oftalmolog.</p>',
+    ad17t: 'Nekoliko pitanja o vidu deteta',
+    ad17: 'Odgovori pomažu u pripremi pregleda. Zakazati možete bez obzira na odgovore.',
+    acc17Label: 'Da li se vid deteta može proveriti u optici? Pročitaj →',
+    acc17Body: '<p>Od 12. godine primam decu. Za prvu dijagnostiku i prvo propisivanje naočara preporučuje se dečiji oftalmolog.</p><p>Ako naočare nikada nisu propisane, dete ih ne koristi, dugo nije bilo kod lekara ili se vid naglo pogoršao — preporučuje se pregled kod oftalmologa.</p><p>Ako imate pitanja ili nedoumice — pišite Ani: ' + TG + '</p>',
+    kqDeclineFirst: 'Za prvu proveru vida deteta preporučuje se pregled kod dečijeg oftalmologa. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    kqDeclineNoglasses: 'Ako naočare još nisu propisane, preporučuje se pregled kod dečijeg oftalmologa. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    kqDeclineNotusing: 'Ako dete trenutno ne nosi propisane naočare, preporučuje se pregled kod dečijeg oftalmologa. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    kqDeclineNoexam: 'Preporučuje se pregled kod dečijeg oftalmologa. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    kqAcceptNote: 'Hvala! Kod dece je često pojačana akomodacija, zato se dodatno preporučuje pregled kod dečijeg oftalmologa. Ako imate pitanja ili nedoumice — pišite Ani: ' + TG,
+    errSlotPick: 'Izaberite datum i vreme'
+  });
+
+  // стиль: предупреждение (жёлтое), не запрет (красное)
+  const st = document.createElement('style');
+  st.textContent = '#age-disc-10.disc-block{background:#fffbeb;border-color:#fcd34d}#age-disc-10.disc-block h3{color:#92400e}'
+    + '.kq-decline{background:#fffbeb !important;border-color:#fcd34d !important;color:#78350f !important}'
+    + '.btn-next.inactive{background:#94a3b8}';
+  document.head.appendChild(st);
+
+  // тексты
+  const _al = applyLang;
+  window.applyLang = function(){
+    _al.apply(this, arguments);
+    const e = document.getElementById('ad10-text'); if (e) e.innerHTML = T('ad10html');
+    document.querySelectorAll('#age-disc-10 > p').forEach((p, i) => { if (i > 0) p.style.display = 'none'; }); // старая строка «По вопросам…» — теперь в тексте
+  };
+
+  // возраст больше не блокирует запись
+  window.finishKidsQuiz = function(){};
+  window.checkAge = function(dob){
+    const age = calcAge(dob);
+    const noLimit = !!(selectedType && selectedType.noAgeLimit);
+    const under12 = !noLimit && age !== null && age < 12;
+    const isKid = !noLimit && age !== null && age >= 12 && age < 18;
+    document.getElementById('age-disc-10').style.display = under12 ? 'block' : 'none';
+    document.getElementById('age-disc-17').style.display = isKid ? 'block' : 'none';
+    if (!isKid) resetKidsQuiz();
+  };
+  const _sub = submitBooking;
+  window.submitBooking = function(){
+    if (!selectedType) return _sub.apply(this, arguments);
+    const was = selectedType.noAgeLimit;
+    selectedType.noAgeLimit = true;           // пропустить возрастные проверки внутри старой функции
+    try { return _sub.apply(this, arguments); } finally { selectedType.noAgeLimit = was; }
+  };
+
+  // кнопки не блокируются: серые, но кликабельные → скролл к незаполненному
+  function keepClickable(id, busy){
+    const b = document.getElementById(id); if (!b) return;
+    const fix = () => { if (b.disabled && !busy(b)) { b.disabled = false; b.classList.add('inactive'); } };
+    new MutationObserver(fix).observe(b, { attributes: true, attributeFilter: ['disabled'] });
+    fix();
+  }
+  keepClickable('submit-btn', b => b.textContent === T('submitting'));
+  keepClickable('btn-to-form', () => false);
+  const btf = document.getElementById('btn-to-form');
+  const _go = goPage;
+  window.goPage = function(n){
+    if (n === 'form' && !selectedSlot) {
+      const ts = document.getElementById('times-section');
+      showFieldError(ts && ts.style.display !== 'none' ? '#times-grid' : '#cal-grid');
+      const m = document.querySelector('#pg-cal .err-msg'); if (m) m.textContent = T('errSlotPick');
+      return;
+    }
+    return _go.apply(this, arguments);
+  };
+  const _sel = selectTime;
+  window.selectTime = function(){
+    _sel.apply(this, arguments);
+    document.querySelectorAll('#pg-cal .field-error').forEach(el => el.classList.remove('field-error'));
+    document.querySelectorAll('#pg-cal .err-msg').forEach(el => el.remove());
+    if (btf) btf.classList.remove('inactive');
+  };
+  const _reset = resetBooking;
+  window.resetBooking = function(){ _reset.apply(this, arguments); if (btf) btf.classList.add('inactive'); };
+})();
+
+/* ═══ 2026-11-18 (3): дата рождения — в выпадашке только существующие дни месяца (31 ноября и т.п. ломали запись) ═══ */
+(function(){
+  function syncDays(){
+    const sd = document.getElementById('dob-d'), m = +document.getElementById('dob-m').value, y = +document.getElementById('dob-y').value || 2000;
+    if (!sd) return;
+    const max = m ? new Date(y, m, 0).getDate() : 31;
+    [...sd.options].forEach(o => { if (o.value) o.hidden = o.disabled = +o.value > max; });
+    if (+sd.value > max) sd.value = '';
+  }
+  const _dob = onDobChange;
+  window.onDobChange = function(){ syncDays(); return _dob.apply(this, arguments); };
+  const _gd = getDobValue;
+  window.getDobValue = function(){
+    const v = _gd.apply(this, arguments); if (!v) return v;
+    const [y, m, d] = v.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return (dt.getMonth() === m - 1 && dt.getDate() === d) ? v : '';
+  };
+})();

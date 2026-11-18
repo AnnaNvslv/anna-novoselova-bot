@@ -202,3 +202,35 @@
   document.addEventListener('change', onFix, true);
   document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('chip')) onFix(e); }, true);
 })();
+
+/* ═══ 2026-11-18: запись только на будущее время, не позже чем за 10 минут до начала (время Белграда) ═══ */
+(function(){
+  const LEAD_MIN = 10;
+  function nowBelgrade(){
+    try{
+      const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Belgrade',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+      const g = t => p.find(x => x.type === t).value;
+      return new Date(g('year')+'-'+g('month')+'-'+g('day')+'T'+g('hour')+':'+g('minute')+':00');
+    }catch(e){ return new Date(); }
+  }
+  function slotOk(date, time){
+    return new Date(date + 'T' + String(time).substr(0,5) + ':00') - nowBelgrade() >= LEAD_MIN * 60000;
+  }
+  window.slotOk = slotOk;
+  const _get = getSlotsForType;
+  window.getSlotsForType = function(){ return _get.apply(this, arguments).filter(s => slotOk(s.date, s.start_time)); };
+  Object.assign(BK.ru, { errLate: 'Это время уже недоступно — запись возможна не позже чем за 10 минут до начала. Выберите другое время.' });
+  Object.assign(BK.sr, { errLate: 'Ovaj termin više nije dostupan — zakazivanje je moguće najkasnije 10 minuta pre početka. Izaberite drugo vreme.' });
+  const _submit = submitBooking;
+  window.submitBooking = async function(){
+    if (selectedSlot && !slotOk(selectedSlot.date, selectedSlot.time)) {
+      alert(T('errLate'));
+      selectedSlot = null; selectedDateStr = null;
+      document.getElementById('times-section').style.display = 'none';
+      document.getElementById('btn-to-form').disabled = true;
+      renderCalendar(); goPage('cal');
+      return;
+    }
+    return _submit.apply(this, arguments);
+  };
+})();

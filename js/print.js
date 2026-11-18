@@ -116,12 +116,12 @@ async function _buildPrintCard(examId) {
     </div>` : '';
 
   const hasExamPrism = rx('exam_od_prism')||rx('exam_os_prism');
-  const hasExam = hd(['exam_od_without','exam_os_without','exam_od_cosph','exam_os_cosph','exam_od_cyl','exam_os_cyl','exam_od_ax','exam_os_ax','exam_od_with','exam_os_with','exam_od_prism','exam_os_prism','exam_ou','exam_comment']);
+  const hasExam = hd(['exam_od_without','exam_os_without','exam_od_cosph','exam_os_cosph','exam_od_cyl','exam_os_cyl','exam_od_ax','exam_os_ax','exam_od_with','exam_os_with','exam_od_prism','exam_os_prism','exam_ou','exam_comment']) || !!(e?.clinical?.va_ou_wo||e?.clinical?.va_own_ou);
   const clin = keys => (typeof _clinPrintHtml==='function') ? _clinPrintHtml(e, keys) : '';
   const express = !!e?.express_pregled;
 
   const html=`<div class="print-card">
-    ${_pcHeader(doctor,'Karton optometrijskog pregleda'+(express?' <span class="pc-express">Ekspres pregled</span>':''),e?.appointment_number||('Poseta br. '+(e?.visit_number||1)),date)}
+    ${_pcHeader(doctor,'Karton optometrijskog pregleda'+(express?' <span class="pc-express">Ekspres pregled</span>':''),'Poseta br. '+(e?.visit_number||1),date)}
     <div class="pc-patient-block">
       <div class="pc-patient-name">${_pe(p?.name||'')}</div>
       <div class="pc-patient-sub">${[age!==''&&age!==null?age+' god.':'',p?.dob?'D.r. '+fmt(p.dob):'',p?.patient_code?'ID: '+_pe(p.patient_code):''].filter(Boolean).join(' · ')}</div>
@@ -145,7 +145,7 @@ async function _buildPrintCard(examId) {
         ['Visus bez kor.','Sph','Cyl','Ax','Visus sa kor.'].concat(hasExamPrism?['Prizma']:[]),
         [rx('exam_od_without'),rx('exam_od_cosph'),rx('exam_od_cyl'),rx('exam_od_ax'),rx('exam_od_with')].concat(hasExamPrism?[rx('exam_od_prism')]:[]),
         [rx('exam_os_without'),rx('exam_os_cosph'),rx('exam_os_cyl'),rx('exam_os_ax'),rx('exam_os_with')].concat(hasExamPrism?[rx('exam_os_prism')]:[]))}
-      ${_pcKV([{label:'Visus OU sa korekcijom',val:rx('exam_ou')}])}
+      ${_pcKV([{label:'Visus OU u svojim naočarima',val:e?.clinical?.va_own_ou},{label:'Visus OU bez korekcije',val:e?.clinical?.va_ou_wo},{label:'Visus OU sa korekcijom',val:rx('exam_ou')}])}
       ${_pcComment(rx('exam_comment'))}
     </div>`:''}
     ${clin(['subj','bino','accom','extra'])}
@@ -209,7 +209,7 @@ async function _buildPatientPrintCard(pid) {
     const hasPrism = lastExam.rx_far_od_prism||lastExam.rx_far_os_prism;
     const hasRx = lastExam.rx_far_od_sph||lastExam.rx_far_os_sph||lastExam.rx_far_od_cyl||lastExam.rx_far_os_cyl;
     examBlock = `<div class="pc-sec">
-      ${_pcLabel('Poslednji pregled — '+_pe(lastExam.appointment_number||('poseta br. '+(lastExam.visit_number||'—')))+', '+fmtExamDate(lastExam)+(lastExam.express_pregled?' · ekspres pregled':''),'')}
+      ${_pcLabel('Poslednji pregled — '+_pe('poseta br. '+(lastExam.visit_number||'—'))+', '+fmtExamDate(lastExam)+(lastExam.express_pregled?' · ekspres pregled':''),'')}
       ${hasRx?`<div class="pc-sub-title">Naočare za daljinu</div>`+_pcEyeTable(
         ['Sph','Cyl','Ax'].concat(hasPrism?['Prizma']:[]),
         [lastExam.rx_far_od_sph,lastExam.rx_far_od_cyl,lastExam.rx_far_od_ax].concat(hasPrism?[lastExam.rx_far_od_prism]:[]),

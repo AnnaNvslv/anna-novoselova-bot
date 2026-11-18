@@ -489,34 +489,40 @@ function _apptTab(appts, pid, exams) {
   if (!appts.length) return add+'<div class="empty"><p>'+t('no_appts')+'</p></div>';
   const examByAppt = {};
   (exams||[]).forEach(e => { if (e.appointment_id && !examByAppt[e.appointment_id]) examByAppt[e.appointment_id] = e; });
-  return add+appts.map(a => {
+  const td = today();
+  // Отменённые и несостоявшиеся (запланирован, дата прошла, карты нет) — свёрнуты внизу
+  const isOff = a => a.status==='отменён' || (a.status==='запланирован' && a.date && a.date < td && !examByAppt[a.id]);
+  const row = a => {
     const ex = examByAppt[a.id];
+    const off = isOff(a);
+    const missed = off && a.status!=='отменён';
+    const kind = a.status==='отменён' ? 'off' : missed ? 'missed' : a.status==='завершён' ? 'done' : 'plan';
     const menu = ddMenu([
       {label:'✏️ '+t('pt_edit'), fn:"openEditAppt('"+a.id+"')", hide:a.status==='отменён'},
       {label:'↩ '+t('pt_revert_planned'), fn:"revertApptToPlanned('"+a.id+"')", hide:a.status!=='завершён'||isErvin()},
       {label:'🚫 '+t('pt_cancel_appt'), fn:"cancelAppt('"+a.id+"')", hide:a.status!=='запланирован'||isErvin()},
       {label:'🗑 '+t('delete'), fn:"deleteAppt('"+a.id+"')", danger:true, hide:isErvin()},
     ]);
-    return '<div class="history-item pt-row">'+
-      '<div class="history-dot"></div>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div class="history-date">'+fmt(a.date)+' · '+(a.time||'').substr(0,5)+
-          ' · <span class="badge '+(STATUS_BADGE[a.status]||'badge-gray')+'">'+statusLabel(a.status)+'</span></div>'+
-        '<div class="history-title" style="word-break:break-word">'+
-          (a.appointment_number ? '<span class="badge badge-accent" style="margin-right:6px">'+_escH(a.appointment_number)+'</span>' : '')+
-          _escH(apptTypeName(a.type||'') || t('appointments'))+
+    return '<div class="appt-row appt-'+kind+'">'+
+      '<div class="appt-main">'+
+        '<div class="appt-head"><b class="appt-when">'+fmt(a.date)+' · '+(a.time||'').substr(0,5)+'</b>'+
+          '<span class="badge '+(missed?'badge-warn':(STATUS_BADGE[a.status]||'badge-gray'))+'">'+(missed?'не состоялся':statusLabel(a.status))+'</span>'+
+          '<span class="appt-type">'+_escH(apptTypeName(a.type||'') || t('appointments'))+(a.consultation_price && !off ? ' · '+fmtMoney(a.consultation_price) : '')+'</span>'+
         '</div>'+
-        (a.consultation_price ? '<div class="text-sm text-m">'+t('cost')+': '+fmtMoney(a.consultation_price)+'</div>' : '')+
         (a.notes ? '<div class="text-sm text-m">'+_escH(a.notes)+'</div>' : '')+
-        (_hasIntake(a) ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:14px;color:var(--primary)">📝 '+t('intake_show')+'</summary><div style="margin-top:6px">'+_bookingSurveyHtml(a.intake, false)+'</div></details>' : '')+
+        (_hasIntake(a) ? '<details class="appt-intake"><summary>📝 '+t('intake_show')+'</summary><div style="margin-top:6px">'+_bookingSurveyHtml(a.intake, false)+'</div></details>' : '')+
       '</div>'+
       '<div class="history-actions">'+
-        (!isErvin() && a.status!=='отменён' ? '<button class="btn btn-primary btn-sm" onclick="'+(ex ? 'openExamView(\''+ex.id+'\',\''+pid+'\')' : 'openExamForm(\''+a.id+'\',\''+pid+'\')')+'">📋 '+(ex ? t('pt_open_exam') : t('exam_card_short'))+'</button>' : '')+
+        (!isErvin() && a.status!=='отменён' ? '<button class="btn '+(ex?'btn-primary':'btn-ghost')+' btn-sm" onclick="'+(ex ? 'openExamView(\''+ex.id+'\',\''+pid+'\')' : 'openExamForm(\''+a.id+'\',\''+pid+'\')')+'">📋 '+(ex ? t('pt_open_exam') : t('exam_card_short'))+'</button>' : '')+
         (a.status==='запланирован' && !isErvin() ? '<button class="btn btn-success btn-sm" onclick="openCompleteApptPopup(\''+a.id+'\','+(a.consultation_price||3000)+')">✓ '+t('pt_complete')+'</button>' : '')+
         menu+
       '</div>'+
     '</div>';
-  }).join('');
+  };
+  const main = appts.filter(a => !isOff(a)), off = appts.filter(isOff);
+  return add+
+    (main.length ? main.map(row).join('') : '<div class="empty"><p>'+t('no_appts')+'</p></div>')+
+    (off.length ? '<details class="appt-off-group"><summary>▸ Отменённые / несостоявшиеся ('+off.length+')</summary>'+off.map(row).join('')+'</details>' : '');
 }
 
 // ── Вкладка «Коррекция (RX)»: данные коррекции каждого осмотра таблицами OD/OS ──

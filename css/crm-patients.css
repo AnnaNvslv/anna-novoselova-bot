@@ -168,3 +168,39 @@ a.tg-nick:hover{background:#bae6fd}
 @media(max-width:768px){.ord-sum{gap:8px;padding:10px}.ord-sum label{font-size:10.5px;letter-spacing:0}}
 .pt-stat b{white-space:normal;overflow:visible;font-size:19px;line-height:1.25}
 @media(max-width:1320px){.pt-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ── Приёмы в карточке пациента (2026-11-18) ── */
+.appt-row{display:flex;gap:12px;align-items:center;padding:10px 12px;margin:0 0 8px;border:1px solid var(--border);border-left:4px solid var(--border);border-radius:0 10px 10px 0;background:var(--surface)}
+.appt-row.appt-plan{border-left-color:#2563eb;background:#f5f9ff}
+.appt-row.appt-done{border-left-color:#16a34a}
+.appt-row.appt-off,.appt-row.appt-missed{opacity:.6;padding:6px 12px;background:transparent}
+.appt-main{flex:1;min-width:0}
+.appt-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.appt-when{font-size:15px;white-space:nowrap}
+.appt-type{font-size:15px;word-break:break-word}
+.appt-intake{margin-top:4px}.appt-intake summary{cursor:pointer;font-size:13.5px;color:var(--primary)}
+.appt-off-group{margin-top:6px}.appt-off-group>summary{cursor:pointer;font-size:14px;color:var(--text-m);padding:8px 2px;list-style:none}
+.appt-off-group[open]>summary{margin-bottom:6px}
+@media(max-width:768px){.appt-row{flex-direction:column;align-items:stretch}}
+/* ── Карта обследования: свои очки, прошлый визит, скрытые заметки, режим ношения ── */
+.ex-own{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:8px 12px;background:var(--surface2);border-radius:10px;width:max-content;max-width:100%}
+.ex-own label{font-size:13.5px;font-weight:600;margin:0}
+.ex-own input{width:80px;text-align:center;padding:6px;border:1.5px solid var(--border);border-radius:8px;font-size:15px}
+.ex-prev{margin-top:12px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc}
+.ex-prev>summary{cursor:pointer;padding:8px 12px;font-size:13.5px;color:#475569;list-style:none}
+.ex-prev>summary::-webkit-details-marker,.ex-priv>summary::-webkit-details-marker,.appt-off-group>summary::-webkit-details-marker{display:none}
+.ex-prev[open] .ex-prev-chev{display:inline-block;transform:rotate(90deg)}
+.ex-prev-hint{color:#94a3b8;font-size:12px}
+.ex-prev-body{padding:0 12px 12px}
+.ex-prev-pick{margin:0 0 8px;font-size:13px}.ex-prev-pick select{width:auto;padding:3px 8px;font-size:13px}
+.ex-prev-line{font-size:13.5px;margin:6px 0}
+.ex-prev-note{font-size:13px;margin-top:6px;padding:6px 10px;border-radius:8px;background:#fffbeb;color:#92400e;white-space:pre-line}
+.ex-priv{margin-top:10px;border:1px solid #fcd34d;border-radius:10px;background:#fffbeb}
+.ex-priv>summary{cursor:pointer;padding:7px 12px;font-size:13px;color:#92400e;list-style:none}
+.ex-priv-hint{color:#b45309;font-weight:400;opacity:.8}
+.ex-priv textarea{display:block;width:calc(100% - 20px);margin:0 10px 10px;min-height:70px;font-size:13.5px;border:1px solid #fcd34d;border-radius:8px;padding:8px;background:#fff}
+.wear-box{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px;font-size:13.5px}
+.wear-box>span{font-weight:600;margin-right:4px}
+.wear-chip{border:1.5px solid var(--border);background:#fff;border-radius:18px;padding:5px 12px;font-size:13px;cursor:pointer}
+.wear-chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+@media print{.ex-priv,.ex-prev{display:none!important}}

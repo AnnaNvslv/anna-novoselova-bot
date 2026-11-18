@@ -24,6 +24,7 @@ async function openExamForm(apptId,patientId){
   _currentExamId = e.id || null;
   _currentApptType = appt?.type || '';
   if(e.current_corrections?.length)_examData.corrections=e.current_corrections;
+  await _loadPrevExams(patientId, e);
   _drawExam(p,e,visitNum,apptId,_currentApptType);
   _examApplyLock(e,false);
   _autosaveTimer = setInterval(()=>{
@@ -48,6 +49,7 @@ async function openExamView(examId,pid,edit){
   }
   _currentApptType=apptType;
   _examData.corrections=e?.current_corrections||[];
+  await _loadPrevExams(pid, e);
   openModal(`<div class="modal modal-xl"><div class="modal-header"><span></span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="spinner"></div></div></div>`);
   _drawExam(p,e,e?.visit_number||1,e?.appointment_id||'',apptType);
   _examApplyLock(e,!!edit);
@@ -170,13 +172,13 @@ function removeRecBlock(key){
   if(ta.value.includes(b.text)){ ta.value=ta.value.replace('\n\n'+b.text,'').replace(b.text,'').trim(); _modalDirty=true; }
 }
 
-// ── Дополнительные рецепты на очки (examinations.rx_extra) ──
+// ── Дополнительные коррекции на очки (examinations.rx_extra) ──
 function _rxExtraHtml(x){
   const id=x.id, p='rxx-'+id, v=f=>_escH(x[f]==null?'':String(x[f]));
   return `<div class="rx-section rx-extra" data-xid="${id}">
     <div class="rx-section-title">Параметры для изготовления очков <select id="${p}-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(x.purpose||'constant')}</select>
-      <button type="button" class="rx-extra-del" title="Удалить этот рецепт" onclick="rxExtraRemove('${id}')">×</button></div>
-    <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="rxExtraCopyFar('${id}')">← Скопировать из первого рецепта</button></div>
+      <button type="button" class="rx-extra-del" title="Удалить эту коррекцию" onclick="rxExtraRemove('${id}')">×</button></div>
+    <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="rxExtraCopyFar('${id}')">← Скопировать из первой коррекции</button></div>
     <table class="rx-table">
       <tr><th></th><th>Sph</th><th>Cyl</th><th>Ax</th><th>Prism</th></tr>
       <tr><td>OD</td><td>${_rs(p+'-od-sph','sph',v('od_sph'))}</td><td>${_rs(p+'-od-cyl','cyl',v('od_cyl'))}</td><td>${_rs(p+'-od-ax','ax',v('od_ax'))}</td><td>${_rs(p+'-od-prism','prism',v('od_prism'))}</td></tr>
@@ -186,7 +188,8 @@ function _rxExtraHtml(x){
       <div class="form-group" style="max-width:80px"><label>PD</label>${_rs(p+'-pd','pd',v('pd'))}</div>
       <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(x.purpose||'constant')}</label>${_rs(p+'-add','add',v('add'))}</div>
     </div>
-    ${_comment(p+'-comment',v('comment'),'Комментарий к рецепту')}
+    ${_comment(p+'-comment',v('comment'),'Комментарий к коррекции')}
+    ${_privNote('',v('note'),'Мои заметки — как подбирала',p+'-note')}
   </div>`;
 }
 function _rxAddLbl(sel){
@@ -203,7 +206,7 @@ function rxExtraAdd(){
 }
 function rxExtraRemove(id){
   if(_examIsLocked()) return;
-  if(!confirm('Удалить этот рецепт? Если по нему уже оформлен заказ, в заказе останутся оправа и линзы, но без диоптрий.')) return;
+  if(!confirm('Удалить эту коррекцию? Если по ней уже оформлен заказ, в заказе останутся оправа и линзы, но без диоптрий.')) return;
   const el=document.querySelector('.rx-extra[data-xid="'+id+'"]'); if(el) el.remove();
   _modalDirty=true;
 }
@@ -214,7 +217,7 @@ function rxExtraCopyFar(id){
   ['od','os'].forEach(eye=>['sph','cyl','ax','prism'].forEach(f=>set(p+'-'+eye+'-'+f, g('rf-'+eye+'-'+f))));
   set(p+'-pd', g('rf-pd')); set(p+'-add', g('rf-add'));
   _modalDirty=true;
-  toast('Скопировано из первого рецепта — поправьте диоптрии','info');
+  toast('Скопировано из первой коррекции — поправьте диоптрии','info');
 }
 function _rxExtraCollect(){
   const g=x=>{const el=document.getElementById(x);return el?el.value.trim():'';};
@@ -222,12 +225,118 @@ function _rxExtraCollect(){
     const id=el.dataset.xid, p='rxx-'+id;
     const r={id, purpose:g(p+'-purpose')||'constant'};
     ['od','os'].forEach(eye=>['sph','cyl','ax','prism'].forEach(f=>{ r[eye+'_'+f]=g(p+'-'+eye+'-'+f); }));
-    r.pd=g(p+'-pd'); r.add=g(p+'-add'); r.comment=g(p+'-comment');
+    r.pd=g(p+'-pd'); r.add=g(p+'-add'); r.comment=g(p+'-comment'); r.note=g(p+'-note');
     return r;
-  }).filter(r=>['od_sph','od_cyl','os_sph','os_cyl','pd','add','comment'].some(f=>r[f]));
+  }).filter(r=>['od_sph','od_cyl','os_sph','os_cyl','pd','add','comment','note'].some(f=>r[f]));
 }
 
-const EXAM_TABS=[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['bino','Бинокулярное / аккомодация'],['rx','Рецепты'],['concl','Заключение']];
+// ── Скрытые заметки (examinations.clinical.note_*): не печатаются, свёрнуты по умолчанию ──
+// Ключи note_* не входят в CLIN_SECTIONS, поэтому _clinPrintHtml их не выводит.
+function _privNote(key, val, label, id){
+  const attr = key ? `id="${_cid(key)}" data-clin="${key}"` : `id="${id}"`;
+  return `<details class="ex-priv"${val?' data-has="1"':''}><summary>🔒 ${label} <span class="ex-priv-hint">· не печатается${val?' · есть запись':''}</span></summary>
+    <textarea ${attr} oninput="_modalDirty=true">${_escH(val||'')}</textarea></details>`;
+}
+
+// ── Прошлые визиты пациента: показываем внутри новой карты, чтобы не прыгать между картами ──
+let _prevIdx = 0;
+const _exKey = x => x?.exam_date || (x?.created_at||'').split('T')[0] || '';
+async function _loadPrevExams(pid, e){
+  _examData.prevList = []; _prevIdx = 0;
+  if(!pid) return;
+  const {data} = await db.from('examinations').select('*').eq('patient_id',pid).is('deleted_at',null);
+  const cur = e?.id ? _exKey(e) : (_examDefaultDate?.date || today());
+  const curCreated = e?.created_at || '9999';
+  _examData.prevList = (data||[]).filter(x=>x.id!==e?.id && (_exKey(x)<cur || (_exKey(x)===cur && (x.created_at||'')<curCreated)))
+    .sort((a,b)=>(_exKey(b)+(b.created_at||'')).localeCompare(_exKey(a)+(a.created_at||'')));
+}
+function _pv(x){ return (x!=null && String(x).trim()!=='') ? _escH(x) : '—'; }
+function _prevEyeTable(cols, od, os){
+  return `<table class="rx-view"><thead><tr><th></th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>
+    <tr><td class="rx-eye">OD</td>${od.map(v=>`<td>${_pv(v)}</td>`).join('')}</tr>
+    <tr><td class="rx-eye">OS</td>${os.map(v=>`<td>${_pv(v)}</td>`).join('')}</tr></tbody></table>`;
+}
+function _prevNote(txt){ return txt ? `<div class="ex-prev-note">🔒 ${_escH(txt)}</div>` : ''; }
+function _prevBody(sec, x){
+  const c = x.clinical || {};
+  const L = _examData.prevList;
+  const pick = L.length>1 ? `<div class="ex-prev-pick">Визит: <select onchange="prevPick(this.value)">${L.map((y,i)=>`<option value="${i}" ${i===_prevIdx?'selected':''}>${fmtExamDate(y)}</option>`).join('')}</select></div>` : '';
+  let body = '';
+  if(sec==='refr'){
+    body = _prevEyeTable(['Sph','Cyl','Ax','R AVE'],[x.refr_od_sph,x.refr_od_cyl,x.refr_od_ax,x.refr_od_ave],[x.refr_os_sph,x.refr_os_cyl,x.refr_os_ax,x.refr_os_ave])
+      + (x.refr_od_pd?`<div class="ex-prev-line">PD: <b>${_escH(x.refr_od_pd)}</b></div>`:'')
+      + (x.refr_comment?`<div class="ex-prev-line">${_escH(x.refr_comment)}</div>`:'');
+  } else if(sec==='exam'){
+    body = (c.va_own_ou?`<div class="ex-prev-line">Visus в своих очках OU: <b>${_escH(c.va_own_ou)}</b></div>`:'')
+      + _prevEyeTable(['Visus b/k','Sph','Cyl','Ax','Visus s/k'],[x.exam_od_without,x.exam_od_cosph,x.exam_od_cyl,x.exam_od_ax,x.exam_od_with],[x.exam_os_without,x.exam_os_cosph,x.exam_os_cyl,x.exam_os_ax,x.exam_os_with])
+      + `<div class="ex-prev-line">OU b/k: <b>${_pv(c.va_ou_wo)}</b> · OU s/k: <b>${_pv(x.exam_ou)}</b></div>`
+      + (x.exam_comment?`<div class="ex-prev-line">${_escH(x.exam_comment)}</div>`:'')
+      + _prevNote(c.note_exam)
+      + `<div class="ex-tools" style="margin:8px 0 0"><button class="btn btn-ghost btn-sm" type="button" onclick="prevCopyExam()">← Подставить Sph / Cyl / Ax в текущую карту</button></div>`;
+  } else if(sec==='rx'){
+    const kinds = (typeof _rxKindsOf==='function') ? _rxKindsOf(x) : [];
+    body = kinds.length ? '<div class="rx-view-grid">'+kinds.map(k=>{
+      const note = (k==='far'||k==='comp'||k==='near'||k==='cl') ? c['note_rx_'+k] : (rxExtraList(x).find(r=>r.id===k)||{}).note;
+      return '<div>'+_rxTableHtml(x,k)+_prevNote(note)+'</div>';
+    }).join('')+'</div>' : '<div class="ex-prev-line">Коррекция не заполнялась</div>';
+  }
+  return pick + body;
+}
+function _prevSummary(sec){
+  const x = _examData.prevList[_prevIdx];
+  const t0 = sec==='refr' ? 'Авторефрактометрия' : sec==='rx' ? 'Коррекция' : 'Обследование';
+  return `<span class="ex-prev-chev">▸</span> ${t0} на прошлом визите · <b>${fmtExamDate(x)}</b>${_examData.prevList.length>1?` <span class="ex-prev-hint">(всего визитов: ${_examData.prevList.length})</span>`:''}`;
+}
+function _prevBox(sec){
+  const L = _examData.prevList || [];
+  if(!L.length) return '';
+  return `<details class="ex-prev" data-nolock data-sec="${sec}"><summary>${_prevSummary(sec)}</summary><div class="ex-prev-body">${_prevBody(sec, L[_prevIdx])}</div></details>`;
+}
+function prevPick(i){
+  _prevIdx = +i || 0;
+  document.querySelectorAll('#modal-container .ex-prev').forEach(d=>{
+    const sec=d.dataset.sec, x=_examData.prevList[_prevIdx];
+    d.querySelector('summary').innerHTML=_prevSummary(sec);
+    d.querySelector('.ex-prev-body').innerHTML=_prevBody(sec,x);
+  });
+}
+function prevCopyExam(){
+  if(_examIsLocked()){ toast(t('exam_locked_save'),'info'); return; }
+  const x = _examData.prevList[_prevIdx]; if(!x) return;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null){ el.value=v; } };
+  ['od','os'].forEach(eye=>{ set('x-'+eye+'-cs',x['exam_'+eye+'_cosph']); set('x-'+eye+'-cyl',x['exam_'+eye+'_cyl']); set('x-'+eye+'-ax',x['exam_'+eye+'_ax']); });
+  _modalDirty=true;
+  toast('Подставлено с визита '+fmtExamDate(x)+' — проверьте','info');
+}
+
+// ── Режим ношения очков: кнопки вставляют/убирают строку в начале заключения ──
+const WEAR_OPTS = ['на постоянной основе','для дали','отдельно для работы за компьютером','для близи'];
+const WEAR_HDR = '## Режим ношения очков';
+const _wearLine = i => '• Рекомендовано ношение очков '+WEAR_OPTS[i]+'.';
+function wearToggle(i){
+  const ta=document.getElementById('e-recs'); if(!ta || ta.disabled) return;
+  const lines=ta.value.replace(/\r/g,'').split('\n');
+  const line=_wearLine(i), at=lines.indexOf(line);
+  if(at>=0){
+    lines.splice(at,1);
+    if(!WEAR_OPTS.some((_,j)=>lines.includes(_wearLine(j)))){
+      const h=lines.indexOf(WEAR_HDR);
+      if(h>=0){ lines.splice(h,1); if(lines[h]==='') lines.splice(h,1); }
+    }
+  } else {
+    const h=lines.indexOf(WEAR_HDR);
+    if(h<0) lines.unshift(WEAR_HDR, line, '');
+    else { let j=h+1; while(j<lines.length && lines[j].startsWith('• Рекомендовано ношение очков')) j++; lines.splice(j,0,line); }
+  }
+  ta.value=lines.join('\n'); _modalDirty=true; _wearSync();
+}
+function _wearSync(){
+  const ta=document.getElementById('e-recs'); if(!ta) return;
+  const lines=ta.value.split('\n');
+  document.querySelectorAll('#modal-container .wear-chip').forEach(b=>b.classList.toggle('on', lines.includes(_wearLine(+b.dataset.wear))));
+}
+
+const EXAM_TABS=[['anamn','Анамнез'],['refr','Рефрактометрия'],['exam','Обследование'],['bino','Бинокулярное / аккомодация'],['rx','Коррекция'],['concl','Заключение']];
 function _drawExam(p,e,visitNum,apptId,apptType){
   const ge=f=>e?.[f]||'';
   const apptNum = e?.appointment_number || '';
@@ -253,7 +362,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       <div style="display:flex;flex-direction:column;gap:2px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <span class="modal-title">📋 ${t('exam_card')} — ${p?.name||''}</span>${tgTag(p?.telegram_username)}
-          ${apptNum?`<span class="badge badge-accent">${apptNum}</span>`:`<span class="badge badge-accent">${t('visit')}${visitNum}</span>`}
+          <span class="badge badge-accent">${t('visit')}${visitNum}</span>
           <label class="ex-express${isExpress?' on':''}" title="Отметьте, если это экспресс-преглед — отметка выводится на печать"><input type="checkbox" id="e-express" ${isExpress?'checked':''} onchange="this.parentNode.classList.toggle('on',this.checked);_modalDirty=true"> ⚡ ${(typeof _lang!=='undefined'&&_lang==='sr'?'Ekspres pregled':'Экспресс-преглед')}</label>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:2px">
@@ -327,17 +436,23 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group"><label>PD (оба глаза)</label>${_rs('r-pd','pd',ge('refr_od_pd'))}</div>
           </div>
           ${_comment('r-comment',ge('refr_comment'),'Комментарий к авторефрактометрии')}
+          ${_prevBox('refr')}
         </div>
         ${typeof _clinTabHtml==='function'?_clinTabHtml('refr',e):''}
       </div>
 
       <div id="exam-tab-exam" class="tab-content${_examTab==='exam'?' active':''}">
         <div class="rx-section">
+          <div class="ex-own">
+            <label>Visus в своих очках OU</label>
+            <input id="cl-va-own-ou" data-clin="va_own_ou" value="${_escH((e?.clinical||{}).va_own_ou||'')}" oninput="_modalDirty=true">
+          </div>
           <div class="rx-section-title">Результаты обследования</div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinCopyAutorefToExam()">← Взять из авторефрактометрии</button></div>
           <table class="rx-table" style="table-layout:fixed;width:100%">
             <colgroup>
               <col style="width:32px">
+              <col style="width:60px">
               <col style="width:52px">
               <col style="width:110px">
               <col style="width:110px">
@@ -346,11 +461,13 @@ function _drawExam(p,e,visitNum,apptId,apptType){
               <col style="width:70px">
               <col style="width:80px">
             </colgroup>
-            <tr><th></th><th style="font-size:10px">Visus b/k</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th style="font-size:10px">Visus s/k</th><th style="font-size:10px">Visus OU s/k</th><th>Prisma</th></tr>
-            <tr><td>OD</td><td>${_ri('x-od-wo',ge('exam_od_without'),true)}</td><td>${_rsNoBtn('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rsNoBtn('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rsNoBtn('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'),true)}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'),true)}</td><td>${_ri('x-od-prism',ge('exam_od_prism')||'',true)}</td></tr>
+            <tr><th></th><th style="font-size:10px">Visus OU b/k</th><th style="font-size:10px">Visus b/k</th><th>sa Sph</th><th>Cyl</th><th>Ax</th><th style="font-size:10px">Visus s/k</th><th style="font-size:10px">Visus OU s/k</th><th>Prisma</th></tr>
+            <tr><td>OD</td><td rowspan="2" style="vertical-align:middle;text-align:center"><input id="cl-va-ou-wo" data-clin="va_ou_wo" value="${_escH((e?.clinical||{}).va_ou_wo||'')}" oninput="_modalDirty=true" style="min-width:36px;max-width:60px"></td><td>${_ri('x-od-wo',ge('exam_od_without'),true)}</td><td>${_rsNoBtn('x-od-cs','sph',ge('exam_od_cosph'))}</td><td>${_rsNoBtn('x-od-cyl','cyl',ge('exam_od_cyl'))}</td><td>${_rsNoBtn('x-od-ax','ax',ge('exam_od_ax'))}</td><td>${_ri('x-od-wi',ge('exam_od_with'),true)}</td><td rowspan="2" style="vertical-align:middle;text-align:center">${_ri('x-ou',ge('exam_ou'),true)}</td><td>${_ri('x-od-prism',ge('exam_od_prism')||'',true)}</td></tr>
             <tr><td>OS</td><td>${_ri('x-os-wo',ge('exam_os_without'),true)}</td><td>${_rsNoBtn('x-os-cs','sph',ge('exam_os_cosph'))}</td><td>${_rsNoBtn('x-os-cyl','cyl',ge('exam_os_cyl'))}</td><td>${_rsNoBtn('x-os-ax','ax',ge('exam_os_ax'))}</td><td>${_ri('x-os-wi',ge('exam_os_with'),true)}</td><td>${_ri('x-os-prism',ge('exam_os_prism')||'',true)}</td></tr>
           </table>
           ${_comment('x-comment',ge('exam_comment'),'Комментарий к обследованию')}
+          ${_prevBox('exam')}
+          ${_privNote('note_exam',(e?.clinical||{}).note_exam,'Мои заметки по обследованию')}
         </div>
         ${typeof _clinTabHtml==='function'?_clinTabHtml('exam',e):''}
       </div>
@@ -360,6 +477,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
       </div>
 
       <div id="exam-tab-rx" class="tab-content${_examTab==='rx'?' active':''}">
+        ${_prevBox('rx')}
         <label class="ex-interim${e?.clinical?.interim?' on':''}">
           <input type="checkbox" id="e-interim" data-clin="interim" ${e?.clinical?.interim?'checked':''} onchange="clinInterimToggle(this.checked)">
           <span><b>Промежуточная коррекция для адаптации</b><br><span style="font-weight:400">Бюджетные линзы · контроль через 6–8 недель · затем замена диоптрий в сторону полной коррекции</span></span>
@@ -376,7 +494,8 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rf-pd','pd',ge('rx_far_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_far_purpose')||'far')}</label>${_rs('rf-add','add',ge('rx_far_os_pd'))}</div>
           </div>
-          ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к рецепту')}
+          ${_comment('rf-comment',ge('rx_far_comment'),'Комментарий к коррекции')}
+          ${_privNote('note_rx_far',(e?.clinical||{}).note_rx_far,'Мои заметки — как подбирала')}
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков <select id="rc-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(ge('rx_comp_purpose')||'comp')}</select></div>
@@ -390,7 +509,8 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rc-pd','pd',ge('rx_comp_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_comp_purpose')||'comp')}</label>${_rs('rc-add','add',ge('rx_comp_od_add'))}</div>
           </div>
-          ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к рецепту')}
+          ${_comment('rc-comment',ge('rx_comp_comment'),'Комментарий к коррекции')}
+          ${_privNote('note_rx_comp',(e?.clinical||{}).note_rx_comp,'Мои заметки — как подбирала')}
         </div>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для изготовления очков <select id="rn-purpose" class="rx-purpose" onchange="_modalDirty=true;_rxAddLbl(this)">${rxPurposeOptions(ge('rx_near_purpose')||'near')}</select></div>
@@ -404,10 +524,11 @@ function _drawExam(p,e,visitNum,apptId,apptType){
             <div class="form-group" style="max-width:80px"><label>PD</label>${_rs('rn-pd','pd',ge('rx_near_od_pd'))}</div>
             <div class="form-group" style="max-width:80px"><label data-addlbl>${rxAddLabel(ge('rx_near_purpose')||'near')}</label>${_rs('rn-degr','degr',ge('rx_near_od_add'))}</div>
           </div>
-          ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к рецепту')}
+          ${_comment('rn-comment',ge('rx_near_comment'),'Комментарий к коррекции')}
+          ${_privNote('note_rx_near',(e?.clinical||{}).note_rx_near,'Мои заметки — как подбирала')}
         </div>
         <div id="rx-extra-box">${rxExtraList(e).map(_rxExtraHtml).join('')}</div>
-        <button type="button" class="btn btn-ghost rx-extra-add" onclick="rxExtraAdd()">+ Ещё рецепт на очки (например, второй для дали — послабее)</button>
+        <button type="button" class="btn btn-ghost rx-extra-add" onclick="rxExtraAdd()">+ Ещё коррекция на очки (например, вторая для дали — послабее)</button>
         <div class="rx-section">
           <div class="rx-section-title">Параметры для заказа контактных линз</div>
           <div class="ex-tools"><button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="clinFarToCL()" title="Вертекс от ±4.00 D, округление в плюс, Cyl ≤ 0.75 → сферический эквивалент, торика под стандартную линейку">← Рассчитать из очков для дали</button></div>
@@ -423,13 +544,15 @@ function _drawExam(p,e,visitNum,apptId,apptType){
           </div>
           <div class="form-group mt-8"><label>Рекомендуемые контактные линзы</label><input id="rcl-type" value="${ge('rx_cl_od_type')}" oninput="_modalDirty=true"></div>
           ${_comment('rcl-comment',ge('rx_cl_comment'),'Комментарий')}
+          ${_privNote('note_rx_cl',(e?.clinical||{}).note_rx_cl,'Мои заметки — как подбирала')}
         </div>
       </div>
 
       <div id="exam-tab-concl" class="tab-content${_examTab==='concl'?' active':''}">
         <div class="form-group"><label>Рекомендации</label>
           <div class="ex-tools" style="margin:0 0 6px">${Object.keys(REC_BLOCKS).map(k=>`<button class="btn btn-ghost btn-sm" type="button" tabindex="-1" onclick="addRecBlock('${k}')">+ ${REC_BLOCKS[k].label}</button>`).join('')}</div>
-          <textarea id="e-recs" style="min-height:360px;font-size:14.5px;line-height:1.55" oninput="_modalDirty=true">${ge('recommendations')||DEFAULT_RECS}</textarea>
+          <div class="wear-box"><span>Рекомендовано ношение очков:</span>${WEAR_OPTS.map((w,i)=>`<button type="button" class="wear-chip" data-wear="${i}" tabindex="-1" onclick="wearToggle(${i})">${w}</button>`).join('')}</div>
+          <textarea id="e-recs" style="min-height:360px;font-size:14.5px;line-height:1.55" oninput="_modalDirty=true;_wearSync()">${ge('recommendations')||DEFAULT_RECS}</textarea>
           <div style="font-size:12px;color:var(--text-m);margin-top:4px">«## » — заголовок, «• » — пункт, «1) » — шаг схемы, «🇷🇸 » — подсказка по-сербски, «⚠️ » — предупреждение. На печати оформляется автоматически.</div>
         </div>
         <div class="divider"></div>
@@ -459,6 +582,7 @@ function _drawExam(p,e,visitNum,apptId,apptType){
   </div>`;
   // Клинические поля (exam-clinical.js) тоже без плейсхолдеров
   document.querySelectorAll('#modal-container [placeholder]').forEach(el=>el.removeAttribute('placeholder'));
+  _wearSync();
 }
 function _examClose(){
   if(_modalDirty && !_examIsLocked() && !confirm(t('close_unsaved'))) return;

@@ -13,12 +13,9 @@ function _pcLabel(sr,ru){ return `<div class="pc-sec-label">${sr}${ru?`<span cla
 // Шапка документа
 function _pcHeader(doctor,docType,numLine,date){
   return `<div class="pc-header">
-      <div>
-        <div class="pc-doctor">${_pe(doctor)}</div>
-        <div class="pc-doctor-sub">Optometrista · Optika Ginter · Novi Sad</div>
-      </div>
+      <div class="pc-doctor-sub">${_pe(doctor)} · Optometrista · Optika Ginter · Novi Sad</div>
       <div class="pc-meta">
-        <div class="pc-meta-num">${_pe(numLine)}</div>
+        ${numLine?`<div class="pc-meta-num">${_pe(numLine)}</div>`:''}
         <div>${_pe(date)}</div>
       </div>
     </div>
@@ -127,7 +124,7 @@ async function _buildPrintCard(examId) {
   const express = !!e?.express_pregled;
 
   const html=`<div class="print-card">
-    ${_pcHeader(doctor,'Karton optometrijskog pregleda'+(express?' <span class="pc-express">Ekspres pregled</span>':''),'Poseta br. '+(e?.visit_number||1),date)}
+    ${_pcHeader(doctor,'Karton optometrijskog pregleda'+(express?' <span class="pc-express">Ekspres pregled</span>':''),'',date)}
     <div class="pc-patient-block">
       <div class="pc-patient-name">${_pe(p?.name||'')}</div>
       <div class="pc-patient-sub">${[age!==''&&age!==null?age+' god.':'',p?.dob?'D.r. '+fmt(p.dob):'',p?.patient_code?'ID: '+_pe(p.patient_code):''].filter(Boolean).join(' · ')}</div>
@@ -179,7 +176,6 @@ async function _buildPrintCard(examId) {
     ${e?.control_date?`<div class="pc-control"><span>Kontrolna poseta</span><b>${fmt(e.control_date)}</b></div>`:''}
     <div class="pc-footer">
       <div class="pc-note">Dokument je namenjen za izbor i izradu optičke korekcije (naočare / kontaktna sočiva). U slučaju bolesti oka, bolova ili naglog pogoršanja vida obratite se lekaru oftalmologu.</div>
-      <div class="pc-sign"><div class="pc-sign-line"></div>${_pe(doctor)}</div>
     </div>
   </div>`;
   document.getElementById('print-area').innerHTML = html;
@@ -292,9 +288,9 @@ function _openPrintWindow(title, html) {
     @media screen{body{padding:0 16mm;max-width:210mm;margin:0 auto;box-shadow:0 0 0 1px #e5e7eb}}
 
     .print-card{font-family:'Helvetica Neue',Arial,sans-serif;font-size:9.5pt;color:#1f2937;line-height:1.45;hyphens:auto;overflow-wrap:break-word}
-    .pc-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:6pt;border-bottom:1.2pt solid #1B4F72}
+    .pc-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:4pt;border-bottom:0.8pt solid #1B4F72}
     .pc-doctor{font-size:13pt;font-weight:700;color:#1B4F72}
-    .pc-doctor-sub{font-size:8pt;color:#6b7280;margin-top:1pt}
+    .pc-doctor-sub{font-size:8.5pt;color:#6b7280}
     .pc-meta{text-align:right;font-size:8.5pt;color:#4b5563}
     .pc-meta-num{font-size:10.5pt;font-weight:700;color:#1B4F72}
     .pc-title{font-size:14pt;font-weight:700;color:#111827;margin:12pt 0 8pt}
@@ -355,7 +351,7 @@ function _openPrintWindow(title, html) {
     .pc-clin td{border-bottom:0.4pt solid #eef1f4}
     .pc-control{display:flex;justify-content:space-between;align-items:center;border:0.8pt solid #1B4F72;border-radius:3pt;padding:6pt 9pt;margin-bottom:11pt;font-size:10pt;color:#1B4F72;break-inside:avoid}
     .pc-footer{margin-top:14pt;padding-top:6pt;border-top:0.6pt solid #d1d9e2;display:flex;justify-content:space-between;align-items:flex-end;gap:20pt;break-inside:avoid;page-break-inside:avoid}
-    .pc-note{font-size:7.5pt;color:#6b7280;max-width:115mm;line-height:1.4}
+    .pc-note{font-size:7.5pt;color:#6b7280;line-height:1.4}
     .pc-sign{font-size:8.5pt;color:#374151;text-align:center;min-width:48mm}
     .pc-sign-line{border-top:0.6pt solid #6b7280;margin:22pt 0 2pt}
   </style></head><body><table class="pw"><thead><tr><td><div class="pw-top"></div></td></tr></thead><tfoot><tr><td><div class="pw-bot"></div></td></tr></tfoot><tbody><tr><td>${html}</td></tr></tbody></table></body></html>`);

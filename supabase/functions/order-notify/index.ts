@@ -75,6 +75,15 @@ function totals(o: Record<string, any>) {
   return { items, discount, work, total, prepay, balance: Math.max(total - prepay, 0) }
 }
 
+// Строка позиции: полная цена × кол-во, скидка (% и сумма), цена со скидкой
+function priceLines(icon: string, label: string, base: number, price: number, qty: number, discPct: unknown): string {
+  const b = base > price ? base : price
+  const q = qty > 1 ? ` × ${qty}` : ''
+  const full = `${icon} ${label}: ${money(b)}${q}${qty > 1 ? ` = ${money(b * qty)}` : ''}`
+  if (!(b > price)) return full
+  const pct = num(discPct) || Math.round((b - price) / b * 100)
+  return `${full}\n   Скидка ${pct}%: −${money((b - price) * qty)}\n   Со скидкой: <b>${money(price * qty)}</b>${qty > 1 ? ` за ${qty} шт.` : ''}`
+}
 const isCL = (o: any) => o.type === 'МКЛ'
 // Один Telegram на несколько карточек (мама + дети): приветствие без имени, в тексте — для кого заказ
 const hello = (p: any) => p._shared ? 'Здравствуйте!' : `Здравствуйте, ${esc(firstName(p))}!`
@@ -82,12 +91,12 @@ const forWhom = (p: any) => p._shared ? ` для ${esc(firstName(p))}` : ''
 function msgSummary(o: any, p: any): string {
   const t = totals(o)
   if (isCL(o)) {
-    const cl = t.items.map((it: any) => `👁 Контактные линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`).join('\n')
+    const cl = t.items.map((it: any) => priceLines('👁', `Контактные линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}`, num(it.lens_base), num(it.lens_price), num(it.lens_qty), it.lens_disc)).join('\n')
     return `${hello(p)}
 
 ${p._shared ? `Оформлен заказ на контактные линзы${forWhom(p)}` : 'Вы оформили заказ на контактные линзы'} в оптике Ginter.
 
-${cl}${t.work > 0 ? `\n🛠 Работа: ${money(t.work)}` : ''}${t.discount > 0 ? `\n🏷 Скидка: ${money(t.discount)}` : ''}
+${cl}${t.work > 0 ? `\n🛠 Работа: ${money(t.work)}` : ''}${t.discount > 0 && t.items.length > 1 ? `\n🏷 Ваша скидка: ${money(t.discount)}` : ''}
 
 <b>Итого: ${money(t.total)}</b>
 ${payLines(t)}
@@ -99,7 +108,7 @@ ${payLines(t)}
   const multi = t.items.length > 1
   const lines = t.items.map((it: any, i: number) => {
     const head = multi ? `\n<b>Очки ${i + 1}</b>\n` : ''
-    return `${head}👓 Оправа: ${money(num(it.frame_price))}\n🔍 Линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}: ${money(num(it.lens_price) * num(it.lens_qty))}`
+    return `${head}${priceLines('👓', 'Оправа', num(it.frame_base), num(it.frame_price), 1, it.frame_disc)}\n${priceLines('🔍', `Линзы${it.lens_name ? ' ' + esc(it.lens_name) : ''}`, num(it.lens_base), num(it.lens_price), num(it.lens_qty), it.lens_disc)}`
   }).join('\n')
   const pay = payLines(t)
   return `${hello(p)}
@@ -107,7 +116,7 @@ ${payLines(t)}
 ${p._shared ? `Оформлен заказ на очки${forWhom(p)}` : 'Вы оформили заказ на очки'} в оптике Ginter.
 
 ${lines}
-🛠 Работа: ${money(t.work)}${t.discount > 0 ? `\n🏷 Скидка: ${money(t.discount)}` : ''}
+🛠 Работа: ${money(t.work)}${t.discount > 0 && t.items.length > 1 ? `\n🏷 Ваша скидка: ${money(t.discount)}` : ''}
 
 <b>Итого: ${money(t.total)}</b>
 ${pay}

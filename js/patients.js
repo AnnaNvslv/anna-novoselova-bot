@@ -499,6 +499,7 @@ function _apptTab(appts, pid, exams) {
     const kind = a.status==='отменён' ? 'off' : missed ? 'missed' : a.status==='завершён' ? 'done' : 'plan';
     const menu = ddMenu([
       {label:'✏️ '+t('pt_edit'), fn:"openEditAppt('"+a.id+"')", hide:a.status==='отменён'},
+      {label:'💬 '+t('notify_resend'), fn:"apptNotifyMenu('"+a.id+"')", hide:a.status==='отменён'||isErvin()},
       {label:'↩ '+t('pt_revert_planned'), fn:"revertApptToPlanned('"+a.id+"')", hide:a.status!=='завершён'||isErvin()},
       {label:'🚫 '+t('pt_cancel_appt'), fn:"cancelAppt('"+a.id+"')", hide:a.status!=='запланирован'||isErvin()},
       {label:'🗑 '+t('delete'), fn:"deleteAppt('"+a.id+"')", danger:true, hide:isErvin()},
@@ -614,6 +615,7 @@ function _orderTab(orders, pid, exams) {
       {label:'👁 '+t('pt_view'), fn:"openOrderCard('"+o.id+"')"},
       {label:'✏️ '+t('pt_edit'), fn:"openEditOrder('"+o.id+"')", hide:!isAdmin()},
       {label:'🔁 '+t('pt_followup'), fn:"sendFollowUpSurvey('"+o.id+"')", hide:o.status!=='выдан'||isErvin()},
+      {label:'💬 '+t('notify_resend'), fn:"orderNotifyMenu('"+o.id+"')", hide:(o.type!=='Очки'&&o.type!=='МКЛ')||isErvin()},
       {label:'🗑 '+t('delete'), fn:"delOrder('"+o.id+"')", danger:true, hide:!isAdmin()},
     ]);
     return '<div class="ord-card ord-'+(o.status==='выдан'?'done':_ORDER_VOID.includes(o.status)?'void':'open')+'">'+

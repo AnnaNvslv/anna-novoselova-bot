@@ -146,7 +146,7 @@ const TRANSLATIONS = {
     pt_to_pay: 'к доплате по заказам', pt_no_debt: 'долгов нет', pt_revert_planned: 'Вернуть в запланированные',
     pt_cancel_appt: 'Отменить приём', pt_open_exam: 'Открыть карту', pt_complete: 'Завершить', pt_cl_brand: 'Линзы',
     pt_view: 'Открыть', pt_print: 'Печать', pt_express: 'экспресс', pt_confirm_delete_exam: 'Удалить карту осмотра? Её можно будет вернуть из корзины.',
-    pt_followup: 'Опрос через 2 недели', pt_interim: 'промежуточная', pt_to_work: 'В работу', pt_open_patient: 'Карточка пациента',
+    notify_resend: 'Отправить оповещение клиенту', pt_followup: 'Опрос через 2 недели', pt_interim: 'промежуточная', pt_to_work: 'В работу', pt_open_patient: 'Карточка пациента',
     exam_locked_title: 'Преглед от', exam_locked_hint: 'только просмотр. Чтобы исправить, нажмите «Изменить»',
     exam_unlocked: 'Карта открыта для изменений', exam_locked_save: 'Карта в режиме просмотра — нажмите «Изменить»',
   },
@@ -294,7 +294,7 @@ const TRANSLATIONS = {
     pt_to_pay: 'za doplatu po porudžbinama', pt_no_debt: 'bez dugovanja', pt_revert_planned: 'Vrati na zakazan',
     pt_cancel_appt: 'Otkaži pregled', pt_open_exam: 'Otvori karton', pt_complete: 'Završi', pt_cl_brand: 'Sočiva',
     pt_view: 'Otvori', pt_print: 'Štampa', pt_express: 'ekspres', pt_confirm_delete_exam: 'Obrisati karton pregleda? Može se vratiti iz korpe.',
-    pt_followup: 'Anketa posle 2 nedelje', pt_interim: 'privremena', pt_to_work: 'U izradu', pt_open_patient: 'Karton pacijenta',
+    notify_resend: 'Pošalji obaveštenje klijentu', pt_followup: 'Anketa posle 2 nedelje', pt_interim: 'privremena', pt_to_work: 'U izradu', pt_open_patient: 'Karton pacijenta',
     exam_locked_title: 'Pregled od', exam_locked_hint: 'samo pregled. Za ispravku kliknite „Izmeni"',
     exam_unlocked: 'Karton otvoren za izmene', exam_locked_save: 'Karton je u režimu pregleda — kliknite „Izmeni"',
   }

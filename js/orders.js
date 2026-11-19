@@ -397,6 +397,7 @@ function _renderOrdersTable(list) {
         '<td onclick="event.stopPropagation()"><div class="appt-actions" style="margin-top:0">'+
           (o.status==='готов' ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\')">'+ t('issue_btn')+'</button>' : '')+
           (o.status==='выдан' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey(\''+o.id+'\')">🔁</button>' : '')+
+          ((o.type==='Очки'||o.type==='МКЛ') && !isErvin() ? '<button class="btn btn-ghost btn-sm" title="'+t('notify_resend')+'" onclick="orderNotifyMenu(\''+o.id+'\')">💬</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="openEditOrder(\''+o.id+'\')">✏️</button><button class="btn btn-danger btn-sm" onclick="delOrder(\''+o.id+'\')">🗑</button>' : '')+
         '</div></td>'+
       '</tr>'
@@ -428,6 +429,7 @@ async function openOrderCard(id) {
         '<div class="profile-actions">'+
           (o.status==='готов' ? '<button class="btn btn-accent btn-sm" onclick="issueOrder(\''+o.id+'\');closeModal()">'+ t('issue_btn')+'</button>' : '')+
           (o.status==='выдан' && o.patients && o.patients.telegram_chat_id ? '<button class="btn btn-ghost btn-sm" onclick="sendFollowUpSurvey(\''+o.id+'\')">🔁</button>' : '')+
+          ((o.type==='Очки'||o.type==='МКЛ') && !isErvin() ? '<button class="btn btn-ghost btn-sm" title="'+t('notify_resend')+'" onclick="orderNotifyMenu(\''+o.id+'\')">💬</button>' : '')+
           (isAdmin() ? '<button class="btn btn-ghost btn-sm" onclick="closeModal();openEditOrder(\''+o.id+'\')">✏️ '+t('pt_edit')+'</button>' : '')+
           ddMenu([
             {label:'👤 '+t('pt_open_patient'), fn:"openPatientCard('"+o.patient_id+"')"},

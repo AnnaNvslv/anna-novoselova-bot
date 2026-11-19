@@ -3,13 +3,18 @@
 //   POST {order_id, event:'insert'|'status'}  — из триггера БД orders_notify (pg_net)
 //   POST {mode:'cron'}                         — каждый час: напоминание «очки ждут» через 3 дня + сводка в 9:15
 //   POST {mode:'digest'}                        — сводка заказов Анне сейчас (ручной запуск)
+//   POST {mode:'remind', order_id}              — кнопка 🔔 в CRM: напоминание «заберите заказ» сейчас (только сотрудник;
+//                                                 работает и для старых заказов, можно повторять)
+//   POST {mode:'resend', order_id, kind}        — кнопка 💬 в CRM: повторно отправить summary|ready|reminder|issued (только сотрудник)
 // Пишем только: заказы типа «Очки» и «МКЛ», созданные после settings.order_notify_since, пациенту с telegram_chat_id и без notify_off.
 // Каждое сообщение отправляется один раз (notify_*_at в orders).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const BOT_TOKEN = Deno.env.get('BOT_TOKEN')!
-const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+const db = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const CRM_URL = 'https://annanvslv.github.io/anna-novoselova-bot/crm-v3.html'
 const MAPS = 'https://maps.app.goo.gl/LJerB2rskqhnhES48'
 const GOOGLE_REVIEW = 'https://share.google/staovH2KzgprxiEAN'
@@ -18,6 +23,13 @@ const SPECIALISTS = 'https://t.me/specialistinovisada'
 const ANNA = '<a href="https://t.me/AnnaNvslv">@AnnaNvslv</a>'
 const HOURS = 'пн–пт 9:00–20:00\nсб 9:00–14:00\nвс — выходной'
 const LONG_DAYS = 7
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
 
 const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const money = (n: number) => Math.round(n).toLocaleString('ru-RU').replace(/\u00a0/g, ' ') + ' дин.'
@@ -177,6 +189,47 @@ async function notify(orderId: string, kind: string): Promise<string> {
   return 'sent'
 }
 
+// Ручное напоминание из CRM: без ограничения по дате заказа и без «один раз».
+async function remindNow(orderId: string): Promise<string> {
+  const { data: o } = await db.from('orders').select('*, patients(id, name, first_name, telegram_chat_id, notify_off, deleted_at)').eq('id', orderId).single()
+  if (!o || o.deleted_at) return 'no order'
+  if (o.type !== 'Очки' && o.type !== 'МКЛ') return 'not glasses / CL'
+  if (o.status !== 'готов') return 'not ready'
+  const p = o.patients
+  if (!p || p.deleted_at) return 'no order'
+  if (p.notify_off) return 'opted out'
+  if (!p.telegram_chat_id) return 'no chat'
+  const { count: sameChat } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('telegram_chat_id', p.telegram_chat_id).is('deleted_at', null)
+  p._shared = (sameChat || 0) > 1
+  if (!(await tg(p.telegram_chat_id, msgReminder(o, p)))) return 'tg error'
+  await db.from('orders').update({ notify_reminder_at: new Date().toISOString() }).eq('id', orderId)
+  return 'sent'
+}
+// Повторная отправка из CRM (кнопка 💬, сотрудник подтверждает): любое сообщение, без «один раз» и без ограничения по дате заказа.
+async function resendNow(orderId: string, kind: string): Promise<string> {
+  const k = KIND[kind]; if (!k) return 'bad kind'
+  const { data: o } = await db.from('orders').select('*, patients(id, name, first_name, telegram_chat_id, notify_off, deleted_at)').eq('id', orderId).single()
+  if (!o || o.deleted_at) return 'no order'
+  if (o.type !== 'Очки' && o.type !== 'МКЛ') return 'not glasses / CL'
+  const p = o.patients
+  if (!p || p.deleted_at) return 'no order'
+  if (p.notify_off) return 'opted out'
+  if (!p.telegram_chat_id) return 'no chat'
+  const { count: sameChat } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('telegram_chat_id', p.telegram_chat_id).is('deleted_at', null)
+  p._shared = (sameChat || 0) > 1
+  if (!(await tg(p.telegram_chat_id, k.build(o, p)))) return 'tg error'
+  await db.from('orders').update({ [k.col]: new Date().toISOString() }).eq('id', orderId)
+  return 'sent'
+}
+async function isStaff(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') || ''
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: auth } } })
+  const { data: { user } } = await userClient.auth.getUser()
+  if (!user) return false
+  const { data: role } = await db.from('user_roles').select('role').eq('user_id', user.id).maybeSingle()
+  return !!role
+}
+
 function belgradeNow() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Belgrade' })) }
 const daysSince = (d: string | null) => d ? Math.floor((Date.now() - new Date(d + (d.length === 10 ? 'T12:00:00' : '')).getTime()) / 86400000) : 0
 
@@ -218,9 +271,20 @@ async function digest(): Promise<string> {
 }
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return new Response('ok')
   try {
     const b = await req.json().catch(() => ({}))
+    if (b.mode === 'remind') {
+      if (!(await isStaff(req))) return json({ result: 'forbidden' }, 403)
+      if (!b.order_id) return json({ result: 'bad request' }, 400)
+      return json({ result: await remindNow(b.order_id) })
+    }
+    if (b.mode === 'resend') {
+      if (!(await isStaff(req))) return json({ result: 'forbidden' }, 403)
+      if (!b.order_id || !b.kind) return json({ result: 'bad request' }, 400)
+      return json({ result: await resendNow(b.order_id, b.kind) })
+    }
     if (b.mode === 'digest') return new Response(await digest())
     if (b.mode === 'cron') {
       const local = belgradeNow(); const h = local.getHours()

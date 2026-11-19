@@ -86,6 +86,59 @@ function promoLineForAnna(p: PromoInfo | null): string {
   return line
 }
 
+// Текст подтверждения записи (после /start appt_… и повторная отправка из CRM)
+function apptConfirmText(appt: Record<string, any>, promo: PromoInfo | null): string {
+  const patient = appt.patients as Record<string, any>
+  const firstName = (patient.name || '').split(' ')[1] || patient.name || ''
+  const dateLabel = formatDate(appt.date)
+  const time = (appt.time || '').substr(0, 5)
+  const apptType = appt.type as string
+  const duration = getDuration(apptType)
+  const prepNote = NO_PREP_NOTE_TYPES.has(apptType)
+    ? ''
+    : '\n\nЗа 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут до.'
+
+  const lensPromoNote = promo && promo.valid && promo.pc?.offer === 'L'
+    ? `\n🏷 Промокод ${escHtml(promo.code)} — скидка на линзы для очков${promo.pc.valid_to ? ` до ${String(promo.pc.valid_to).split('-').reverse().join('.')}` : ''}. Назовите его при заказе очков в оптике.`
+    : promo && promo.valid && promo.pc?.offer === 'PL'
+    ? `\n🏷 По промокоду ${escHtml(promo.code)} также −${Number(promo.pc.discount)}% на линзы для очков — при заказе очков в день приёма.`
+    : ''
+
+  const text =
+`Здравствуйте, ${firstName}!
+
+Вы записаны в Оптику Ginter на ${appt.type} к оптометристу <a href="https://t.me/AnnaNvslv">Анне Новосёловой</a>.
+
+🗓 ${dateLabel}
+🕒 ${time}
+
+📍Адрес: Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)
+https://maps.app.goo.gl/LJerB2rskqhnhES48
+
+Продолжительность приёма — ${duration}
+
+${Number(appt.consultation_price) > 0
+  ? `➡️ Стоимость приёма: ${Number(appt.consultation_price)} динар${promo?.applied ? ` (со скидкой ${promo.applied.discount}% по промокоду ${escHtml(promo.code)}, без скидки — ${promo.applied.base_price})` : ''}.\nОплата — только наличными.\nОчки можно оплатить картой.`
+  : '➡️ Приём бесплатный.\nОчки можно оплатить картой.'}${lensPromoNote}
+
+📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).${prepNote}
+
+📖 Как подготовиться к приёму — коротко на сайте: https://annanvslv.github.io/priem.html#podgotovka
+
+🌐 Там же — как проходит приём и статьи о зрении: https://annanvslv.github.io
+
+👥 Хотите записать ещё кого-то на приём? Оформите вторую запись: ${BOOKING_URL}
+
+❤️‍🩹 Если планы изменятся — сообщите, пожалуйста, заранее Анне: @AnnaNvslv
+
+Буду рада вашей подписке на мой канал по оптометрии: https://t.me/+brXxLUcHb-M1MmQ6
+
+До встречи!
+Анна ✨`
+
+  return text
+}
+
 async function handleStart(chat_id: number, username: string | undefined, payload: string) {
   if (!payload.startsWith('appt_')) {
     // Уже привязан (в т.ч. после /stop) — /start просто включает уведомления
@@ -153,54 +206,8 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
   }
 
   const patient = appt.patients
-  const firstName = (patient.name || '').split(' ')[1] || patient.name || ''
-  const dateLabel = formatDate(appt.date)
-  const time = (appt.time || '').substr(0, 5)
-  const apptType = appt.type as string
-  const duration = getDuration(apptType)
-  const prepNote = NO_PREP_NOTE_TYPES.has(apptType)
-    ? ''
-    : '\n\nЗа 30 минут до приёма прекратите активную зрительную нагрузку. Если носите КЛ — снимите за 20 минут до.'
-
   const promo = await getPromo(appt)
-  const lensPromoNote = promo && promo.valid && promo.pc?.offer === 'L'
-    ? `\n🏷 Промокод ${escHtml(promo.code)} — скидка на линзы для очков${promo.pc.valid_to ? ` до ${String(promo.pc.valid_to).split('-').reverse().join('.')}` : ''}. Назовите его при заказе очков в оптике.`
-    : promo && promo.valid && promo.pc?.offer === 'PL'
-    ? `\n🏷 По промокоду ${escHtml(promo.code)} также −${Number(promo.pc.discount)}% на линзы для очков — при заказе очков в день приёма.`
-    : ''
-
-  const text =
-`Здравствуйте, ${firstName}!
-
-Вы записаны в Оптику Ginter на ${appt.type} к оптометристу <a href="https://t.me/AnnaNvslv">Анне Новосёловой</a>.
-
-🗓 ${dateLabel}
-🕒 ${time}
-
-📍Адрес: Trg Republike, 25 (Рибља пијаца, там, где проходит Ночной Базар)
-https://maps.app.goo.gl/LJerB2rskqhnhES48
-
-Продолжительность приёма — ${duration}
-
-${Number(appt.consultation_price) > 0
-  ? `➡️ Стоимость приёма: ${Number(appt.consultation_price)} динар${promo?.applied ? ` (со скидкой ${promo.applied.discount}% по промокоду ${escHtml(promo.code)}, без скидки — ${promo.applied.base_price})` : ''}.\nОплата — только наличными.\nОчки можно оплатить картой.`
-  : '➡️ Приём бесплатный.\nОчки можно оплатить картой.'}${lensPromoNote}
-
-📎 Важно: На приём принесите, пожалуйста, все рецепты, обследования и очки с диоптриями (даже старые и сломанные).${prepNote}
-
-📖 Как подготовиться к приёму — коротко на сайте: https://annanvslv.github.io/priem.html#podgotovka
-
-🌐 Там же — как проходит приём и статьи о зрении: https://annanvslv.github.io
-
-👥 Хотите записать ещё кого-то на приём? Оформите вторую запись: ${BOOKING_URL}
-
-❤️‍🩹 Если планы изменятся — сообщите, пожалуйста, заранее Анне: @AnnaNvslv
-
-Буду рада вашей подписке на мой канал по оптометрии: https://t.me/+brXxLUcHb-M1MmQ6
-
-До встречи!
-Анна ✨`
-
+  const text = apptConfirmText(appt, promo)
   await sendMessage(chat_id, text)
 
   // Уведомить Анну — только при первом подтверждении записи
@@ -521,7 +528,70 @@ async function setupWebhook(): Promise<Response> {
   return new Response(JSON.stringify({ ok: r.ok, description: r.description }), { headers: { 'Content-Type': 'application/json' } })
 }
 
+// ── Повторная отправка из CRM (кнопка 💬): POST ?crm=1 {appointment_id, kind:'confirm'|'remind'} — только сотрудник ──
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const jsonRes = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } })
+async function isStaffReq(req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization') || ''
+  if (!auth) return false
+  const userClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } })
+  const { data: { user } } = await userClient.auth.getUser()
+  if (!user) return false
+  const { data: role } = await db.from('user_roles').select('role').eq('user_id', user.id).maybeSingle()
+  return !!role
+}
+async function crmResend(req: Request): Promise<Response> {
+  if (!(await isStaffReq(req))) return jsonRes({ result: 'forbidden' }, 403)
+  const b = await req.json().catch(() => ({}))
+  if (!b.appointment_id) return jsonRes({ result: 'bad request' }, 400)
+  const { data: appt } = await db.from('appointments').select('*, patients(*)').eq('id', b.appointment_id).single()
+  if (!appt || appt.deleted_at) return jsonRes({ result: 'no appointment' })
+  const pt = appt.patients || {}
+  const chat_id = appt.patient_chat_id || pt.telegram_chat_id
+  if (!chat_id) return jsonRes({ result: 'no chat' })
+  let ok = false
+  if (b.kind === 'remind') {
+    const firstName = (pt.name || '').split(' ')[1] || pt.name || ''
+    const r = await fetch(`${TG}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text:
+`👋 ${firstName}, добрый день!
+
+Напоминаем, что у вас запись к оптометристу Анне Новосёловой:
+
+🗓 ${formatDate(appt.date)}
+🕒 ${(appt.time || '').substr(0, 5)}
+📍 Trg Republike 25, Нови-Сад
+
+Всё по плану?`,
+        reply_markup: { inline_keyboard: [
+          [{ text: '✅ Да, подтверждаю', callback_data: `confirm_${appt.id}` }],
+          [{ text: '🔄 Не смогу, хочу перезаписаться', callback_data: `reschedule_${appt.id}` }],
+          [{ text: '❌ Нет, отменить запись', callback_data: `cancel_${appt.id}` }],
+        ] } }),
+    }).then(r => r.json()).catch(() => ({}))
+    ok = !!r.ok
+  } else {
+    const r = await fetch(`${TG}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text: apptConfirmText(appt, await getPromo(appt)) }),
+    }).then(r => r.json()).catch(() => ({}))
+    ok = !!r.ok
+  }
+  return jsonRes({ result: ok ? 'sent' : 'tg error' })
+}
+
 serve(async (req) => {
+  const isCrm = new URL(req.url).searchParams.get('crm') === '1'
+  if (isCrm && req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  if (isCrm && req.method === 'POST') {
+    try { return await crmResend(req) } catch (e) { console.error(e); return jsonRes({ result: 'error' }, 500) }
+  }
   if (req.method !== 'POST') {
     if (new URL(req.url).searchParams.get('setup') === '1') return await setupWebhook()
     return new Response('ok')

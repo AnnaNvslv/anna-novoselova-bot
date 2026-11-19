@@ -87,10 +87,10 @@ async function tg(method: string, body: Record<string, unknown>) {
   const r = await fetch(`${TG}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   return await r.json()
 }
-async function tgForm(method: string, fields: Record<string, unknown>, files: Record<string, Uint8Array>) {
+async function tgForm(method: string, fields: Record<string, unknown>, files: Record<string, Uint8Array>, mime = 'image/jpeg') {
   const fd = new FormData()
   for (const [k, v] of Object.entries(fields)) if (v !== undefined) fd.append(k, typeof v === 'string' ? v : JSON.stringify(v))
-  for (const [k, v] of Object.entries(files)) fd.append(k, new Blob([v as BlobPart], { type: 'image/jpeg' }), k + '.jpg')
+  for (const [k, v] of Object.entries(files)) fd.append(k, new Blob([v as BlobPart], { type: mime }), k + (mime === 'image/png' ? '.png' : '.jpg'))
   const r = await fetch(`${TG}/${method}`, { method: 'POST', body: fd })
   return await r.json()
 }
@@ -131,6 +131,7 @@ async function dataUrl(url: string): Promise<string | null> {
     return `data:${ct.includes('png') ? 'image/png' : 'image/jpeg'};base64,${b64(await r.arrayBuffer())}`
   } catch { return null }
 }
+let _lastImg: any = null
 let _avatar: string | null | undefined
 async function avatar() {
   if (_avatar !== undefined) return _avatar
@@ -150,7 +151,7 @@ async function render(kind: string, d: Record<string, any>) {
   const view: Record<string, any> = { ...d, avatar: await avatar() }
   if (kind === 'slots') view.groups = (d.groups || []).map((g: any) => ({ label: g.label, times: g.times.filter((t: any) => t.on).map((t: any) => t.t) }))
   if (kind === 'frame') view.photo = d.frame?.photo ? await dataUrl(d.frame.photo) : null
-  const encode = (img: any) => jpeg.encode({ data: img.pixels, width: img.width, height: img.height }, 90).data as Uint8Array
+  const encode = (img: any) => { _lastImg = img; return jpeg.encode({ data: img.pixels, width: img.width, height: img.height }, 90).data as Uint8Array }
   return await renderPng(buildStory(kind, view), { satori, Resvg, fonts: FONTS, emojiSvg, encode })
 }
 
@@ -220,14 +221,15 @@ function kindsFor(date: string, slotDays: number[]) {
 // ── сообщение-черновик Анне ──
 function caption(dr: any) {
   const head = `📝 Черновик: ${KIND_NAME[dr.kind]}`
-  if (dr.status === 'published') return `${head}\n✅ Опубликовано`
+  if (dr.status === 'published') return `${head}\n✅ ${dr.kind === 'bio' ? 'Сохранено' : 'Выложено'}`
   if (dr.status === 'skipped') return `${head}\n⏭ Пропущено`
   if (dr.status === 'failed') return `${head}\n⚠️ Не удалось опубликовать: ${dr.error || ''}`
   if (dr.kind === 'bio') return `${head}\n\n${dr.data.text}\n\n(${dr.data.text.length}/140 символов)`
   let tail = ''
   if (dr.kind === 'slots') tail = '\nНажми на время, чтобы убрать его из истории или вернуть.'
   if (dr.kind === 'frame') tail = `\nОправа: ${dr.data.frame?.name} (шифр ${dr.data.frame?.code || '—'})\n◀ ▶ — другая оправа, 🔎 — выбрать по шифру.`
-  return `${head}${tail}\n\nПубликовать?`
+  const link = dr.kind === 'frame' ? FRAME_URL(dr.data.frame?.id) : BOOK_URL
+  return `${head}${tail}\n\n📲 Как выложить: открой картинку → «Сохранить» → «Добавить историю» → выбери её. Стикер «Ссылка»: ${link}\nПотом нажми «Выложила».`
 }
 function keyboard(dr: any) {
   if (dr.status !== 'pending') return { inline_keyboard: [] }
@@ -240,7 +242,8 @@ function keyboard(dr: any) {
   }
   if (dr.kind === 'frame') rows.push([{ text: '◀', callback_data: `st_fp_${id}` }, { text: '▶', callback_data: `st_fn_${id}` }, { text: '🔎 По шифру', callback_data: `st_fc_${id}` }])
   rows.push([
-    { text: dr.kind === 'bio' ? '✅ Сохранить' : '✅ Опубликовать', callback_data: `st_pub_${id}` },
+    // Истории пока выкладывает Анна вручную: postStory отклоняет отрисованные картинки (см. FIXES.md)
+    dr.kind === 'bio' ? { text: '✅ Сохранить', callback_data: `st_pub_${id}` } : { text: '✅ Выложила', callback_data: `st_done_${id}` },
     { text: '✏️ Изменить', callback_data: `st_edit_${id}` },
     { text: '⏭ Пропустить', callback_data: `st_skip_${id}` },
   ])
@@ -285,21 +288,28 @@ async function publish(dr: any) {
   }
   if (dr.kind === 'slots' && dr.for_date !== localNow().date) return 'черновик устарел — окна были на другой день'
   if (dr.kind === 'slots' && !dr.data.groups.some((g: any) => g.times.some((t: any) => t.on))) return 'не выбрано ни одного окна'
-  const png = await render(dr.kind, dr.data)
+  const jpg = await render(dr.kind, dr.data)
   const o = STORY_OPTS[dr.kind]
   const url = dr.kind === 'frame' ? FRAME_URL(dr.data.frame.id) : BOOK_URL
-  const fields: Record<string, unknown> = {
-    business_connection_id: bc, content: { type: 'photo', photo: 'attach://story' },
-    active_period: String(o.period), post_to_chat_page: String(o.page), areas: [ctaArea(url)],
+  // Несколько способов по очереди; публикуется только первый удачный, неудачные ничего не публикуют
+  const attempts: { areas: boolean; png: boolean }[] = [{ areas: true, png: false }, { areas: false, png: false }, { areas: false, png: true }]
+  const log: string[] = []
+  let r: any = null, used: { areas: boolean; png: boolean } | null = null
+  for (const a of attempts) {
+    const fields: Record<string, unknown> = {
+      business_connection_id: bc, content: { type: 'photo', photo: 'attach://story' },
+      active_period: String(o.period), post_to_chat_page: String(o.page),
+    }
+    if (a.areas) fields.areas = [ctaArea(url)]
+    const file = a.png ? (_lastImg?.asPng() as Uint8Array) : jpg
+    r = await tgForm('postStory', fields, { story: file }, a.png ? 'image/png' : 'image/jpeg')
+    log.push(`${a.areas ? 'area' : 'noarea'}/${a.png ? 'png' : 'jpg'}/${file?.length}: ${r.ok ? 'ok' : r.description}`)
+    if (r.ok) { used = a; break }
   }
-  let r = await tgForm('postStory', fields, { story: png })
-  if (!r.ok && /area|link|premium/i.test(r.description || '')) {
-    delete fields.areas
-    r = await tgForm('postStory', fields, { story: png })
-    if (r.ok) await tg('sendMessage', { chat_id: Number(await setting('my_chat_id')), text: `ℹ️ История опубликована, но Telegram не принял кликабельную ссылку на кнопке (${r.description || 'ограничение аккаунта'}). Ссылка остаётся в профиле.` })
-  }
-  if (r.ok) await db.from('story_drafts').update({ story_id: r.result?.id ?? null }).eq('id', dr.id)
-  return r.ok ? null : r.description
+  console.log('postStory', dr.kind, log.join(' | '))
+  await db.from('story_drafts').update({ story_id: r?.ok ? r.result?.id ?? null : null, error: log.join(' | ') }).eq('id', dr.id)
+  if (r?.ok && used && !used.areas) await tg('sendMessage', { chat_id: Number(await setting('my_chat_id')), text: 'ℹ️ История опубликована, но без кликабельной кнопки — Telegram её не принял. Ссылка на запись остаётся в профиле.' })
+  return r?.ok ? null : r?.description
 }
 
 // ── обработчики ──
@@ -358,6 +368,10 @@ async function onCallback(data: string) {
       text: (dr.kind === 'bio' ? '✏️ Пришли новый текст «О себе» (до 140 символов).' : '✏️ Пришли новый текст: первая строка — заголовок, дальше — текст под ним.') +
         '\n\nСейчас:\n' + cur + '\n\nОтмена: /cancel',
     })
+  } else if (op === 'done') {
+    dr.status = 'published'
+    await db.from('story_drafts').update({ status: 'published', updated_at: new Date().toISOString() }).eq('id', id)
+    await refreshDraft(dr, false)
   } else if (op === 'skip') {
     dr.status = 'skipped'
     await db.from('story_drafts').update({ status: 'skipped', updated_at: new Date().toISOString() }).eq('id', id)
@@ -365,7 +379,7 @@ async function onCallback(data: string) {
   } else if (op === 'pub') {
     const err = await publish(dr)
     dr.status = err ? 'failed' : 'published'; dr.error = err
-    await db.from('story_drafts').update({ status: dr.status, error: err, updated_at: new Date().toISOString() }).eq('id', id)
+    await db.from('story_drafts').update({ status: dr.status, updated_at: new Date().toISOString() }).eq('id', id)
     if (err) {
       // оставляем черновик активным, чтобы можно было поправить и опубликовать снова
       await tg('sendMessage', { chat_id: me, text: `⚠️ Не удалось: ${err}` })

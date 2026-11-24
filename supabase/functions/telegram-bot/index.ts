@@ -139,7 +139,7 @@ ${Number(appt.consultation_price) > 0
   return text
 }
 
-async function handleStart(chat_id: number, username: string | undefined, payload: string) {
+async function handleStart(chat_id: number, username: string | undefined, payload: string, from: Record<string, unknown> = {}) {
   if (!payload.startsWith('appt_')) {
     // Уже привязан (в т.ч. после /stop) — /start просто включает уведомления
     const { data: linked } = await db.from('patients').select('id, name, notify_off').eq('telegram_chat_id', chat_id).is('deleted_at', null)
@@ -151,6 +151,8 @@ async function handleStart(chat_id: number, username: string | undefined, payloa
       return
     }
     // Привязка по номеру телефона (QR-карточка в оптике): уведомления о заказах очков
+    // Сразу фиксируем клиента в «Ждут привязки» — даже если он дальше ничего не нажмёт
+    await saveStartOnly(chat_id, username, [from?.first_name, from?.last_name].filter(Boolean).join(' '))
     await sendMessage(chat_id,
       'Здравствуйте! Это бот оптометриста Анны Новосёловой в оптике Ginter.\n\n' +
       'Здесь будут приходить уведомления о вашем заказе на очки: когда заказ оформлен и когда очки готовы.\n\n' +
@@ -240,6 +242,14 @@ async function handleContact(chat_id: number, username: string | undefined, cont
   for (const p of matches) {
     await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}) }).eq('id', p.id)
   }
+  // История «Ждут привязки»: закрыть открытый запрос этого чата (или записать автопривязку)
+  {
+    const tgName = [contact.first_name, contact.last_name].filter(Boolean).join(' ')
+    const done = { resolved_at: new Date().toISOString(), patient_id: matches[0].id, phone, username: username || null, tg_name: tgName || null }
+    const { data: open } = await db.from('bot_link_requests').select('id').eq('chat_id', chat_id).is('resolved_at', null).limit(1)
+    if (open?.length) await db.from('bot_link_requests').update(done).eq('id', open[0].id)
+    else await db.from('bot_link_requests').insert({ chat_id, message: null, ...done })
+  }
   await sendMessage(chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop', removeKb)
   if (myChatId) await sendMessage(Number(myChatId), `🔗 Клиент поделился номером ${escHtml(phone)} — Telegram привязан к карточке: ${matches.map(p => escHtml(String(p.name))).join(', ')}${username ? `\n(ник в Telegram: @${escHtml(username)})` : ''}`)
 }
@@ -252,7 +262,7 @@ async function saveLinkRequest(chat_id: number, username: string | undefined, tg
       username: username || null, tg_name: tgName || null,
       phone: phone || o.phone, message: message ? [o.message, message].filter(Boolean).join(' / ').slice(0, 500) : o.message,
     }).eq('id', o.id)
-    if (!phone || o.phone) return // уже предупреждали — не дублируем
+    if ((!phone || o.phone) && !(message && !o.message)) return // уже предупреждали — не дублируем
   } else {
     await db.from('bot_link_requests').insert({ chat_id, username: username || null, tg_name: tgName || null, phone, message: message ? message.slice(0, 500) : null })
   }
@@ -262,6 +272,13 @@ async function saveLinkRequest(chat_id: number, username: string | undefined, tg
     (phone ? `Телефон: ${escHtml(phone)} — в CRM не найден\n` : '') +
     `Telegram: ${escHtml(tgName || '—')}${username ? ' · @' + escHtml(username) : ''}\n\n` +
     `Откройте CRM → «Ждут привязки» и нажмите «Привязать» у нужного пациента.\n🗂 ${CRM_URL}`)
+}
+// Клиент только открыл бота (/start по QR) и ещё не поделился номером / не написал имя
+async function saveStartOnly(chat_id: number, username: string | undefined, tgName: string) {
+  const { data: open } = await db.from('bot_link_requests').select('id').eq('chat_id', chat_id).is('resolved_at', null).limit(1)
+  if (open?.length) return
+  await db.from('bot_link_requests').insert({ chat_id, username: username || null, tg_name: tgName || null, phone: null, message: null })
+  await notifyAnna(`🔗 Клиент открыл бота (QR), пока не поделился номером\nTelegram: ${escHtml(tgName || '—')}${username ? ' · @' + escHtml(username) : ''}\n\nCRM → Пациенты → «Ждут привязки»\n🗂 ${CRM_URL}`)
 }
 // Свободный текст от клиента, который ещё не привязан ни к одной карточке
 async function handleFreeText(chat_id: number, username: string | undefined, from: Record<string, unknown>, text: string) {
@@ -626,7 +643,7 @@ serve(async (req) => {
         await handleStop(chat_id)
       } else if (text.startsWith('/start')) {
         const payload = text.split(' ')[1] || ''
-        await handleStart(chat_id, username, payload)
+        await handleStart(chat_id, username, payload, msg.from || {})
       } else if (text.trim() && !text.startsWith('/')) {
         await handleFreeText(chat_id, username, msg.from || {}, text.trim())
       }

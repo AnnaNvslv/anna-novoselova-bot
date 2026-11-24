@@ -33,16 +33,29 @@ async function openLinkRequests() {
         '<div style="font-weight:700">'+_lrEsc(who)+'</div>'+
         (r.message ? '<div class="text-sm">'+(sr?'Napisao: ':'Написал: ')+'«'+_lrEsc(r.message)+'»</div>' : '')+
         (r.phone ? '<div class="text-sm">'+(sr?'Telefon (nije u CRM): ':'Телефон (нет в CRM): ')+_lrEsc(r.phone)+'</div>' : '')+
+        (!r.phone && !r.message ? '<div class="text-sm text-m">'+(sr?'Samo otvorio bota (QR), broj nije podelio':'Только открыл бота (QR), номер не прислал')+'</div>' : '')+
         '<div class="text-sm text-m">'+when+'</div>'+
       '</div><button class="btn btn-ghost btn-sm" onclick="_lrDismiss(\''+r.id+'\')">'+(sr?'Odbaci':'Отклонить')+'</button></div>'+
       '<input class="lr-q" style="margin-top:8px;width:100%" placeholder="'+(sr?'Pretraga pacijenta: ime ili telefon':'Поиск пациента: имя или телефон')+'" value="'+_lrEsc(q)+'" oninput="_lrSearch(\''+r.id+'\',this.value)">'+
       '<div id="lr-res-'+r.id+'" style="margin-top:6px"></div>'+
     '</div>';
   }).join('') : '<div class="text-m">'+(sr?'Nema zahteva.':'Нет запросов.')+'</div>';
+  // Привязанные за 30 дней — чтобы видеть, кто уже подключился
+  const since = new Date(Date.now() - 30*864e5).toISOString();
+  const {data:done} = await db.from('bot_link_requests').select('id,created_at,resolved_at,username,tg_name,phone,patient_id,patients(name,phone)').not('patient_id','is',null).gte('resolved_at', since).order('resolved_at', {ascending:false}).limit(100);
+  const doneHtml = (done||[]).length ? '<div style="margin-top:18px;font-weight:700">✅ '+(sr?'Povezani (30 dana)':'Привязаны (30 дней)')+': '+done.length+'</div>'+
+    done.map(r => {
+      const who = [r.tg_name, r.username ? '@'+r.username : ''].filter(Boolean).join(' · ') || '—';
+      const when = new Date(r.resolved_at).toLocaleString(sr ? 'sr-Latn' : 'ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+      return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><div>'+
+        '<b>'+_lrEsc(r.patients?.name || '—')+'</b> <span class="text-sm text-m">'+_lrEsc(r.patients?.phone || r.phone || '')+'</span>'+
+        '<div class="text-sm text-m">Telegram: '+_lrEsc(who)+' · '+when+'</div></div>'+
+        '<button class="btn btn-ghost btn-sm" onclick="closeModal();openPatientCard(\''+r.patient_id+'\')">'+t('card')+'</button></div>';
+    }).join('') : '';
   openModal('<div class="modal modal-lg"><div class="modal-header"><span class="modal-title">🔗 '+(sr?'Čekaju povezivanje sa botom':'Ждут привязки к боту')+': '+rows.length+'</span><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>'+
     '<div class="modal-body"><div class="text-sm text-m" style="margin-bottom:6px">'+(sr
       ? 'Ovi klijenti su pisali botu, ali ih bot nije našao u CRM. Pronađite pacijenta i kliknite „Poveži" — klijent će dobijati obaveštenja o porudžbinama.'
-      : 'Эти клиенты написали боту, но бот не нашёл их в CRM. Найдите пациента и нажмите «Привязать» — клиент начнёт получать уведомления о заказах. Если пациента ещё нет — «➕ Создать пациента».')+'</div>'+body+'</div>'+
+      : 'Эти клиенты открыли бота или написали ему, но бот не нашёл их в CRM. Найдите пациента и нажмите «Привязать» — клиент начнёт получать уведомления о заказах. Если пациента ещё нет — «➕ Создать пациента».')+'</div>'+body+doneHtml+'</div>'+
     '<div class="modal-footer"><button class="btn btn-accent" onclick="closeModal()">OK</button></div></div>');
   rows.forEach(r => { const inp = document.querySelector('#lr-res-'+r.id); if (inp) _lrSearch(r.id, inp.previousElementSibling.value); });
 }
@@ -145,8 +158,15 @@ async function _lrDismiss(reqId) {
 async function _lrAfter() {
   const {count} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
   sessionStorage.setItem('crm_lr_shown', String(count || 0));
-  if (count) { openLinkRequests(); return; }
-  closeModal();
+  updateLinkReqBtn();
+  openLinkRequests();
+}
+// Кнопка «🔗 Ждут привязки (N)» в разделе Пациенты
+async function updateLinkReqBtn() {
+  const b = document.getElementById('lr-btn'); if (!b) return;
+  const {count} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
+  b.textContent = '🔗 '+(_lrSr()?'Čekaju povezivanje':'Ждут привязки')+(count ? ' ('+count+')' : '');
+  b.className = 'btn '+(count ? 'btn-accent' : 'btn-ghost');
 }
 
 // ── Клиент без бота: подсказка после оформления заказа и при «Готов» ──

@@ -22,6 +22,7 @@ async function renderPatients() {
   document.getElementById('content').innerHTML =
     '<div class="topbar"><h1>'+t('patients')+'</h1><div class="topbar-actions">'+
       '<button id="dupes-btn" class="btn btn-ghost" style="display:none" onclick="openDupesModal()"></button>'+
+      (isAdmin() ? '<button id="lr-btn" class="btn btn-ghost" onclick="openLinkRequests()">🔗 '+(_lang==='sr'?'Čekaju povezivanje':'Ждут привязки')+'</button>' : '')+
       (!isErvin() ? '<button class="btn btn-accent" onclick="openAddPatient()">'+t('add_patient_short')+'</button>' : '')+
     '</div></div>'+
     '<div class="content pt-content">'+
@@ -53,6 +54,7 @@ async function renderPatients() {
   filterPatientsUI(_patientQuery);
   const lst = document.getElementById('pt-list'); if (lst && prevScroll) lst.scrollTop = prevScroll;
   _updateDupesBtn();
+  if (typeof updateLinkReqBtn==='function') updateLinkReqBtn();
   if (_openPatientId && _allPatients.some(p => p.id === _openPatientId)) {
     await _renderPatientCard(_openPatientId);
   } else if (_openPatientId) {

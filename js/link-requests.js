@@ -104,10 +104,11 @@ async function _lrLink(reqId, patientId) {
   if (!r) return;
   const upd = {telegram_chat_id: r.chat_id, notify_off: false};
   if (r.username) upd.telegram_username = '@' + r.username;
+  if (r.phone) upd.telegram_phone = String(r.phone).trim().startsWith('+') ? String(r.phone).trim() : '+' + _lrDigits(r.phone);
   const {error} = await db.from('patients').update(upd).eq('id', patientId);
   if (error) { toast(t('error')+': '+error.message, 'error'); return; }
   await db.from('bot_link_requests').update({resolved_at: new Date().toISOString(), patient_id: patientId}).eq('id', reqId);
-  await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop');
+  await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop', {patient_id: patientId, kind: 'linked'});
   // Открытые заказы: отправить то, что клиент пропустил (сводку для «в работе», «готово» для «готов»)
   const {data:orders} = await db.from('orders').select('id,status').eq('patient_id', patientId).in('status', ['в работе','готов']).in('type', ['Очки','МКЛ']).is('deleted_at', null);
   for (const o of orders || []) {
@@ -133,13 +134,14 @@ async function _lrCreate(reqId) {
     phone: r.phone ? (String(r.phone).trim().startsWith('+') ? String(r.phone).trim() : '+' + _lrDigits(r.phone)) : null,
     telegram_chat_id: r.chat_id,
     telegram_username: r.username ? '@' + r.username : null,
+    telegram_phone: r.phone ? (String(r.phone).trim().startsWith('+') ? String(r.phone).trim() : '+' + _lrDigits(r.phone)) : null,
     notify_off: false
   };
   if (!confirm((sr ? 'Kreirati novog pacijenta i povezati ga sa botom?\n' : 'Создать нового пациента и привязать к боту?\n') + row.name + (row.phone ? '\n' + row.phone : ''))) return;
   const {data:np, error} = await db.from('patients').insert(row).select('id').single();
   if (error) { toast(t('error')+': '+error.message, 'error'); return; }
   await db.from('bot_link_requests').update({resolved_at: new Date().toISOString(), patient_id: np.id}).eq('id', reqId);
-  try { await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop'); } catch (e) { console.error(e); }
+  try { await tgSend(r.chat_id, '✅ Готово! Теперь сюда будут приходить уведомления о ваших заказах на очки.\n\nЕсли не хотите получать уведомления, отправьте /stop', {patient_id: np.id, kind: 'linked'}); } catch (e) { console.error(e); }
   const {count} = await db.from('bot_link_requests').select('id', {count:'exact', head:true}).is('resolved_at', null);
   sessionStorage.setItem('crm_lr_shown', String(count || 0));
   toast(sr ? 'Pacijent kreiran i povezan ✓' : 'Пациент создан и привязан ✓');

@@ -237,3 +237,10 @@ function ddToggle(e, btn) {
 document.addEventListener('click', ddClose);
 window.addEventListener('resize', ddClose);
 document.addEventListener('scroll', ddClose, true);
+
+// Телефон из Telegram отличается от основного (сравнение по последним 8 цифрам)
+function tgPhoneDiffers(p) {
+  if (!p || !p.telegram_phone) return false;
+  const d = s => String(s || '').replace(/\D/g, '').slice(-8);
+  return d(p.telegram_phone) !== d(p.phone);
+}

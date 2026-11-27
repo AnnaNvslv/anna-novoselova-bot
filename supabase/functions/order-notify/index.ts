@@ -35,13 +35,18 @@ const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g,
 const money = (n: number) => Math.round(n).toLocaleString('ru-RU').replace(/\u00a0/g, ' ') + ' дин.'
 const num = (x: unknown) => Number(x) || 0
 
-async function tg(chat_id: number | string, text: string): Promise<boolean> {
+// meta → журнал bot_messages (вкладка «Активность» в карточке пациента)
+async function tg(chat_id: number | string, text: string, meta?: { patient_id?: string; order_id?: string; kind?: string }): Promise<boolean> {
   const r = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true }),
   })
   const j = await r.json().catch(() => ({}))
   if (!j.ok) console.error('tg', j)
+  if (j.ok && meta) {
+    const { error } = await db.from('bot_messages').insert({ chat_id: Number(chat_id), text, patient_id: meta.patient_id || null, order_id: meta.order_id || null, kind: meta.kind || null })
+    if (error) console.error('bot_messages', error)
+  }
   return !!j.ok
 }
 async function setting(key: string): Promise<string | null> {
@@ -193,7 +198,7 @@ async function notify(orderId: string, kind: string): Promise<string> {
   // защита от гонки: занимаем отметку до отправки
   const { data: claimed } = await db.from('orders').update({ [k.col]: new Date().toISOString() }).eq('id', orderId).is(k.col, null).select('id')
   if (!claimed?.length) return 'already sent'
-  const ok = await tg(p.telegram_chat_id, k.build(o, p))
+  const ok = await tg(p.telegram_chat_id, k.build(o, p), { patient_id: p.id, order_id: orderId, kind })
   if (!ok) { await db.from('orders').update({ [k.col]: null }).eq('id', orderId); return 'tg error' }
   return 'sent'
 }
@@ -210,7 +215,7 @@ async function remindNow(orderId: string): Promise<string> {
   if (!p.telegram_chat_id) return 'no chat'
   const { count: sameChat } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('telegram_chat_id', p.telegram_chat_id).is('deleted_at', null)
   p._shared = (sameChat || 0) > 1
-  if (!(await tg(p.telegram_chat_id, msgReminder(o, p)))) return 'tg error'
+  if (!(await tg(p.telegram_chat_id, msgReminder(o, p), { patient_id: p.id, order_id: orderId, kind: 'reminder' }))) return 'tg error'
   await db.from('orders').update({ notify_reminder_at: new Date().toISOString() }).eq('id', orderId)
   return 'sent'
 }
@@ -226,7 +231,7 @@ async function resendNow(orderId: string, kind: string): Promise<string> {
   if (!p.telegram_chat_id) return 'no chat'
   const { count: sameChat } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('telegram_chat_id', p.telegram_chat_id).is('deleted_at', null)
   p._shared = (sameChat || 0) > 1
-  if (!(await tg(p.telegram_chat_id, k.build(o, p)))) return 'tg error'
+  if (!(await tg(p.telegram_chat_id, k.build(o, p), { patient_id: p.id, order_id: orderId, kind }))) return 'tg error'
   await db.from('orders').update({ [k.col]: new Date().toISOString() }).eq('id', orderId)
   return 'sent'
 }

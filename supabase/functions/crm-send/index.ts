@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const { data: role } = await admin.from('user_roles').select('role').eq('user_id', user.id).maybeSingle()
   if (!role) return json({ ok: false, error: 'forbidden' }, 403)
 
-  let body: { chat_id?: number | string; text?: string }
+  let body: { chat_id?: number | string; text?: string; patient_id?: string; order_id?: string; kind?: string }
   try { body = await req.json() } catch { return json({ ok: false, error: 'bad json' }, 400) }
   const chat_id = body.chat_id
   const text = String(body.text || '')
@@ -39,5 +39,13 @@ Deno.serve(async (req) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id, text: text.slice(0, 4096), parse_mode: 'HTML' }),
   }).then(r => r.json()).catch(() => ({ ok: false }))
+  // Журнал bot_messages (вкладка «Активность»), кроме сообщений самой Анне
+  if (r.ok) {
+    const { data: me } = await admin.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+    if (String(me?.value || '') !== String(chat_id)) {
+      const { error } = await admin.from('bot_messages').insert({ chat_id: Number(chat_id), text: text.slice(0, 4096), patient_id: body.patient_id || null, order_id: body.order_id || null, kind: body.kind || 'crm' })
+      if (error) console.error('bot_messages', error)
+    }
+  }
   return json({ ok: !!r.ok, description: r.ok ? undefined : r.description })
 })

@@ -36,12 +36,27 @@ function formatDate(dateStr: string): string {
   return `${d.getDate()} ${MONTHS_G[d.getMonth()]}, ${DAYS_FULL[d.getDay()]}`
 }
 
-async function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}) {
-  await fetch(`${TG}/sendMessage`, {
+// Журнал bot_messages (вкладка «Активность» в карточке пациента). Сообщения самой Анне не пишем.
+let _myChat: string | null | undefined
+async function logBot(chat_id: number | string, text: string, kind?: string) {
+  try {
+    if (_myChat === undefined) {
+      const { data } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+      _myChat = data?.value ?? null
+    }
+    if (String(chat_id) === String(_myChat)) return
+    const { error } = await db.from('bot_messages').insert({ chat_id: Number(chat_id), text, kind: kind || null })
+    if (error) console.error('bot_messages', error)
+  } catch (e) { console.error('bot_messages', e) }
+}
+async function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}, kind?: string) {
+  const r = await fetch(`${TG}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id, text, parse_mode: 'HTML', ...extra }),
   })
+  const j = await r.json().catch(() => ({}))
+  if (j.ok) await logBot(chat_id, text, kind)
 }
 
 // ── Промокоды: код и применённая скидка хранятся в appointments.intake (скидку на приём считает триггер в базе) ──
@@ -240,7 +255,7 @@ async function handleContact(chat_id: number, username: string | undefined, cont
     return
   }
   for (const p of matches) {
-    await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}) }).eq('id', p.id)
+    await db.from('patients').update({ telegram_chat_id: chat_id, notify_off: false, ...(username ? { telegram_username: '@' + username } : {}), ...(phone ? { telegram_phone: phone.startsWith('+') ? phone : '+' + phone } : {}) }).eq('id', p.id)
   }
   // История «Ждут привязки»: закрыть открытый запрос этого чата (или записать автопривязку)
   {
@@ -410,6 +425,7 @@ ${why}
     body: JSON.stringify({ chat_id: Number(patientChat), text, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[button]] } }),
   })
   const ok = (await res.json().catch(() => ({})))?.ok
+  if (ok) await logBot(patientChat as number, text, 'control_invite')
   await finish(ok ? '✅ Приглашение отправлено пациенту' : '⚠️ Не удалось отправить (пациент мог заблокировать бота) — свяжитесь вручную')
 }
 
@@ -574,9 +590,7 @@ async function crmResend(req: Request): Promise<Response> {
   let ok = false
   if (b.kind === 'remind') {
     const firstName = (pt.name || '').split(' ')[1] || pt.name || ''
-    const r = await fetch(`${TG}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text:
+    const text =
 `👋 ${firstName}, добрый день!
 
 Напоминаем, что у вас запись к оптометристу Анне Новосёловой:
@@ -585,7 +599,10 @@ async function crmResend(req: Request): Promise<Response> {
 🕒 ${(appt.time || '').substr(0, 5)}
 📍 Trg Republike 25, Нови-Сад
 
-Всё по плану?`,
+Всё по плану?`
+    const r = await fetch(`${TG}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text,
         reply_markup: { inline_keyboard: [
           [{ text: '✅ Да, подтверждаю', callback_data: `confirm_${appt.id}` }],
           [{ text: '🔄 Не смогу, хочу перезаписаться', callback_data: `reschedule_${appt.id}` }],
@@ -593,12 +610,15 @@ async function crmResend(req: Request): Promise<Response> {
         ] } }),
     }).then(r => r.json()).catch(() => ({}))
     ok = !!r.ok
+    if (ok) await logBot(chat_id, text, 'appt_remind')
   } else {
+    const text = apptConfirmText(appt, await getPromo(appt))
     const r = await fetch(`${TG}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text: apptConfirmText(appt, await getPromo(appt)) }),
+      body: JSON.stringify({ chat_id, parse_mode: 'HTML', text }),
     }).then(r => r.json()).catch(() => ({}))
     ok = !!r.ok
+    if (ok) await logBot(chat_id, text, 'appt_confirm')
   }
   return jsonRes({ result: ok ? 'sent' : 'tg error' })
 }

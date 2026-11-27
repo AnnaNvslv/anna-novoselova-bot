@@ -1,8 +1,9 @@
 // ═══ TELEGRAM ═══
 // Отправка идёт через Edge Function crm-send: токен бота хранится только на сервере.
-async function tgSend(chatId,text) {
+// meta: {patient_id, order_id, kind} → журнал bot_messages (вкладка «Активность»)
+async function tgSend(chatId,text,meta) {
   if(!chatId)return false;
-  try { const{data,error}=await db.functions.invoke('crm-send',{body:{chat_id:chatId,text}}); return !error&&data?.ok===true; } catch{return false;}
+  try { const{data,error}=await db.functions.invoke('crm-send',{body:Object.assign({chat_id:chatId,text},meta||{})}); return !error&&data?.ok===true; } catch{return false;}
 }
 
 // ═══ SALARY ═══

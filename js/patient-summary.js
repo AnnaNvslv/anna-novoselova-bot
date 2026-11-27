@@ -18,7 +18,9 @@
     '.chip-gray{background:var(--surface2);color:var(--text-m);border-color:var(--border)}'+
     '.cg2-chips{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}.cg2-chips .chip{font-size:10.5px;padding:0 6px}'+
     '.pt-act{display:grid;grid-template-columns:96px 24px 1fr;row-gap:9px;column-gap:6px;font-size:14.5px;align-items:baseline}'+
-    '.pt-act .d{color:var(--text-m);font-size:13.5px}';
+    '.pt-act .d{color:var(--text-m);font-size:13.5px;line-height:1.25}.pt-act .d small{font-size:12px}'+
+    '.pt-act-msg>summary{cursor:pointer;list-style:none;color:var(--primary)}.pt-act-msg>summary::-webkit-details-marker{display:none}'+
+    '.pt-act-text{margin-top:6px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);white-space:pre-wrap;font-size:14px;color:var(--text);max-width:560px}';
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 })();
 
@@ -92,9 +94,12 @@ function ptSummaryHtml(p, A, O, E, promoMap, s) {
   if (p.notify_off) imp.push('🔕 '+_L('Отказался от уведомлений о заказах','Odjavio se od obaveštenja'));
 
   const allCodes = promos.map(x => _escH(x.code)+(x.expired && !x.applied ? ' ('+_L('истёк','istekao')+')' : '')).join(', ');
+  // Telegram: статус + @ник + телефон в TG (если отличается от основного)
+  const tgWho = [p.telegram_username ? _escH('@'+tgNick(p.telegram_username)) : _L('без ника','bez nika'),
+                 tgPhoneDiffers(p) ? _escH(p.telegram_phone) : ''].filter(Boolean).join(' · ');
   const tg = p.telegram_chat_id
-    ? '<b style="color:var(--green)">'+_L('подключён','povezan')+'</b><small>'+(p.notify_off ? _L('уведомления выкл.','obaveštenja isklj.') : _L('уведомления вкл.','obaveštenja uklj.'))+'</small>'
-    : '<b style="color:var(--text-m)">'+_L('не подключён','nije povezan')+'</b><small>'+(p.telegram_username ? _escH('@'+tgNick(p.telegram_username)) : _L('нет ника','nema nika'))+'</small>';
+    ? '<b style="color:var(--green)">'+_L('подключён','povezan')+'</b><small>'+tgWho+'</small><small>'+(p.notify_off ? _L('уведомления выкл.','obaveštenja isklj.') : _L('уведомления вкл.','obaveštenja uklj.'))+'</small>'
+    : '<b style="color:var(--text-m)">'+_L('не подключён','nije povezan')+'</b><small>'+tgWho+'</small>';
 
   let open = false; try { open = localStorage.getItem('pt_sum_open') === '1'; } catch(e) {}
   return '<details class="pt-sum"'+(open?' open':'')+' ontoggle="try{localStorage.setItem(\'pt_sum_open\',this.open?\'1\':\'0\')}catch(e){}">'+
@@ -111,36 +116,74 @@ function ptSummaryHtml(p, A, O, E, promoMap, s) {
   '</details>';
 }
 
-// Вкладка «Активность» — всё по датам одной лентой
-function ptActivityHtml(p, A, O, E) {
+// Вкладка «Активность» — всё по датам одной лентой, с временем где оно известно.
+// M — журнал bot_messages: по клику на сообщение бота раскрывается его текст.
+const _BOT_KIND = {
+  summary: ['Бот: сводка заказа','Bot: pregled porudžbine'],
+  ready: ['Бот: «заказ готов»','Bot: „spremno“'],
+  reminder: ['Бот: напоминание забрать','Bot: podsetnik'],
+  issued: ['Бот: спасибо после выдачи','Bot: hvala posle izdavanja'],
+  ready_manual: ['Сообщение «очки готовы» (из CRM)','Poruka „spremno“ (iz CRM)'],
+  survey: ['Опрос после выдачи','Anketa posle izdavanja'],
+  appt_new: ['Сообщение о записи','Poruka o terminu'],
+  appt_confirm: ['Бот: подтверждение записи','Bot: potvrda termina'],
+  appt_24h: ['Бот: напоминание о записи (за сутки)','Bot: podsetnik za termin (dan ranije)'],
+  appt_1h: ['Бот: напоминание о записи (за час)','Bot: podsetnik za termin (sat ranije)'],
+  appt_remind: ['Бот: напоминание о записи','Bot: podsetnik za termin'],
+  control_invite: ['Бот: приглашение на контроль','Bot: poziv na kontrolu'],
+  linked: ['Бот: Telegram привязан','Bot: Telegram povezan'],
+  crm: ['Сообщение из CRM','Poruka iz CRM'],
+};
+function _botKindLabel(k) { const x = _BOT_KIND[k]; return x ? _L(x[0], x[1]) : _L('Бот','Bot'); }
+// HTML сообщения Telegram → безопасный текст с переносами (ссылки — как текст)
+function _botText(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = String(html||'').replace(/<br\s*\/?>/gi, '\n');
+  return _escH(tmp.textContent || '');
+}
+function ptActivityHtml(p, A, O, E, M) {
+  M = M || [];
   const ev = [];
-  const add = (d, ic, txt) => { if (d) ev.push({d:String(d).substr(0,10), ic, txt}); };
+  const pad = n => String(n).padStart(2,'0');
+  // d: 'YYYY-MM-DD' или ISO-время; tm: 'HH:MM' (если известно)
+  const add = (d, ic, txt, tm, body) => {
+    if (!d) return;
+    d = String(d);
+    if (!tm && d.length > 10 && d.includes('T')) { const x = new Date(d); if (!isNaN(x)) { d = x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); tm = pad(x.getHours())+':'+pad(x.getMinutes()); } }
+    ev.push({d: d.substr(0,10), tm: tm || '', ic, txt, body});
+  };
   add(p.created_at, '👤', _L('Добавлен(а) в базу','Dodat(a) u bazu')+(p.source ? ' · '+_escH(p.source) : ''));
   A.forEach(a => {
     const code = apptPromoCode(a);
     add(a.date, a.status==='отменён' ? '🚫' : '📅',
       _escH(apptTypeName(a.type||'') || t('appointments'))+' · '+statusLabel(a.status)+
       (a.consultation_price && a.status==='завершён' ? ' · '+fmtMoney(a.consultation_price) : '')+
-      (code ? ' '+_chip('chip-promo','🎁 '+_escH(code)) : ''));
+      (code ? ' '+_chip('chip-promo','🎁 '+_escH(code)) : ''), (a.time||'').substr(0,5));
   });
   E.forEach(e => { const d = e.exam_date_prec === 'unknown' ? '' : examDate(e); add(d, '📋', _L('Обследование','Pregled vida')+(e.visit_number ? ' №'+e.visit_number : '')); });
+  const logged = new Set(M.filter(m => m.order_id && m.kind).map(m => m.order_id+'|'+m.kind));
+  const ordNum = {}; O.forEach(o => { ordNum[o.id] = o.order_number ? ' №'+_escH(o.order_number) : ''; });
   O.forEach(o => {
-    const n = o.order_number ? ' №'+_escH(o.order_number) : '';
+    const n = ordNum[o.id];
     const disc = orderDiscountSum(o);
     add(orderDateOf(o), '🧾', _L('Заказ','Porudžbina')+n+' · '+_escH(o.type||'')+' · '+fmtMoney(orderTotal(o))+
       (disc ? ' · '+_L('скидка','popust')+' −'+fmtMoney(disc) : '')+(o.promo_code ? ' '+_chip('chip-promo','🎁 '+_escH(o.promo_code)) : '')+
       (_ORDER_VOID.includes(o.status) ? ' · '+_escH(o.status) : ''));
     if (o.ready_date) add(o.ready_date, '📦', _L('Заказ готов','Porudžbina spremna')+n);
     if (o.issued_date) add(o.issued_date, '✅', _L('Заказ выдан','Porudžbina izdata')+n);
-    [['notify_summary_at', _L('Бот: сводка заказа','Bot: pregled porudžbine')],
-     ['notify_ready_at', _L('Бот: «заказ готов»','Bot: „spremno“')],
-     ['notify_reminder_at', _L('Бот: напоминание забрать','Bot: podsetnik')],
-     ['notify_issued_at', _L('Бот: спасибо после выдачи','Bot: hvala posle izdavanja')]
-    ].forEach(([k, l]) => { if (o[k]) add(o[k], '💬', l+n); });
+    // Старые отправки (до журнала) — только дата и время, без текста
+    [['notify_summary_at','summary'],['notify_ready_at','ready'],['notify_reminder_at','reminder'],['notify_issued_at','issued']]
+      .forEach(([k, kind]) => { if (o[k] && !logged.has(o.id+'|'+kind)) add(o[k], '💬', _botKindLabel(kind)+n); });
   });
+  M.forEach(m => add(m.created_at, '💬', _botKindLabel(m.kind)+(m.order_id && ordNum[m.order_id] ? ordNum[m.order_id] : ''), '', _botText(m.text)));
   if (!ev.length) return '<div class="empty"><p>—</p></div>';
-  ev.sort((a, b) => b.d.localeCompare(a.d));
-  return '<div class="pt-act">'+ev.map(x => '<span class="d">'+fmt(x.d)+'</span><span>'+x.ic+'</span><span>'+x.txt+'</span>').join('')+'</div>';
+  ev.sort((a, b) => (b.d+' '+(b.tm||'99:99')).localeCompare(a.d+' '+(a.tm||'99:99')));
+  return '<div class="pt-act">'+ev.map(x =>
+    '<span class="d">'+fmt(x.d)+(x.tm ? '<br><small>'+x.tm+'</small>' : '')+'</span><span>'+x.ic+'</span>'+
+    (x.body
+      ? '<details class="pt-act-msg"><summary>'+x.txt+' <span class="text-m">▾</span></summary><div class="pt-act-text">'+x.body+'</div></details>'
+      : '<span>'+x.txt+'</span>')
+  ).join('')+'</div>';
 }
 
 // ── Распоред: долги пациентов недели одним запросом ──

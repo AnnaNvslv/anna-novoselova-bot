@@ -16,12 +16,27 @@ function formatDate(dateStr: string): string {
   return `${d.getDate()} ${MONTHS_G[d.getMonth()]}, ${DAYS_FULL[d.getDay()]}`
 }
 
-async function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}) {
-  await fetch(`${TG}/sendMessage`, {
+// Журнал bot_messages (вкладка «Активность» в карточке пациента). Сообщения самой Анне не пишем.
+let _myChat: string | null | undefined
+async function logBot(chat_id: number | string, text: string, kind?: string) {
+  try {
+    if (_myChat === undefined) {
+      const { data } = await db.from('settings').select('value').eq('key', 'my_chat_id').maybeSingle()
+      _myChat = data?.value ?? null
+    }
+    if (String(chat_id) === String(_myChat)) return
+    const { error } = await db.from('bot_messages').insert({ chat_id: Number(chat_id), text, kind: kind || null })
+    if (error) console.error('bot_messages', error)
+  } catch (e) { console.error('bot_messages', e) }
+}
+async function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}, kind?: string) {
+  const r = await fetch(`${TG}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id, text, parse_mode: 'HTML', ...extra }),
   })
+  const j = await r.json().catch(() => ({}))
+  if (j.ok) await logBot(chat_id, text, kind)
 }
 
 const BOOKING_URL = 'https://annanvslv.github.io/anna-novoselova-bot/booking.html'
@@ -169,7 +184,7 @@ serve(async () => {
             [{ text: '❌ Нет, отменить запись', callback_data: `cancel_${appt.id}` }],
           ],
         },
-      })
+      }, 'appt_24h')
 
       await db.from('appointments').update({ reminder_24h_sent: true }).eq('id', appt.id)
     }
@@ -181,7 +196,7 @@ serve(async () => {
 
       await sendMessage(
         chat_id,
-        `⏰ ${firstName}, напоминаем: через час ваш приём у Анны Новосёловой!\n\n🕒 ${time} · Trg Republike 25\n\nДо встречи! ✨`
+        `⏰ ${firstName}, напоминаем: через час ваш приём у Анны Новосёловой!\n\n🕒 ${time} · Trg Republike 25\n\nДо встречи! ✨`, {}, 'appt_1h'
       )
 
       await db.from('appointments').update({ reminder_1h_sent: true }).eq('id', appt.id)

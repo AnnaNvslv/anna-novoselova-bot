@@ -914,7 +914,7 @@ async function notifyOrderReady(id) {
     ? 'Ostatak po vašoj porudžbini: '+fmtMoney(bal)+'.\nPlačanje karticom ili gotovinom.'
     : 'Porudžbina je u potpunosti plaćena.';
   const msg = 'Zdravo!\n\nNaocare za '+o.patients.name+' su spremne!\n\n'+paymentText+'\n\nMožete ih preuzeti u bilo koje vreme koje vam odgovara.\n\nRadno vreme optike Ginter:\nradnim danima — 09:00–19:00\nsubota — 09:00–13:00\nnedelja — neradan dan.\n\nAko imate pitanja — obratite se Ani @AnnaNvslv 😊\n\nLep dan!';
-  const ok = await tgSend(o.patients.telegram_chat_id, msg);
+  const ok = await tgSend(o.patients.telegram_chat_id, msg, {patient_id:o.patient_id, order_id:o.id, kind:'ready_manual'});
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }
 async function sendFollowUpSurvey(orderId) {
@@ -927,7 +927,7 @@ async function sendFollowUpSurvey(orderId) {
     '1️⃣ Как вам '+(cl ? 'новые линзы' : 'новые очки')+'?\n😊 Отлично\n🤔 Привыкаю\n😕 Есть вопросы\n\n'+
     (cl ? '2️⃣ Комфортно ли в линзах в течение дня?\n👍 Да\n👎 Нет\n\n' : '2️⃣ Удобно ли сидит оправа?\n👍 Да\n👎 Нет\n\n')+
     'Напишите мне, пожалуйста, пару слов: @AnnaNvslv — отвечу лично.\n\nСпасибо! 🙏\nАнна';
-  const ok = await tgSend(o.patients.telegram_chat_id, msg);
+  const ok = await tgSend(o.patients.telegram_chat_id, msg, {patient_id:o.patient_id, order_id:o.id, kind:'survey'});
   toast(ok ? '📨 '+t('tg_sent') : t('tg_error'), ok ? 'success' : 'error');
 }
 async function delOrder(id) {

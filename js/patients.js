@@ -410,6 +410,14 @@ async function _renderPatientCard(pid) {
   if (_openPatientId !== pid) return; // пока грузили, открыли другого пациента
   if (!p || p.deleted_at) { closePatientCard(); return; }
   const A = appts || [], O = orders || [], E = exams || [];
+  // Сообщения бота пациенту (журнал bot_messages) — для вкладки «Активность»
+  let M = [];
+  if (_cardTab === 'activity') {
+    const {data:msgs} = await db.from('bot_messages').select('created_at,order_id,patient_id,kind,text')
+      .or('patient_id.eq.'+pid+(p.telegram_chat_id ? ',chat_id.eq.'+p.telegram_chat_id : '')).order('created_at',{ascending:false}).limit(300);
+    M = (msgs || []).filter(m => !m.patient_id || m.patient_id === pid);
+    if (_openPatientId !== pid) return;
+  }
   (E).forEach(e => { if (window._examCache) window._examCache[e.id] = e; });
   // Заказы сортируем по дате оформления (её часто вносят задним числом)
   O.sort((a,b) => orderDateOf(b).localeCompare(orderDateOf(a)) || (b.created_at||'').localeCompare(a.created_at||''));
@@ -479,7 +487,7 @@ async function _renderPatientCard(pid) {
       (_cardTab==='rx' ? _examTabHtml(E, pid) : '')+
       (_cardTab==='orders' ? _orderTab(O, pid, E) : '')+
       (_cardTab==='appts' ? _apptTab(A, pid, E) : '')+
-      (_cardTab==='activity' ? ptActivityHtml(p, A, O, E) : '')+
+      (_cardTab==='activity' ? ptActivityHtml(p, A, O, E, M) : '')+
       (_cardTab==='info' ? _infoTabHtml(p, A) : '')+
     '</div>';
   if (keepScroll) box.scrollTop = keepScroll;
@@ -657,7 +665,8 @@ function _infoTabHtml(p, appts) {
       '<div class="info-item"><label>ID</label><p>'+_escH(p.patient_code||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('phone')+'</label><p>'+(p.phone ? '<a class="pt-link" href="tel:'+_escH(p.phone.replace(/\s/g,''))+'">'+_escH(p.phone)+'</a>' : '—')+'</p></div>'+
       '<div class="info-item"><label>Email</label><p>'+(p.email ? '<a class="pt-link" href="mailto:'+_escH(p.email)+'">'+_escH(p.email)+'</a>' : '—')+'</p></div>'+
-      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="badge badge-green" title="ID '+_escH(p.telegram_chat_id)+'">'+(_lang==='sr'?'bot povezan':'бот подключён')+'</span>' : '')+(p.notify_off ? ' <span class="badge badge-warn">🔕 '+(_lang==='sr'?'odjavio se od obaveštenja':'отказался от уведомлений о заказах')+'</span>' : '')+'</p></div>'+
+      '<div class="info-item"><label>Telegram</label><p>'+(tgTag(p.telegram_username) || '—')+(p.telegram_chat_id ? ' <span class="badge badge-green" title="ID '+_escH(p.telegram_chat_id)+'">'+(_lang==='sr'?'bot povezan':'бот подключён')+'</span>' : '')+(p.notify_off ? ' <span class="badge badge-warn">🔕 '+(_lang==='sr'?'odjavio se od obaveštenja':'отказался от уведомлений о заказах')+'</span>' : '')+
+        (tgPhoneDiffers(p) ? '<br><small class="text-m">'+(_lang==='sr'?'tel. u TG':'тел. в TG')+': <a class="pt-link" href="tel:'+_escH(p.telegram_phone.replace(/\s/g,''))+'">'+_escH(p.telegram_phone)+'</a></small>' : '')+'</p></div>'+
       '<div class="info-item"><label>'+t('dob')+'</label><p>'+(p.dob ? fmt(p.dob)+(age ? ' ('+age+' '+t('years')+')' : '') : '—')+'</p></div>'+
       '<div class="info-item"><label>'+t('source')+'</label><p>'+_escH(p.source||'—')+'</p></div>'+
       '<div class="info-item"><label>'+t('first_visit')+'</label><p>'+fmtFirstVisit(p)+'</p></div>'+
@@ -695,6 +704,7 @@ function _patientForm(p) {
             dpHtml('p-first-visit', p ? (p.first_visit_date || (p.first_visit_date_prec==='unknown' ? '' : (p.created_at||'').split('T')[0])) : today(), p && p.first_visit_date_prec)+
           '</div>'+
           '<div class="form-group"><label>Telegram @username</label><input id="p-tguser" value="'+(p&&p.telegram_username||'')+'"></div>'+
+          '<div class="form-group"><label>'+(_lang==='sr'?'Telefon u Telegramu':'Телефон в Telegram')+'</label><input id="p-tgphone" value="'+_escH(p&&p.telegram_phone||'')+'" placeholder="+7 …"></div>'+
           '<div class="form-group"><label>Telegram Chat ID</label><input type="number" id="p-tgid" value="'+(p&&p.telegram_chat_id||'')+'" placeholder="123456789"></div>'+
           '<div class="form-group full"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="p-notify-off" style="width:auto"'+(p&&p.notify_off?' checked':'')+'> '+(_lang==='sr'?'Ne slati obaveštenja o porudžbinama u Telegram':'Не присылать уведомления о заказах в Telegram')+'</label></div>'+
           '<div class="form-group full"><label>'+t('source')+'</label>'+
@@ -723,7 +733,7 @@ async function savePatient(id) {
   const tgIdRaw = v('p-tgid');
   const telegram_chat_id = tgIdRaw ? +tgIdRaw : null;
   const data = {name, last_name:lastName||null, first_name:firstName||null, phone:v('p-phone'), email:v('p-email'), dob:v('p-dob')||null,
-    telegram_username:v('p-tguser'), telegram_chat_id, source:v('p-source'), notes:v('p-notes'),
+    telegram_username:v('p-tguser'), telegram_phone:v('p-tgphone')||null, telegram_chat_id, source:v('p-source'), notes:v('p-notes'),
     notify_off: !!(document.getElementById('p-notify-off') && document.getElementById('p-notify-off').checked),
     first_visit_date:fv.date, first_visit_date_prec:fv.prec};
   try {
